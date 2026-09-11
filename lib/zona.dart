@@ -1,4 +1,4 @@
-import 'tipo.dart';
+import 'tipoo.dart';
 
 // ==========================================
 // CLASE COORDENADA

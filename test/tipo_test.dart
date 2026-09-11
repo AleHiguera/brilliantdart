@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import '../lib/tipo.dart';
+import '../lib/tipoo.dart';
 
 void main() {
   group('Pruebas de Tipo Azul', () {
@@ -7,7 +7,7 @@ void main() {
       tipo: TipoZona.azul,
       color: 'Azul',
       regla: 'Todos los numeros deben ser iguales',
-      puntuacion: 10,
+      puntuacion: 7,
     );
 
     test('Azul permite numeros iguales', () {
@@ -30,7 +30,7 @@ void main() {
       tipo: TipoZona.rojo,
       color: 'Rojo',
       regla: 'Todos los numeros deben ser diferentes',
-      puntuacion: 10,
+      puntuacion: 6,
     );
 
     test('Rojo permite numeros diferentes', () {
@@ -53,7 +53,7 @@ void main() {
       tipo: TipoZona.verde,
       color: 'Verde',
       regla: 'Los numeros pueden repetirse',
-      puntuacion: 10,
+      puntuacion: 4,
     );
 
     test('Verde permite numeros repetidos', () {
@@ -76,7 +76,7 @@ void main() {
       tipo: TipoZona.morado,
       color: 'Morado',
       regla: 'Debe contener exactamente dos numeros',
-      puntuacion: 10,
+      puntuacion: 8,
     );
 
     test('Morado permite exactamente dos numeros', () {
@@ -111,7 +111,7 @@ void main() {
       tipo: TipoZona.amarillo,
       color: 'Amarillo',
       regla: 'Ningún numero puede repetirse entre las zonas amarillas',
-      puntuacion: 10,
+      puntuacion: 8,
     );
 
     test('Amarillo permite numeros diferentes', () {
@@ -129,19 +129,93 @@ void main() {
     });
   });
 
-  group('Pruebas de puntuacion', () {
-    test('El tipo devuelve su puntuacion', () {
+  group('Pruebas de puntuacion por posicion', () {
+    test('Azul en primer lugar puntua 7', () {
       final azul = Tipo(
         tipo: TipoZona.azul,
         color: 'Azul',
         regla: 'Todos iguales',
-        puntuacion: 15,
+        puntuacion: 7,
       );
 
-      expect(
-        azul.calcularPuntuacion(),
-        equals(15),
+      expect(azul.calcularPuntuacion(1), equals(7));
+    });
+
+    test('Azul en segundo lugar puntua 5', () {
+      final azul = Tipo(
+        tipo: TipoZona.azul,
+        color: 'Azul',
+        regla: 'Todos iguales',
+        puntuacion: 7,
       );
+
+      expect(azul.calcularPuntuacion(2), equals(5));
+    });
+
+    test('Azul en tercer lugar puntua 3', () {
+      final azul = Tipo(
+        tipo: TipoZona.azul,
+        color: 'Azul',
+        regla: 'Todos iguales',
+        puntuacion: 7,
+      );
+
+      expect(azul.calcularPuntuacion(3), equals(3));
+    });
+
+    test('Rojo en primer lugar puntua 6', () {
+      final rojo = Tipo(
+        tipo: TipoZona.rojo,
+        color: 'Rojo',
+        regla: 'Todos diferentes',
+        puntuacion: 6,
+      );
+
+      expect(rojo.calcularPuntuacion(1), equals(6));
+    });
+
+    test('Rojo en segundo lugar puntua 4', () {
+      final rojo = Tipo(
+        tipo: TipoZona.rojo,
+        color: 'Rojo',
+        regla: 'Todos diferentes',
+        puntuacion: 6,
+      );
+
+      expect(rojo.calcularPuntuacion(2), equals(4));
+    });
+
+    test('Verde en segundo lugar puntua 3', () {
+      final verde = Tipo(
+        tipo: TipoZona.verde,
+        color: 'Verde',
+        regla: 'Puede repetirse',
+        puntuacion: 4,
+      );
+
+      expect(verde.calcularPuntuacion(2), equals(3));
+    });
+
+    test('Morado en primer lugar puntua 8', () {
+      final morado = Tipo(
+        tipo: TipoZona.morado,
+        color: 'Morado',
+        regla: 'Dos numeros distintos',
+        puntuacion: 8,
+      );
+
+      expect(morado.calcularPuntuacion(1), equals(8));
+    });
+
+    test('Amarillo en segundo lugar puntua 6', () {
+      final amarillo = Tipo(
+        tipo: TipoZona.amarillo,
+        color: 'Amarillo',
+        regla: 'Sin repetidos',
+        puntuacion: 8,
+      );
+
+      expect(amarillo.calcularPuntuacion(2), equals(6));
     });
   });
 }

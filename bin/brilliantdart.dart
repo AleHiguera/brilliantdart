@@ -1,4 +1,4 @@
-import '../lib/tipo.dart';
+import '../lib/tipoo.dart';
 import '../lib/zona.dart';
 
 void main() {
