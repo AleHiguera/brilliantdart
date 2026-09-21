@@ -1,5 +1,6 @@
 import 'package:test/test.dart';
 import '../lib/tipoo.dart';
+import '../lib/region.dart';
 import '../lib/zona.dart';
 
 void main() {
@@ -216,6 +217,49 @@ void main() {
       expect(
         zona.obtenerValores(),
         equals([5]),
+      );
+    });
+
+    test('Zona pertenece al modelo abstracto Region', () {
+      final zona = Zona(
+        id: 11,
+        tipo: Tipo(
+          tipo: TipoZona.verde,
+          color: 'Verde',
+          regla: 'Los numeros pueden repetirse',
+          puntuacion: 4,
+        ),
+        coordenadas: [Coordenada(fila: 2, columna: 4)],
+      );
+
+      expect(zona, isA<Region>());
+    });
+
+    test('La coordenada conserva el mapeo x/y y fila/columna', () {
+      final coordenada = Coordenada(fila: 2, columna: 4);
+
+      expect(coordenada.x, equals(2));
+      expect(coordenada.y, equals(4));
+      expect(coordenada.fila, equals(2));
+      expect(coordenada.columna, equals(4));
+    });
+
+    test('Region rechaza coordenadas duplicadas', () {
+      expect(
+        () => Zona(
+          id: 12,
+          tipo: Tipo(
+            tipo: TipoZona.verde,
+            color: 'Verde',
+            regla: 'Los numeros pueden repetirse',
+            puntuacion: 4,
+          ),
+          coordenadas: [
+            Coordenada(fila: 0, columna: 0),
+            Coordenada(fila: 0, columna: 0),
+          ],
+        ),
+        throwsArgumentError,
       );
     });
   });

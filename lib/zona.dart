@@ -1,46 +1,18 @@
-import 'tipoo.dart';
+import 'region.dart';
 
-// ==========================================
-// CLASE COORDENADA
-// ==========================================
-//
-// Cada coordenada pertenece a una posición
-// dentro del tablero 7x7.
-//
-// El valor puede ser:
-// - un número entero
-// - null, cuando la casilla está vacía
-// ==========================================
-
-class Coordenada {
-  final int fila;
-  final int columna;
-  int? valor;
-
-  Coordenada({
-    required this.fila,
-    required this.columna,
-    this.valor,
-  });
-}
+export 'region.dart' show Coordenada;
 
 // ==========================================
 // CLASE ZONA
 // ==========================================
 
-class Zona {
-  final int id;
-  final List<Coordenada> coordenadas;
-  final Tipo tipo;
-
-  bool completado;
-
+class Zona extends Region {
   Zona({
-    required this.id,
-    required this.coordenadas,
-    required this.tipo,
-    this.completado = false,
-  });
+    required super.id,
+    required super.coordenadas,
+    required super.tipo,
+    super.completado,
+  }) : super();
 
   // ==========================================
   // PROPIEDAD: TAMAÑO DE ZONA
@@ -50,26 +22,7 @@ class Zona {
   // tiene la zona.
   // ==========================================
 
-  int get tamanoZona {
-    return coordenadas.length;
-  }
-
-  // ==========================================
-  // MÉTODO: OBTENER VALORES
-  // ==========================================
-  //
-  // Regresa solamente los números que ya están
-  // colocados.
-  //
-  // Los valores null no se toman en cuenta.
-  // ==========================================
-
-  List<int> obtenerValores() {
-    return coordenadas
-        .where((coordenada) => coordenada.valor != null)
-        .map((coordenada) => coordenada.valor!)
-        .toList();
-  }
+  int get tamanoZona => tamanoRegion;
 
   // ==========================================
   // MÉTODO: COLOCAR NÚMERO
@@ -77,8 +30,7 @@ class Zona {
 
   void colocarNumero(int fila, int columna, int numero) {
     for (var coordenada in coordenadas) {
-      if (coordenada.fila == fila &&
-          coordenada.columna == columna) {
+      if (coordenada.x == fila && coordenada.y == columna) {
         coordenada.valor = numero;
         return;
       }
@@ -93,17 +45,8 @@ class Zona {
   // MÉTODO: CONTIENE COORDENADA
   // ==========================================
 
-  bool contieneCoordenada(int fila, int columna) {
-    return coordenadas.any(
-      (coordenada) =>
-          coordenada.fila == fila &&
-          coordenada.columna == columna,
-    );
-  }
-
-  // ==========================================
-  // MÉTODO: VERIFICAR COMPLETADO
-  // ==========================================
+  @override
+  bool verificarCompletado() {
   //
   // Una zona está completa cuando todas sus
   // coordenadas tienen un número.
@@ -111,7 +54,6 @@ class Zona {
   // Además, se verifica la regla de su tipo.
   // ==========================================
 
-  bool verificarCompletado() {
     // Si todavía existe una casilla vacía,
     // la zona no está completa.
     if (coordenadas.any((coordenada) => coordenada.valor == null)) {
