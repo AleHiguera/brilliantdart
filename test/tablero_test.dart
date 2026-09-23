@@ -101,5 +101,32 @@ void main() {
         throwsRangeError,
       );
     });
+
+    test('El juego se bloquea hasta completar las 6 celdas iniciales con 1..6 sin repetir', () {
+      final tablero = Tablero();
+      final bloc = BlocValoresIniciales(tablero);
+
+      const celdasIniciales = <(int, int)>[
+        (1, 3),
+        (2, 6),
+        (4, 2),
+        (4, 5),
+        (6, 3),
+        (7, 5),
+      ];
+
+      expect(bloc.puedeIniciar, isFalse);
+
+      final valoresCorrectos = [1, 2, 3, 4, 5, 6];
+      for (var i = 0; i < celdasIniciales.length; i++) {
+        final (fila, columna) = celdasIniciales[i];
+        tablero.colocarDato(fila - 1, columna - 1, valoresCorrectos[i]);
+      }
+
+      expect(bloc.puedeIniciar, isTrue);
+
+      tablero.colocarDato(1, 5, 1);
+      expect(bloc.puedeIniciar, isFalse);
+    });
   });
 }
