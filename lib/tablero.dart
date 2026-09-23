@@ -71,3 +71,59 @@ class Tablero {
     }
   }
 }
+
+class BlocValoresIniciales {
+  BlocValoresIniciales(this.tablero);
+
+  final Tablero tablero;
+
+  static const List<(int, int)> celdasIniciales = [
+    (1, 3),
+    (2, 6),
+    (4, 2),
+    (4, 5),
+    (6, 3),
+    (7, 5),
+  ];
+
+  bool get bloqueado => !puedeIniciar;
+
+  bool get puedeIniciar => _validarValoresIniciales();
+
+  void validarAntesDeIniciar() {
+    if (!puedeIniciar) {
+      throw StateError(
+        'Debes completar los valores iniciales antes de iniciar la partida.',
+      );
+    }
+  }
+
+  List<int> obtenerValoresIniciales() {
+    final valores = <int>[];
+
+    for (final (fila, columna) in celdasIniciales) {
+      final valor = tablero.obtenerCelda(fila - 1, columna - 1).valor;
+      if (valor == null) {
+        return const [];
+      }
+      valores.add(valor);
+    }
+
+    return valores;
+  }
+
+  bool _validarValoresIniciales() {
+    final valores = obtenerValoresIniciales();
+    if (valores.length != celdasIniciales.length) {
+      return false;
+    }
+
+    final conjunto = valores.toSet();
+    if (conjunto.length != celdasIniciales.length) {
+      return false;
+    }
+
+    final esperados = List<int>.generate(6, (index) => index + 1);
+    return conjunto.containsAll(esperados);
+  }
+}

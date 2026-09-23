@@ -1,34 +1,19 @@
-import '../lib/tipoo.dart';
-import '../lib/zona.dart';
+import '../lib/tablero.dart';
 
 void main() {
-  final tipoAzul = Tipo(
-    tipo: TipoZona.azul,
-    color: 'Azul',
-    regla: 'Todos los números deben ser iguales',
-    puntuacion: 10,
-  );
+  final tablero = Tablero();
+  final bloc = BlocValoresIniciales(tablero);
 
-  final zonaAzul = Zona(
-    id: 1,
-    tipo: tipoAzul,
-    coordenadas: [
-      Coordenada(fila: 0, columna: 0, valor: 3),
-      Coordenada(fila: 0, columna: 1, valor: 3),
-      Coordenada(fila: 1, columna: 0, valor: 3),
-    ],
-  );
+  print('Estado inicial del juego: ${bloc.puedeIniciar ? 'habilitado' : 'bloqueado'}');
 
-  print('===== TIPO =====');
-  print(tipoAzul.obtenerInformacion());
+  final valoresIniciales = [1, 2, 3, 4, 5, 6];
 
-  print('===== ZONA =====');
-  print('ID: ${zonaAzul.id}');
-  print('Tipo: ${zonaAzul.tipo.color}');
-  print('Tamaño: ${zonaAzul.tamanoZona}');
-  print('Valores: ${zonaAzul.obtenerValores()}');
+  for (var i = 0; i < BlocValoresIniciales.celdasIniciales.length; i++) {
+    final (fila, columna) = BlocValoresIniciales.celdasIniciales[i];
+    tablero.colocarDato(fila - 1, columna - 1, valoresIniciales[i]);
+  }
 
-  print('===== VALIDACIÓN =====');
-  print('Movimiento válido: ${zonaAzul.validarMovimiento()}');
-  print('Zona completada: ${zonaAzul.verificarCompletado()}');
+  print('Celdas iniciales: ${BlocValoresIniciales.celdasIniciales}');
+  print('Estado después de completar las celdas iniciales: ${bloc.puedeIniciar ? 'habilitado' : 'bloqueado'}');
+  print('Valores en las celdas iniciales: ${bloc.obtenerValoresIniciales()}');
 }
