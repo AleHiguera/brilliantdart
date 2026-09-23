@@ -1,3 +1,4 @@
+import '../lib/bloc_valores_iniciales.dart';
 import '../lib/tablero.dart';
 
 void main() {

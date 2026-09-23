@@ -1,4 +1,5 @@
 import 'package:test/test.dart';
+import '../lib/bloc_valores_iniciales.dart';
 import '../lib/tablero.dart';
 import '../lib/tipoo.dart';
 import '../lib/zona.dart';
