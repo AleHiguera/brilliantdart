@@ -1,3 +1,8 @@
 # https://dart.dev/guides/libraries/private-files
 # Created by `dart pub`
 .dart_tool/
+
+# Flutter SDK local download used for this workspace
+src/flutter/
+src/flutter_windows_3.47.5-stable/
+src/flutter_windows_3.47.5-stable.zip
