@@ -26,6 +26,16 @@ class TableroPage extends StatelessWidget {
 
   static const int tamano = 7;
 
+  static const List<List<Color>> mapaColores = [
+    [Color(0xFFFFEB3B), Color(0xFF4CAF50), Color(0xFF2196F3), Color(0xFF9C27B0), Color(0xFF9C27B0), Color(0xFF9C27B0), Color(0xFFFFEB3B)],
+    [Color(0xFF4CAF50), Color(0xFF4CAF50), Color(0xFF2196F3), Color(0xFF2196F3), Color(0xFF9C27B0), Color(0xFF9C27B0), Color(0xFF4CAF50)],
+    [Color(0xFF4CAF50), Color(0xFFF44336), Color(0xFFF44336), Color(0xFF2196F3), Color(0xFF9C27B0), Color(0xFF4CAF50), Color(0xFF4CAF50)],
+    [Color(0xFF4CAF50), Color(0xFFF44336), Color(0xFF9C27B0), Color(0xFFFFEB3B), Color(0xFF4CAF50), Color(0xFF4CAF50), Color(0xFF4CAF50)],
+    [Color(0xFF4CAF50), Color(0xFFF44336), Color(0xFF9C27B0), Color(0xFF9C27B0), Color(0xFFF44336), Color(0xFFF44336), Color(0xFF2196F3)],
+    [Color(0xFFF44336), Color(0xFFF44336), Color(0xFF9C27B0), Color(0xFFF44336), Color(0xFFF44336), Color(0xFF2196F3), Color(0xFF2196F3)],
+    [Color(0xFFFFEB3B), Color(0xFF9C27B0), Color(0xFF9C27B0), Color(0xFFF44336), Color(0xFFF44336), Color(0xFF2196F3), Color(0xFFFFEB3B)],
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,10 +59,15 @@ class TableroPage extends StatelessWidget {
                 ),
                 itemCount: tamano * tamano,
                 itemBuilder: (context, index) {
-                  return const DecoratedBox(
+                  final row = index ~/ tamano;
+                  final col = index % tamano;
+                  final color = mapaColores[row][col];
+
+                  return DecoratedBox(
                     decoration: BoxDecoration(
+                      color: color,
                       border: Border.fromBorderSide(
-                        BorderSide(color: Colors.black, width: 1),
+                        const BorderSide(color: Colors.black, width: 1),
                       ),
                     ),
                   );
