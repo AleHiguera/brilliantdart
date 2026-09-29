@@ -18,7 +18,159 @@ class BrilliantApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.black),
         scaffoldBackgroundColor: Colors.white,
       ),
-      home: const TableroPage(),
+      home: const SeleccionMapaPage(),
+    );
+  }
+}
+
+class SeleccionMapaPage extends StatelessWidget {
+  const SeleccionMapaPage({super.key});
+
+  void _abrirMapa(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const TableroPage()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Brilliant'),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+          children: [
+            Text(
+              'Elige tu mapa',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Selecciona un mapa para preparar la partida.',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 24),
+            _OpcionMapa(
+              key: const Key('map-option-1'),
+              numero: 1,
+              disponible: true,
+              onTap: () => _abrirMapa(context),
+            ),
+            const SizedBox(height: 12),
+            const _OpcionMapa(numero: 2, disponible: false),
+            const SizedBox(height: 12),
+            const _OpcionMapa(numero: 3, disponible: false),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OpcionMapa extends StatelessWidget {
+  const _OpcionMapa({
+    super.key,
+    required this.numero,
+    required this.disponible,
+    this.onTap,
+  });
+
+  final int numero;
+  final bool disponible;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = disponible ? Colors.black : Colors.black54;
+
+    return Semantics(
+      button: disponible,
+      enabled: disponible,
+      label: disponible ? 'Mapa $numero, disponible' : 'Mapa $numero, bloqueado',
+      child: Material(
+        color: disponible ? const Color(0xFFF4F4F0) : const Color(0xFFF0F0F0),
+        borderRadius: BorderRadius.circular(6),
+        child: InkWell(
+          key: Key('map-choice-$numero'),
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(6),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                if (disponible)
+                  SizedBox(
+                    width: 76,
+                    height: 76,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: GridView.builder(
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 7,
+                        ),
+                        itemCount: 49,
+                        itemBuilder: (context, index) => DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: TableroPage.mapaColores[index ~/ 7][index % 7],
+                            border: Border.all(color: Colors.black12, width: 0.3),
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  SizedBox(
+                    width: 76,
+                    height: 76,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE4E4E4),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Icon(Icons.lock_outline, size: 28),
+                    ),
+                  ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Mapa $numero',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: foreground,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        disponible ? 'Disponible' : 'Próximamente',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: foreground,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  disponible ? Icons.arrow_forward : Icons.lock_outline,
+                  color: foreground,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -177,7 +329,19 @@ class _TableroPageState extends State<TableroPage> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _bloc.jugando
+                      ? 'Mapa 1'
+                      : 'Coloca los 6 números iniciales para comenzar',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
               child: Row(
                 children: [
                   Expanded(
