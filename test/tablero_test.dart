@@ -129,5 +129,17 @@ void main() {
       tablero.colocarDato(1, 5, 1);
       expect(bloc.puedeIniciar, isFalse);
     });
+
+    test('Mover un numero inicial despeja su posicion anterior', () {
+      final tablero = Tablero();
+      final bloc = BlocValoresIniciales(tablero);
+
+      bloc.colocarValorInicial(1, 3, 4);
+      bloc.colocarValorInicial(6, 3, 4);
+
+      expect(tablero.obtenerCelda(0, 2).valor, isNull);
+      expect(tablero.obtenerCelda(5, 2).valor, 4);
+      expect(bloc.puedeIniciar, isFalse);
+    });
   });
 }

@@ -29,6 +29,30 @@ class BlocValoresIniciales {
 
   bool get jugando => estado == EstadoInicialPartida.jugando;
 
+  void colocarValorInicial(int fila, int columna, int? valor) {
+    final esCeldaInicial = celdasIniciales.any(
+      (celda) => celda.$1 == fila && celda.$2 == columna,
+    );
+    if (!esCeldaInicial) {
+      throw ArgumentError('La celda ($fila, $columna) no es inicial.');
+    }
+    if (valor != null && (valor < 1 || valor > 6)) {
+      throw ArgumentError.value(valor, 'valor', 'Debe estar entre 1 y 6.');
+    }
+
+    if (valor != null) {
+      for (final (otraFila, otraColumna) in celdasIniciales) {
+        if (otraFila == fila && otraColumna == columna) continue;
+        final otraCelda = tablero.obtenerCelda(otraFila - 1, otraColumna - 1);
+        if (otraCelda.valor == valor) {
+          otraCelda.valor = null;
+        }
+      }
+    }
+
+    tablero.colocarDato(fila - 1, columna - 1, valor);
+  }
+
   void iniciarPartida() {
     if (estado != EstadoInicialPartida.inicializado) {
       throw StateError(
