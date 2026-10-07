@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:brilliantdart/bloc_valores_iniciales.dart';
 import 'package:brilliantdart/tablero.dart';
+import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
 
 void main() {
   runApp(const BrilliantApp());
@@ -328,38 +329,53 @@ class _TableroPageState extends State<TableroPage> {
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  _bloc.jugando
-                      ? 'Mapa 1'
-                      : 'Coloca los 6 números iniciales para comenzar',
-                  style: Theme.of(context).textTheme.bodyMedium,
+            if (_bloc.jugando)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Lanza los dados para continuar',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const PanelLanzamientoDados(),
+                  ],
+                ),
+              )
+            else ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Coloca los 6 números iniciales para comenzar',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Números: $_cantidadColocada/6',
-                      style: Theme.of(context).textTheme.titleMedium,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Números: $_cantidadColocada/6',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                     ),
-                  ),
-                  ElevatedButton(
-                    onPressed:
-                        _bloc.puedeIniciar && !_bloc.jugando
-                            ? _comenzarPartida
-                            : null,
-                    child: Text(_bloc.jugando ? 'En partida' : 'Comenzar'),
-                  ),
-                ],
+                    ElevatedButton(
+                      onPressed: _bloc.puedeIniciar ? _comenzarPartida : null,
+                      child: const Text('Comenzar'),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),

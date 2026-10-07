@@ -81,6 +81,25 @@ void main() {
     await tester.tap(find.text('Comenzar'));
     await tester.pump();
     expect(find.text('Partida iniciada'), findsOneWidget);
-    expect(find.text('En partida'), findsOneWidget);
+    expect(find.byKey(const Key('roll-dice-button')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('roll-dice-button')));
+    await tester.pump();
+    expect(find.text('Lanzando dados...'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 1300));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lanzando dados...'), findsNothing);
+    expect(find.textContaining(RegExp(r'Dado 1: [1-6]')), findsOneWidget);
+    expect(find.textContaining(RegExp(r'Dado 2: [1-6]')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('roll-dice-button')));
+    await tester.pump();
+    expect(find.text('Lanzando dados...'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 1300));
+    await tester.pumpAndSettle();
+    expect(find.textContaining(RegExp(r'Dado 1: [1-6]')), findsOneWidget);
+    expect(find.textContaining(RegExp(r'Dado 2: [1-6]')), findsOneWidget);
   });
 }
