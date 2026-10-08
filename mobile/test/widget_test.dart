@@ -111,6 +111,11 @@ void main() {
 
     await tester.tap(find.byKey(const Key('initial-cell-1-3')));
     await tester.pumpAndSettle();
+    expect(find.textContaining('Celda ('), findsNothing);
+    for (var numero = 1; numero <= 6; numero++) {
+      expect(find.text('$numero'), findsOneWidget);
+    }
+    expect(find.text('Vaciar celda'), findsOneWidget);
     await tester.tap(find.byKey(const Key('initial-value-4')));
     await tester.pumpAndSettle();
 

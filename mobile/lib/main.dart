@@ -229,7 +229,6 @@ class _TableroPageState extends State<TableroPage> {
     final valor = await showDialog<int>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: Text('Celda ($fila, $columna)'),
         children: [
           for (var numero = 1; numero <= 6; numero++)
             SimpleDialogOption(
