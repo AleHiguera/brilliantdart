@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:brilliantdart/bloc_valores_iniciales.dart';
 import 'package:brilliantdart/dados.dart';
@@ -497,9 +499,8 @@ class _TableroPageState extends State<TableroPage> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        'Números: $_cantidadColocada/6',
-                        style: Theme.of(context).textTheme.titleMedium,
+                      child: _ProgresoIniciales(
+                        cantidad: _cantidadColocada,
                       ),
                     ),
                     ElevatedButton(
@@ -515,6 +516,97 @@ class _TableroPageState extends State<TableroPage> {
       ),
     );
   }
+}
+
+class _ProgresoIniciales extends StatelessWidget {
+  const _ProgresoIniciales({required this.cantidad});
+
+  final int cantidad;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      key: const Key('initial-progress'),
+      label: '$cantidad de 6 números iniciales colocados',
+      child: Row(
+        children: [
+          CustomPaint(
+            size: const Size.square(44),
+            painter: _RuedaProgresoPainter(cantidad),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Números iniciales',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              Text(
+                '$cantidad/6',
+                key: const Key('initial-progress-count'),
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RuedaProgresoPainter extends CustomPainter {
+  _RuedaProgresoPainter(this.cantidad);
+
+  final int cantidad;
+
+  static const List<Color> _colores = [
+    Color(0xFFFFEB3B),
+    Color(0xFF4CAF50),
+    Color(0xFF2196F3),
+    Color(0xFF9C27B0),
+    Color(0xFFF44336),
+    Color(0xFFFF9800),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final centro = Offset(size.width / 2, size.height / 2);
+    final radio = math.min(size.width, size.height) / 2 - 1;
+    final limites = Rect.fromCircle(center: centro, radius: radio);
+    final separador = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    for (var indice = 0; indice < 6; indice++) {
+      final inicio = -math.pi / 2 + indice * math.pi / 3;
+      final sector = Path()
+        ..moveTo(centro.dx, centro.dy)
+        ..arcTo(limites, inicio, math.pi / 3, false)
+        ..close();
+      final relleno = Paint()
+        ..color = indice < cantidad
+            ? _colores[indice]
+            : const Color(0xFFE6E6E6);
+      canvas.drawPath(sector, relleno);
+      canvas.drawPath(sector, separador);
+    }
+
+    canvas.drawCircle(
+      centro,
+      radio,
+      Paint()
+        ..color = Colors.black
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_RuedaProgresoPainter oldDelegate) =>
+      cantidad != oldDelegate.cantidad;
 }
 
 class _ResumenMovimiento extends StatelessWidget {

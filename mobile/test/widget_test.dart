@@ -95,6 +95,7 @@ void main() {
       find.text('Coloca los 6 números iniciales para comenzar'),
       findsOneWidget,
     );
+    expect(find.text('0/6'), findsOneWidget);
     expect(
       tester.widget<ElevatedButton>(find.byType(ElevatedButton)).onPressed,
       isNull,
@@ -158,6 +159,7 @@ void main() {
       tester.widget<ElevatedButton>(find.byType(ElevatedButton)).onPressed,
       isNotNull,
     );
+    expect(find.text('6/6'), findsOneWidget);
 
     await tester.tap(find.text('Comenzar'));
     await tester.pump();
