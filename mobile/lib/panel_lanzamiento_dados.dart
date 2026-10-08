@@ -124,29 +124,26 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
       mainAxisSize: MainAxisSize.min,
       children: [
         Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Expanded(
-              child: _DadoAnimado(
-                nombre: 'Dado 1',
-                valor: valorDado1,
-                animacion: _animacion,
-                animando: _estaLanzando,
-              ),
+            _DadoAnimado(
+              nombre: 'Dado 1',
+              valor: valorDado1,
+              animacion: _animacion,
+              animando: _estaLanzando,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _DadoAnimado(
-                nombre: 'Dado 2',
-                valor: valorDado2,
-                animacion: _animacion,
-                animando: _estaLanzando,
-              ),
+            const SizedBox(width: 24),
+            _DadoAnimado(
+              nombre: 'Dado 2',
+              valor: valorDado2,
+              animacion: _animacion,
+              animando: _estaLanzando,
             ),
           ],
         ),
         const SizedBox(height: 10),
-        SizedBox(
-          width: double.infinity,
+        Align(
+          alignment: Alignment.center,
           child: FilledButton.icon(
             key: const Key('roll-dice-button'),
             onPressed: _estaLanzando || _esperandoDecision
@@ -178,8 +175,8 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
             ),
           ),
           const SizedBox(height: 6),
-          SizedBox(
-            width: double.infinity,
+          Align(
+            alignment: Alignment.center,
             child: FilledButton(
               key: const Key('pass-turn-button'),
               onPressed: _pasarTurno,
@@ -203,8 +200,8 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
                 widget.onOpcionAnclaChanged(opcion);
               },
             ),
-          SizedBox(
-            width: double.infinity,
+          Align(
+            alignment: Alignment.center,
             child: TextButton(
               key: const Key('pass-turn-button'),
               onPressed: _pasarTurno,

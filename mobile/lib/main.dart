@@ -642,8 +642,8 @@ class _ResumenMovimiento extends StatelessWidget {
             'Posición: (${movimiento.destino.x + 1}, ${movimiento.destino.y + 1})',
           ),
           const SizedBox(height: 6),
-          SizedBox(
-            width: double.infinity,
+          Align(
+            alignment: Alignment.center,
             child: FilledButton.icon(
               key: const Key('confirm-move-button'),
               onPressed: onConfirmar,

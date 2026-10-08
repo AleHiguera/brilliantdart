@@ -187,6 +187,10 @@ void main() {
       isNull,
     );
     expect(find.byKey(const Key('pass-turn-button')), findsOneWidget);
+    expect(
+      tester.getSize(find.byKey(const Key('pass-turn-button'))).width,
+      lessThan(180),
+    );
     final opcionDado1 = find.byKey(Key('anchor-option-$valorDado1'));
     final opcionDado2 = find.byKey(Key('anchor-option-$valorDado2'));
 
