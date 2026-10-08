@@ -12,11 +12,13 @@ class PanelLanzamientoDados extends StatefulWidget {
     required this.validadorAnclas,
     required this.onOpcionAnclaChanged,
     required this.onPasarTurno,
+    required this.onHistorialActualizado,
   });
 
   final ValidadorAnclas validadorAnclas;
   final ValueChanged<OpcionAncla?> onOpcionAnclaChanged;
   final VoidCallback onPasarTurno;
+  final VoidCallback onHistorialActualizado;
   final Dados dados;
 
   @override
@@ -76,6 +78,7 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
     await Future<void>.delayed(const Duration(milliseconds: 1200));
     _temporizador?.cancel();
     final (resultadoDado1, resultadoDado2) = widget.dados.lanzar();
+    widget.onHistorialActualizado();
     final opcionesAncla =
       widget.validadorAnclas.obtenerOpciones(resultadoDado1, resultadoDado2);
     final noHayMovimientos = !opcionesAncla.any(

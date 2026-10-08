@@ -7,6 +7,7 @@ import 'package:brilliantdart/mapa_uno.dart';
 import 'package:brilliantdart/tablero.dart';
 import 'package:brilliantdart/tipoo.dart';
 import 'package:brilliantdart/validador_anclas.dart';
+import 'package:brilliant_mobile/historial_dados_view.dart';
 import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
 
 void main() {
@@ -273,6 +274,10 @@ class _TableroPageState extends State<TableroPage> {
     });
   }
 
+  void _actualizarHistorial() {
+    setState(() {});
+  }
+
   void _seleccionarDestino(MovimientoAncla movimiento) {
     setState(() => _movimientoSeleccionado = movimiento);
   }
@@ -307,6 +312,7 @@ class _TableroPageState extends State<TableroPage> {
   @override
   Widget build(BuildContext context) {
     final movimientosDisponibles = _movimientosDisponibles;
+    final mostrarHistorialLateral = MediaQuery.sizeOf(context).width >= 850;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tablero'),
@@ -319,12 +325,15 @@ class _TableroPageState extends State<TableroPage> {
         child: Column(
           children: [
             Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: AspectRatio(
-                    aspectRatio: 1,
-                    child: GridView.builder(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: GridView.builder(
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
@@ -436,10 +445,44 @@ class _TableroPageState extends State<TableroPage> {
                         );
                       },
                     ),
-                  ),
-                ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (mostrarHistorialLateral)
+                    SizedBox(
+                      width: 292,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 12, 16, 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Historial de dados',
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                            const SizedBox(height: 8),
+                            Expanded(
+                              child: HistorialDadosView(
+                                historial: _dados.historial,
+                                maxAlturaFilas: 300,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
+            if (_bloc.jugando && !mostrarHistorialLateral)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: HistorialDadosView(
+                  historial: _dados.historial,
+                  maxAlturaFilas: 46,
+                ),
+              ),
             if (_bloc.jugando)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
@@ -460,6 +503,7 @@ class _TableroPageState extends State<TableroPage> {
                       validadorAnclas: _validadorAnclas,
                       onOpcionAnclaChanged: _seleccionarOpcionAncla,
                       onPasarTurno: _pasarTurno,
+                      onHistorialActualizado: _actualizarHistorial,
                     ),
                     if (_opcionAnclaSeleccionada != null &&
                         movimientosDisponibles.isEmpty)

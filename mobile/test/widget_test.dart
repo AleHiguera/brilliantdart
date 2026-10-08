@@ -1,14 +1,149 @@
 import 'dart:math';
 
 import 'package:brilliantdart/dados.dart';
+import 'package:brilliantdart/historial_dados.dart';
 import 'package:brilliantdart/tablero.dart';
 import 'package:brilliantdart/validador_anclas.dart';
+import 'package:brilliant_mobile/historial_dados_view.dart';
 import 'package:brilliant_mobile/main.dart';
 import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('History table displays stored dice results', (tester) async {
+    final historial = HistorialDados()
+      ..registrarLanzamiento(2, 6)
+      ..registrarLanzamiento(4, 1);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: HistorialDadosView(historial: historial)),
+      ),
+    );
+
+    expect(find.text('Lanzamiento'), findsOneWidget);
+    expect(find.text('Dado 1'), findsOneWidget);
+    expect(find.text('Dado 2'), findsOneWidget);
+    expect(find.byKey(const Key('dice-history-row-1')), findsOneWidget);
+    expect(find.byKey(const Key('dice-history-row-2')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('dice-history-row-1')),
+        matching: find.text('2'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('dice-history-row-1')),
+        matching: find.text('6'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('dice-history-row-2')),
+        matching: find.text('4'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('dice-history-row-2')),
+        matching: find.text('1'),
+      ),
+      findsOneWidget,
+    );
+  });
+  
+  testWidgets('Four successive rolls stay in the visible history',
+      (tester) async {
+    final dados = DadosFijos([(5, 5), (2, 6), (4, 1), (3, 6)]);
+    final tablero = Tablero();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: StatefulBuilder(
+              builder: (context, setState) => Column(
+                children: [
+                  HistorialDadosView(historial: dados.historial),
+                  PanelLanzamientoDados(
+                    dados: dados,
+                    validadorAnclas: ValidadorAnclas(tablero),
+                    onOpcionAnclaChanged: (_) {},
+                    onPasarTurno: () {},
+                    onHistorialActualizado: () => setState(() {}),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    const resultados = [(5, 5), (2, 6), (4, 1), (3, 6)];
+    for (var indice = 0; indice < resultados.length; indice++) {
+      await tester.tap(find.byKey(const Key('roll-dice-button')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1300));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('No se puede realizar ningún movimiento'),
+        findsOneWidget,
+      );
+      final numeroLanzamiento = indice + 1;
+      final registro = find.byKey(
+        Key('dice-history-row-$numeroLanzamiento'),
+      );
+      expect(registro, findsOneWidget);
+      expect(
+        find.descendant(
+          of: registro,
+          matching: find.text('${resultados[indice].$1}'),
+        ),
+        findsNWidgets(resultados[indice].$1 == resultados[indice].$2 ? 2 : 1),
+      );
+      expect(
+        find.descendant(
+          of: registro,
+          matching: find.text('${resultados[indice].$2}'),
+        ),
+        findsNWidgets(resultados[indice].$1 == resultados[indice].$2 ? 2 : 1),
+      );
+      expect(dados.historial.lanzamientos, hasLength(numeroLanzamiento));
+
+      if (indice < resultados.length - 1) {
+        await tester.tap(find.byKey(const Key('pass-turn-button')));
+        await tester.pumpAndSettle();
+      }
+    }
+
+    expect(dados.historial.lanzamientos, hasLength(4));
+  });
+
+  testWidgets('History appears to the right of the board on wide screens',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final dados = DadosFijos([])..historial.registrarLanzamiento(2, 6);
+    await tester.pumpWidget(
+      MaterialApp(home: TableroPage(dados: dados)),
+    );
+
+    final tablero = tester.getRect(find.byType(GridView).first);
+    final historial = tester.getRect(find.byKey(const Key('dice-history')));
+    expect(historial.left, greaterThanOrEqualTo(tablero.right));
+    expect(find.text('Historial de dados'), findsOneWidget);
+  });
+
   testWidgets('Invalid movement confirmation rerolls without placing a number',
       (tester) async {
     final tablero = Tablero();
@@ -25,6 +160,7 @@ void main() {
               validadorAnclas: validador,
               onOpcionAnclaChanged: (_) {},
               onPasarTurno: () => turnosPasados++,
+              onHistorialActualizado: () {},
             ),
           ),
         ),
@@ -264,5 +400,9 @@ class DadosFijos extends Dados {
   int _lanzamientoActual = 0;
 
   @override
-  (int, int) lanzar() => resultados[_lanzamientoActual++];
+  (int, int) lanzar() {
+    final resultado = resultados[_lanzamientoActual++];
+    historial.registrarLanzamiento(resultado.$1, resultado.$2);
+    return resultado;
+  }
 }

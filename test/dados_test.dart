@@ -23,6 +23,11 @@ void main() {
       expect(valorDado2, inInclusiveRange(1, 6));
       expect(dados.dado1.valor, valorDado1);
       expect(dados.dado2.valor, valorDado2);
+
+      expect(dados.historial.lanzamientos, hasLength(1));
+      expect(dados.historial.lanzamientos.single.numeroLanzamiento, 1);
+      expect(dados.historial.lanzamientos.single.resultadoDado1, valorDado1);
+      expect(dados.historial.lanzamientos.single.resultadoDado2, valorDado2);
     });
 
     test('Permite realizar múltiples lanzamientos', () {
@@ -34,7 +39,13 @@ void main() {
         expect(valores.$1, inInclusiveRange(1, 6));
         expect(valores.$2, inInclusiveRange(1, 6));
         expect(dados.dados, hasLength(2));
+        final registro = dados.historial.lanzamientos[lanzamiento];
+        expect(registro.numeroLanzamiento, lanzamiento + 1);
+        expect(registro.resultadoDado1, valores.$1);
+        expect(registro.resultadoDado2, valores.$2);
       }
+
+      expect(dados.historial.lanzamientos, hasLength(100));
     });
   });
 }
