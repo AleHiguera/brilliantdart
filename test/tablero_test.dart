@@ -1,8 +1,8 @@
 import 'package:test/test.dart';
-import '../lib/bloc_valores_iniciales.dart';
-import '../lib/tablero.dart';
-import '../lib/tipoo.dart';
-import '../lib/zona.dart';
+import 'package:brilliantdart/bloc_valores_iniciales.dart';
+import 'package:brilliantdart/tablero.dart';
+import 'package:brilliantdart/tipoo.dart';
+import 'package:brilliantdart/zona.dart';
 
 void main() {
   Tipo tipoVerde() {
@@ -11,6 +11,15 @@ void main() {
       color: 'Verde',
       regla: 'Los numeros pueden repetirse',
       puntuacion: 4,
+    );
+  }
+
+  Tipo tipoRojo() {
+    return Tipo(
+      tipo: TipoZona.rojo,
+      color: 'Rojo',
+      regla: 'Todos los numeros deben ser diferentes',
+      puntuacion: 6,
     );
   }
 
@@ -100,6 +109,54 @@ void main() {
       expect(
         () => tablero.obtenerCelda(7, 0),
         throwsRangeError,
+      );
+    });
+
+    test('Obtiene las cuatro posiciones ortogonales de una celda central', () {
+      final tablero = Tablero();
+      tablero.colocarDato(2, 4, 6);
+
+      final posiciones = tablero.obtenerPosicionesAdyacentes(3, 4);
+
+      expect(
+        posiciones.map((celda) => (celda.x + 1, celda.y + 1)),
+        [(3, 5), (5, 5), (4, 4), (4, 6)],
+      );
+    });
+
+    test('Rechaza un repetido en rojo y no modifica la posicion destino', () {
+      final tablero = Tablero();
+      final ancla = tablero.obtenerCelda(3, 1);
+      final destino = tablero.obtenerCelda(2, 1);
+      ancla.valor = 5;
+      tablero.agregarRegion(
+        Zona(
+          id: 1,
+          tipo: tipoRojo(),
+          coordenadas: [ancla, destino],
+        ),
+      );
+
+      expect(tablero.puedeColocarDato(2, 1, 5), isFalse);
+      expect(tablero.puedeColocarDato(2, 1, 4), isTrue);
+      expect(destino.valor, isNull);
+    });
+
+    test('No permite colocar en celdas sin zona ni fuera del tablero', () {
+      final tablero = Tablero();
+
+      expect(tablero.puedeColocarDato(0, 0, 3), isFalse);
+      expect(tablero.puedeColocarDato(7, 0, 3), isFalse);
+    });
+
+    test('En una esquina solo devuelve vecinos dentro del tablero', () {
+      final tablero = Tablero();
+
+      final posiciones = tablero.obtenerPosicionesAdyacentes(0, 0);
+
+      expect(
+        posiciones.map((celda) => (celda.x + 1, celda.y + 1)),
+        [(2, 1), (1, 2)],
       );
     });
 

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:brilliantdart/bloc_valores_iniciales.dart';
+import 'package:brilliantdart/dados.dart';
+import 'package:brilliantdart/mapa_uno.dart';
 import 'package:brilliantdart/tablero.dart';
+import 'package:brilliantdart/tipoo.dart';
+import 'package:brilliantdart/validador_anclas.dart';
 import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
 
 void main() {
@@ -122,7 +126,7 @@ class _OpcionMapa extends StatelessWidget {
                         itemCount: 49,
                         itemBuilder: (context, index) => DecoratedBox(
                           decoration: BoxDecoration(
-                            color: TableroPage.mapaColores[index ~/ 7][index % 7],
+                            color: TableroPage.colorEn(index ~/ 7, index % 7),
                             border: Border.all(color: Colors.black12, width: 0.3),
                           ),
                         ),
@@ -177,27 +181,44 @@ class _OpcionMapa extends StatelessWidget {
 }
 
 class TableroPage extends StatefulWidget {
-  const TableroPage({super.key});
+  const TableroPage({super.key, this.dados});
+
+  final Dados? dados;
 
   static const int tamano = 7;
 
-  static const List<List<Color>> mapaColores = [
-    [Color(0xFFFFEB3B), Color(0xFF4CAF50), Color(0xFF2196F3), Color(0xFF9C27B0), Color(0xFF9C27B0), Color(0xFF9C27B0), Color(0xFFFFEB3B)],
-    [Color(0xFF4CAF50), Color(0xFF4CAF50), Color(0xFF2196F3), Color(0xFF2196F3), Color(0xFF9C27B0), Color(0xFF9C27B0), Color(0xFF4CAF50)],
-    [Color(0xFF4CAF50), Color(0xFFF44336), Color(0xFFF44336), Color(0xFF2196F3), Color(0xFF9C27B0), Color(0xFF4CAF50), Color(0xFF4CAF50)],
-    [Color(0xFF4CAF50), Color(0xFFF44336), Color(0xFF9C27B0), Color(0xFFFFEB3B), Color(0xFF4CAF50), Color(0xFF4CAF50), Color(0xFF4CAF50)],
-    [Color(0xFF4CAF50), Color(0xFFF44336), Color(0xFF9C27B0), Color(0xFF9C27B0), Color(0xFFF44336), Color(0xFFF44336), Color(0xFF2196F3)],
-    [Color(0xFFF44336), Color(0xFFF44336), Color(0xFF9C27B0), Color(0xFFF44336), Color(0xFFF44336), Color(0xFF2196F3), Color(0xFF2196F3)],
-    [Color(0xFFFFEB3B), Color(0xFF9C27B0), Color(0xFF9C27B0), Color(0xFFF44336), Color(0xFFF44336), Color(0xFF2196F3), Color(0xFFFFEB3B)],
-  ];
+  static const Map<TipoZona, Color> coloresZonas = {
+    TipoZona.azul: Color(0xFF2196F3),
+    TipoZona.rojo: Color(0xFFF44336),
+    TipoZona.verde: Color(0xFF4CAF50),
+    TipoZona.amarillo: Color(0xFFFFEB3B),
+    TipoZona.morado: Color(0xFF9C27B0),
+  };
+
+  static Color colorEn(int fila, int columna) =>
+      coloresZonas[MapaUno.tiposPorCelda[fila][columna]]!;
 
   @override
   State<TableroPage> createState() => _TableroPageState();
 }
 
 class _TableroPageState extends State<TableroPage> {
-  final Tablero _tablero = Tablero();
+  late final Dados _dados = widget.dados ?? Dados();
+  final Tablero _tablero = MapaUno.crearTablero();
   late final BlocValoresIniciales _bloc = BlocValoresIniciales(_tablero);
+  late final ValidadorAnclas _validadorAnclas = ValidadorAnclas(_tablero);
+  OpcionAncla? _opcionAnclaSeleccionada;
+  MovimientoAncla? _movimientoSeleccionado;
+  int _rondaDados = 0;
+
+  List<MovimientoAncla> get _movimientosDisponibles {
+    final opcion = _opcionAnclaSeleccionada;
+    if (opcion == null || !_validadorAnclas.puedeSerAncla(opcion.ancla)) {
+      return const [];
+    }
+
+    return _validadorAnclas.obtenerMovimientosPosibles(opcion);
+  }
 
   int get _cantidadColocada => BlocValoresIniciales.celdasIniciales
       .where((celda) =>
@@ -234,13 +255,57 @@ class _TableroPageState extends State<TableroPage> {
 
   void _comenzarPartida() {
     setState(_bloc.iniciarPartida);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Partida iniciada')),
+  }
+
+  void _seleccionarOpcionAncla(OpcionAncla? opcion) {
+    setState(() {
+      _opcionAnclaSeleccionada = opcion;
+      _movimientoSeleccionado = null;
+    });
+  }
+
+  void _pasarTurno() {
+    setState(() {
+      _opcionAnclaSeleccionada = null;
+      _movimientoSeleccionado = null;
+      _rondaDados++;
+    });
+  }
+
+  void _seleccionarDestino(MovimientoAncla movimiento) {
+    setState(() => _movimientoSeleccionado = movimiento);
+  }
+
+  void _confirmarMovimiento() {
+    final opcion = _opcionAnclaSeleccionada;
+    final movimiento = _movimientoSeleccionado;
+    if (opcion == null ||
+        movimiento == null ||
+        !_validadorAnclas.puedeSerAncla(opcion.ancla) ||
+        !_tablero.puedeColocarDato(
+          movimiento.destino.x,
+          movimiento.destino.y,
+          opcion.numeroAColocar,
+        )) {
+      setState(() => _movimientoSeleccionado = null);
+      return;
+    }
+
+    _tablero.colocarDato(
+      movimiento.destino.x,
+      movimiento.destino.y,
+      opcion.numeroAColocar,
     );
+    setState(() {
+      _opcionAnclaSeleccionada = null;
+      _movimientoSeleccionado = null;
+      _rondaDados++;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final movimientosDisponibles = _movimientosDisponibles;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tablero'),
@@ -275,50 +340,95 @@ class _TableroPageState extends State<TableroPage> {
                           (fila, columna),
                         );
                         final esInicial = posicionInicial >= 0;
-                        final valor = esInicial
-                            ? _tablero.obtenerCelda(
-                                filaIndice,
-                                columnaIndice,
-                              ).valor
-                            : null;
+                        final celda =
+                            _tablero.obtenerCelda(filaIndice, columnaIndice);
+                        final valor = celda.valor;
+                        MovimientoAncla? movimientoDestino;
+                        for (final movimiento in movimientosDisponibles) {
+                          if (identical(movimiento.destino, celda)) {
+                            movimientoDestino = movimiento;
+                            break;
+                          }
+                        }
+                        final esDestinoPosible = movimientoDestino != null;
+                        final esDestinoSeleccionado =
+                            identical(_movimientoSeleccionado?.destino, celda);
                         final color =
-                            TableroPage.mapaColores[filaIndice][columnaIndice];
+                            TableroPage.colorEn(filaIndice, columnaIndice);
 
                         return Material(
                           color: color,
                           child: InkWell(
                             key: esInicial
                                 ? Key('initial-cell-$fila-$columna')
-                                : null,
-                            onTap: esInicial && !_bloc.jugando
+                                : esDestinoPosible
+                                    ? Key('candidate-cell-$fila-$columna')
+                                    : Key('board-cell-$fila-$columna'),
+                            onTap: !_bloc.jugando && esInicial
                                 ? () => _mostrarSelector(fila, columna)
-                                : null,
+                                : _bloc.jugando && esDestinoPosible
+                                    ? () =>
+                                        _seleccionarDestino(movimientoDestino!)
+                                    : null,
                             child: Container(
                               decoration: BoxDecoration(
                                 border: Border.fromBorderSide(
                                   BorderSide(
-                                    color: esInicial
-                                        ? Colors.white
-                                        : Colors.black,
-                                    width: esInicial ? 2 : 1,
+                                    color: esDestinoSeleccionado
+                                        ? Colors.black
+                                        : esDestinoPosible || esInicial
+                                            ? Colors.white
+                                            : Colors.black,
+                                    width: esDestinoSeleccionado
+                                        ? 3
+                                        : esDestinoPosible || esInicial
+                                            ? 2
+                                            : 1,
                                   ),
                                 ),
                               ),
-                              child: esInicial
+                              child: valor != null
                                   ? Center(
                                       child: Text(
-                                        valor?.toString() ?? '+',
+                                        valor.toString(),
                                         style: TextStyle(
-                                          color: valor == null
-                                              ? Colors.black87
-                                              : color.computeLuminance() > 0.5
-                                                  ? Colors.black
-                                                  : Colors.white,
-                                          fontSize: valor == null ? 20 : 24,
+                                          color: color.computeLuminance() > 0.5
+                                              ? Colors.black
+                                              : Colors.white,
+                                          fontSize: 24,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     )
+                                  : esDestinoPosible
+                                      ? Center(
+                                          child: esDestinoSeleccionado
+                                              ? Text(
+                                                  _opcionAnclaSeleccionada!
+                                                      .numeroAColocar
+                                                      .toString(),
+                                                  style: const TextStyle(
+                                                    color: Colors.black,
+                                                    fontSize: 24,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                )
+                                              : const Icon(
+                                                  Icons.add_circle_outline,
+                                                  color: Colors.white,
+                                                ),
+                                        )
+                                        : esInicial
+                                            ? const Center(
+                                                child: Text(
+                                                  '+',
+                                                  style: TextStyle(
+                                                    color: Colors.black87,
+                                                    fontSize: 20,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              )
                                   : null,
                             ),
                           ),
@@ -343,7 +453,32 @@ class _TableroPageState extends State<TableroPage> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const PanelLanzamientoDados(),
+                    PanelLanzamientoDados(
+                      key: ValueKey('dice-panel-$_rondaDados'),
+                      dados: _dados,
+                      validadorAnclas: _validadorAnclas,
+                      onOpcionAnclaChanged: _seleccionarOpcionAncla,
+                      onPasarTurno: _pasarTurno,
+                    ),
+                    if (_opcionAnclaSeleccionada != null &&
+                        movimientosDisponibles.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Text('No hay posiciones válidas para esta opción.'),
+                      ),
+                    if (_opcionAnclaSeleccionada != null &&
+                        movimientosDisponibles.isNotEmpty &&
+                        _movimientoSeleccionado == null)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Text('Toca una posición resaltada del tablero.'),
+                      ),
+                    if (_movimientoSeleccionado != null)
+                      _ResumenMovimiento(
+                        opcion: _opcionAnclaSeleccionada!,
+                        movimiento: _movimientoSeleccionado!,
+                        onConfirmar: _confirmarMovimiento,
+                      ),
                   ],
                 ),
               )
@@ -378,6 +513,54 @@ class _TableroPageState extends State<TableroPage> {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ResumenMovimiento extends StatelessWidget {
+  const _ResumenMovimiento({
+    required this.opcion,
+    required this.movimiento,
+    required this.onConfirmar,
+  });
+
+  final OpcionAncla opcion;
+  final MovimientoAncla movimiento;
+  final VoidCallback onConfirmar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const Key('movement-summary'),
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.only(top: 8),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Color(0xFFD0D0D0))),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Ancla: ${opcion.ancla} en (${movimiento.ancla.x + 1}, ${movimiento.ancla.y + 1})',
+          ),
+          Text('Número a colocar: ${opcion.numeroAColocar}'),
+          Text(
+            'Posición: (${movimiento.destino.x + 1}, ${movimiento.destino.y + 1})',
+          ),
+          const SizedBox(height: 6),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              key: const Key('confirm-move-button'),
+              onPressed: onConfirmar,
+              icon: const Icon(Icons.check),
+              label: const Text('Confirmar movimiento'),
+            ),
+          ),
+        ],
       ),
     );
   }

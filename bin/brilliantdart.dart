@@ -1,5 +1,5 @@
-import '../lib/bloc_valores_iniciales.dart';
-import '../lib/tablero.dart';
+import 'package:brilliantdart/bloc_valores_iniciales.dart';
+import 'package:brilliantdart/tablero.dart';
 
 void main() {
   final tablero = Tablero();
@@ -13,8 +13,6 @@ void main() {
     final (fila, columna) = BlocValoresIniciales.celdasIniciales[i];
     tablero.colocarDato(fila - 1, columna - 1, valoresIniciales[i]);
   }
-dart --version
-flutter --version
   print('Celdas iniciales: ${BlocValoresIniciales.celdasIniciales}');
   print('Estado después de completar las celdas iniciales: ${bloc.puedeIniciar ? 'habilitado' : 'bloqueado'}');
   print('Valores en las celdas iniciales: ${bloc.obtenerValoresIniciales()}');

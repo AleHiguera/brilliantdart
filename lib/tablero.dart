@@ -18,6 +18,9 @@ class Tablero {
 
   List<Region> get regiones => List.unmodifiable(_regiones);
 
+  Set<int> get valoresColocados =>
+      celdas.map((celda) => celda.valor).whereType<int>().toSet();
+
   List<Coordenada> get celdas => [
         for (final fila in _celdas)
           for (final celda in fila)
@@ -31,6 +34,45 @@ class Tablero {
 
   void colocarDato(int fila, int columna, int? dato) {
     obtenerCelda(fila, columna).valor = dato;
+  }
+
+  bool puedeColocarDato(int fila, int columna, int dato) {
+    if (fila < 0 || fila >= filas || columna < 0 || columna >= columnas) {
+      return false;
+    }
+
+    if (obtenerCelda(fila, columna).valor != null) {
+      return false;
+    }
+
+    final zonasDestino = _regiones
+        .where((region) => region.contieneCoordenada(fila, columna))
+        .toList(growable: false);
+
+    return zonasDestino.isNotEmpty &&
+        zonasDestino.every(
+          (region) => region.puedeColocarNumero(fila, columna, dato),
+        );
+  }
+
+  List<Coordenada> obtenerPosicionesAdyacentes(int fila, int columna) {
+    _validarCoordenada(fila, columna);
+
+    final vecinas = <(int, int)>[
+      (fila - 1, columna),
+      (fila + 1, columna),
+      (fila, columna - 1),
+      (fila, columna + 1),
+    ];
+
+    return vecinas
+        .where((posicion) =>
+            posicion.$1 >= 0 &&
+            posicion.$1 < filas &&
+            posicion.$2 >= 0 &&
+            posicion.$2 < columnas)
+        .map((posicion) => obtenerCelda(posicion.$1, posicion.$2))
+        .toList(growable: false);
   }
 
   List<int?> extraerDatos() {

@@ -39,6 +39,28 @@ abstract class Region {
     );
   }
 
+  bool puedeColocarNumero(int fila, int columna, int numero) {
+    final indiceDestino = coordenadas.indexWhere(
+      (coordenada) => coordenada.x == fila && coordenada.y == columna,
+    );
+    if (indiceDestino < 0 || coordenadas[indiceDestino].valor != null) {
+      return false;
+    }
+
+    final valoresActuales = obtenerValores();
+    if (!tipo.esPosibleAgregar(valoresActuales, numero)) {
+      return false;
+    }
+
+    final valoresDespuesDeColocar = [...valoresActuales, numero];
+    final espaciosRestantes = coordenadas
+        .where((coordenada) => coordenada.valor == null)
+        .length -
+      1;
+    return espaciosRestantes > 0 ||
+      tipo.validarMovimiento(valoresDespuesDeColocar);
+  }
+
   bool verificarCompletado();
 }
 
