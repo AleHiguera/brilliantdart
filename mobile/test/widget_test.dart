@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:brilliantdart/dados.dart';
 import 'package:brilliantdart/historial_dados.dart';
+import 'package:brilliantdart/mapa_uno.dart';
 import 'package:brilliantdart/tablero.dart';
 import 'package:brilliantdart/validador_anclas.dart';
 import 'package:brilliant_mobile/historial_dados_view.dart';
@@ -11,10 +12,49 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('Passing a turn with a legal move records Turno pasado',
+      (tester) async {
+    final tablero = MapaUno.crearTablero();
+    tablero.colocarDato(0, 2, 2);
+    final dados = DadosFijos([(2, 6)]);
+    final validador = ValidadorAnclas(tablero);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: PanelLanzamientoDados(
+              dados: dados,
+              validadorAnclas: validador,
+              onOpcionAnclaChanged: (_) {},
+              onPasarTurno: () {},
+              onHistorialActualizado: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('roll-dice-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1300));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No se puede realizar ningún movimiento'), findsNothing);
+    expect(find.byKey(const Key('candidate-cell-1-4')), findsNothing);
+    expect(find.byKey(const Key('pass-turn-button')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('pass-turn-button')));
+    expect(dados.historial.lanzamientos.single.accionRealizada, 'Turno pasado');
+    expect(tablero.obtenerCelda(0, 2).valor, 2);
+    expect(tablero.valoresColocados, {2});
+  });
+
   testWidgets('History table displays stored dice results', (tester) async {
     final historial = HistorialDados()
       ..registrarLanzamiento(2, 6)
       ..registrarLanzamiento(4, 1);
+    historial.registrarAccion(1, '5 ancla → coloca 2');
 
     await tester.pumpWidget(
       MaterialApp(
@@ -22,36 +62,34 @@ void main() {
       ),
     );
 
-    expect(find.text('Lanzamiento'), findsOneWidget);
-    expect(find.text('Dado 1'), findsOneWidget);
-    expect(find.text('Dado 2'), findsOneWidget);
     expect(find.byKey(const Key('dice-history-row-1')), findsOneWidget);
     expect(find.byKey(const Key('dice-history-row-2')), findsOneWidget);
+
     expect(
       find.descendant(
         of: find.byKey(const Key('dice-history-row-1')),
-        matching: find.text('2'),
+        matching: find.text('Lanzamiento 1 — Dados: (2, 6)'),
       ),
       findsOneWidget,
     );
     expect(
       find.descendant(
         of: find.byKey(const Key('dice-history-row-1')),
-        matching: find.text('6'),
+        matching: find.text('Acción: 5 ancla → coloca 2'),
       ),
       findsOneWidget,
     );
     expect(
       find.descendant(
         of: find.byKey(const Key('dice-history-row-2')),
-        matching: find.text('4'),
+        matching: find.text('Lanzamiento 2 — Dados: (4, 1)'),
       ),
       findsOneWidget,
     );
     expect(
       find.descendant(
         of: find.byKey(const Key('dice-history-row-2')),
-        matching: find.text('1'),
+        matching: find.text('Acción: —'),
       ),
       findsOneWidget,
     );
@@ -92,6 +130,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 1300));
       await tester.pumpAndSettle();
 
+      if (indice >= 2) {
+        await tester.drag(
+          find.byKey(const Key('dice-history-list')),
+          const Offset(0, -60),
+        );
+        await tester.pumpAndSettle();
+      }
+
       expect(
         find.text('No se puede realizar ningún movimiento'),
         findsOneWidget,
@@ -104,22 +150,29 @@ void main() {
       expect(
         find.descendant(
           of: registro,
-          matching: find.text('${resultados[indice].$1}'),
+          matching: find.text(
+            'Lanzamiento $numeroLanzamiento — Dados: '
+            '(${resultados[indice].$1}, ${resultados[indice].$2})',
+          ),
         ),
-        findsNWidgets(resultados[indice].$1 == resultados[indice].$2 ? 2 : 1),
+        findsOneWidget,
       );
       expect(
         find.descendant(
           of: registro,
-          matching: find.text('${resultados[indice].$2}'),
+          matching: find.text('Acción: —'),
         ),
-        findsNWidgets(resultados[indice].$1 == resultados[indice].$2 ? 2 : 1),
+        findsOneWidget,
       );
       expect(dados.historial.lanzamientos, hasLength(numeroLanzamiento));
 
       if (indice < resultados.length - 1) {
         await tester.tap(find.byKey(const Key('pass-turn-button')));
         await tester.pumpAndSettle();
+        expect(
+          dados.historial.lanzamientos[indice].accionRealizada,
+          'Movimiento inválido',
+        );
       }
     }
 
@@ -191,6 +244,10 @@ void main() {
 
     await tester.tap(find.byKey(const Key('pass-turn-button')));
     expect(turnosPasados, 1);
+    expect(
+      dados.historial.lanzamientos.first.accionRealizada,
+      'Movimiento inválido',
+    );
     await tester.pump();
     expect(
       tester.widget<FilledButton>(find.byKey(const Key('roll-dice-button')))
@@ -240,9 +297,10 @@ void main() {
 
   testWidgets('Duplicate initial values move and enable Comenzar at 1..6',
       (tester) async {
+    final dados = DadosFijos([(1, 6), (6, 4)]);
     await tester.pumpWidget(
       MaterialApp(
-        home: TableroPage(dados: DadosFijos([(1, 6), (6, 4)])),
+        home: TableroPage(dados: dados),
       ),
     );
 
@@ -359,6 +417,11 @@ void main() {
       findsOneWidget,
     );
     expect(
+      dados.historial.lanzamientos[0].accionRealizada,
+      '1 ancla → coloca 6',
+    );
+    expect(find.text('Acción: 1 ancla → coloca 6'), findsOneWidget);
+    expect(
       tester.widget<FilledButton>(find.byKey(const Key('roll-dice-button')))
           .onPressed,
       isNotNull,
@@ -389,6 +452,14 @@ void main() {
         matching: find.text('4'),
       ),
       findsOneWidget,
+    );
+    expect(
+      dados.historial.lanzamientos[0].accionRealizada,
+      '1 ancla → coloca 6',
+    );
+    expect(
+      dados.historial.lanzamientos[1].accionRealizada,
+      '6 ancla → coloca 4',
     );
   });
 }

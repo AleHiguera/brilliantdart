@@ -28,34 +28,6 @@ class HistorialDadosView extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          DecoratedBox(
-            decoration: const BoxDecoration(color: Color(0xFFEAEAEA)),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Text('Lanzamiento', style: TextStyle(fontSize: 12)),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Dado 1',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Dado 2',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
           if (lanzamientos.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 5, vertical: 3),
@@ -75,31 +47,25 @@ class HistorialDadosView extends StatelessWidget {
                   return Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 5,
-                      vertical: 1,
+                      vertical: 3,
                     ),
-                    child: Row(
+                    child: Column(
                       key: Key('dice-history-row-${lanzamiento.numeroLanzamiento}'),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            'Lanzamiento ${lanzamiento.numeroLanzamiento}',
-                            style: const TextStyle(fontSize: 12),
-                          ),
+                        Text(
+                          'Lanzamiento ${lanzamiento.numeroLanzamiento} — Dados: '
+                          '(${lanzamiento.resultadoDado1}, ${lanzamiento.resultadoDado2})',
+                          style: const TextStyle(fontSize: 12),
                         ),
-                        Expanded(
-                          child: Text(
-                            '${lanzamiento.resultadoDado1}',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 12),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Acción: ${lanzamiento.accionRealizada ?? '—'}',
+                          key: Key(
+                            'dice-history-action-${lanzamiento.numeroLanzamiento}',
                           ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            '${lanzamiento.resultadoDado2}',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 12),
-                          ),
+                          style: const TextStyle(fontSize: 12),
                         ),
                       ],
                     ),

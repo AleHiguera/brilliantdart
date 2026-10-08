@@ -30,5 +30,31 @@ void main() {
         throwsUnsupportedError,
       );
     });
+
+    test('Guarda una acción en el lanzamiento correspondiente', () {
+      final historial = HistorialDados()
+        ..registrarLanzamiento(2, 5)
+        ..registrarLanzamiento(3, 6);
+
+      historial.registrarAccion(1, '5 ancla -> coloca 2');
+
+      expect(historial.lanzamientos[0].accionRealizada, '5 ancla -> coloca 2');
+      expect(historial.lanzamientos[1].accionRealizada, isNull);
+
+      expect(
+        () => historial.registrarAccion(1, 'Otra acción'),
+        throwsStateError,
+      );
+      expect(historial.lanzamientos[0].accionRealizada, '5 ancla -> coloca 2');
+    });
+
+    test('Rechaza acciones para números de lanzamiento inexistentes', () {
+      final historial = HistorialDados();
+
+      expect(
+        () => historial.registrarAccion(1, 'Pasó turno'),
+        throwsArgumentError,
+      );
+    });
   });
 }

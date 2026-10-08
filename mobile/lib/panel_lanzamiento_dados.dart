@@ -104,6 +104,14 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
 
   void _pasarTurno() {
     if (!_esperandoDecision || _estaLanzando) return;
+    if (widget.dados.historial.lanzamientos.isNotEmpty) {
+      final lanzamiento = widget.dados.historial.lanzamientos.last;
+      widget.dados.historial.registrarAccion(
+        lanzamiento.numeroLanzamiento,
+        _noHayMovimientos ? 'Movimiento inválido' : 'Turno pasado',
+      );
+      widget.onHistorialActualizado();
+    }
     widget.onOpcionAnclaChanged(null);
     setState(() {
       _esperandoDecision = false;

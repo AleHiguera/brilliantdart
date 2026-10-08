@@ -212,6 +212,7 @@ class _TableroPageState extends State<TableroPage> {
   late final ValidadorAnclas _validadorAnclas = ValidadorAnclas(_tablero);
   OpcionAncla? _opcionAnclaSeleccionada;
   MovimientoAncla? _movimientoSeleccionado;
+  int? _numeroLanzamientoPendiente;
   int _rondaDados = 0;
 
   List<MovimientoAncla> get _movimientosDisponibles {
@@ -270,12 +271,16 @@ class _TableroPageState extends State<TableroPage> {
     setState(() {
       _opcionAnclaSeleccionada = null;
       _movimientoSeleccionado = null;
+      _numeroLanzamientoPendiente = null;
       _rondaDados++;
     });
   }
 
   void _actualizarHistorial() {
-    setState(() {});
+    setState(() {
+      _numeroLanzamientoPendiente =
+          _dados.historial.lanzamientos.last.numeroLanzamiento;
+    });
   }
 
   void _seleccionarDestino(MovimientoAncla movimiento) {
@@ -287,6 +292,7 @@ class _TableroPageState extends State<TableroPage> {
     final movimiento = _movimientoSeleccionado;
     if (opcion == null ||
         movimiento == null ||
+        _numeroLanzamientoPendiente == null ||
         !_validadorAnclas.puedeSerAncla(opcion.ancla) ||
         !_tablero.puedeColocarDato(
           movimiento.destino.x,
@@ -297,6 +303,10 @@ class _TableroPageState extends State<TableroPage> {
       return;
     }
 
+    _dados.historial.registrarAccion(
+      _numeroLanzamientoPendiente!,
+      '${opcion.ancla} ancla → coloca ${opcion.numeroAColocar}',
+    );
     _tablero.colocarDato(
       movimiento.destino.x,
       movimiento.destino.y,
@@ -305,6 +315,7 @@ class _TableroPageState extends State<TableroPage> {
     setState(() {
       _opcionAnclaSeleccionada = null;
       _movimientoSeleccionado = null;
+      _numeroLanzamientoPendiente = null;
       _rondaDados++;
     });
   }
