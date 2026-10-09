@@ -73,5 +73,37 @@ void main() {
       expect(roja.tipo.tipo, TipoZona.rojo);
       expect(azul.tipo.tipo, TipoZona.azul);
     });
+
+    test('Suma 54 puntos al completar cada zona una sola vez', () {
+      final tablero = MapaUno.crearTablero();
+
+      expect(tablero.puntuacionTotal, 0);
+
+      for (final region in tablero.regiones) {
+        for (var indice = 0; indice < region.coordenadas.length; indice++) {
+          final numero = switch (region.tipo.tipo) {
+            TipoZona.azul => 2,
+            TipoZona.rojo || TipoZona.amarillo => indice + 1,
+            TipoZona.verde => indice % 3 + 1,
+            TipoZona.morado => indice == 0 ? 2 : 5,
+          };
+          final celda = region.coordenadas[indice];
+          tablero.colocarDato(celda.x, celda.y, numero);
+        }
+      }
+
+      expect(tablero.puntuacionTotal, 54);
+      expect(tablero.puntuacionPorTipo(TipoZona.morado), 12);
+      expect(tablero.puntuacionPorTipo(TipoZona.amarillo), 8);
+      expect(tablero.puntuacionPorTipo(TipoZona.verde), 8);
+      expect(tablero.puntuacionPorTipo(TipoZona.azul), 14);
+      expect(tablero.puntuacionPorTipo(TipoZona.rojo), 12);
+
+      final ultimaZona = tablero.regiones.last;
+      final ultimaCelda = ultimaZona.coordenadas.last;
+      tablero.colocarDato(ultimaCelda.x, ultimaCelda.y, ultimaCelda.valor);
+
+      expect(tablero.puntuacionTotal, 54);
+    });
   });
 }

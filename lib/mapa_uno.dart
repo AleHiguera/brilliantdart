@@ -123,7 +123,7 @@ class MapaUno {
           tipo: TipoZona.morado,
           color: 'Morado',
           regla: 'Debe contener exactamente dos numeros diferentes',
-          puntuacion: 8,
+          puntuacion: 6,
         ),
     };
   }

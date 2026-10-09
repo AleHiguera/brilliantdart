@@ -193,8 +193,12 @@ void main() {
 
     final tablero = tester.getRect(find.byType(GridView).first);
     final historial = tester.getRect(find.byKey(const Key('dice-history')));
+    final puntuacion = tester.getRect(find.byKey(const Key('score-table')));
     expect(historial.left, greaterThanOrEqualTo(tablero.right));
+    expect(puntuacion.left, greaterThanOrEqualTo(tablero.right));
     expect(find.text('Historial de dados'), findsOneWidget);
+    expect(find.text('Puntuación'), findsOneWidget);
+    expect(find.text('0 pts'), findsOneWidget);
   });
 
   testWidgets('Invalid movement confirmation rerolls without placing a number',

@@ -1,4 +1,5 @@
 import 'region.dart';
+import 'tipoo.dart';
 
 class Tablero {
   static const int filas = 7;
@@ -18,6 +19,18 @@ class Tablero {
 
   List<Region> get regiones => List.unmodifiable(_regiones);
 
+    int get puntuacionTotal => _regiones
+      .where((region) => region.completado)
+      .fold(0, (total, region) => total + region.tipo.puntuacion);
+
+    int puntuacionPorTipo(TipoZona tipo) => _regiones
+      .where((region) => region.tipo.tipo == tipo && region.completado)
+      .fold(0, (total, region) => total + region.tipo.puntuacion);
+
+    int zonasCompletadasPorTipo(TipoZona tipo) => _regiones
+      .where((region) => region.tipo.tipo == tipo && region.completado)
+      .length;
+
   Set<int> get valoresColocados =>
       celdas.map((celda) => celda.valor).whereType<int>().toSet();
 
@@ -34,6 +47,9 @@ class Tablero {
 
   void colocarDato(int fila, int columna, int? dato) {
     obtenerCelda(fila, columna).valor = dato;
+    for (final region in _regiones) {
+      region.verificarCompletado();
+    }
   }
 
   bool puedeColocarDato(int fila, int columna, int dato) {

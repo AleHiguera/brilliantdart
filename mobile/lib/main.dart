@@ -9,6 +9,7 @@ import 'package:brilliantdart/tipoo.dart';
 import 'package:brilliantdart/validador_anclas.dart';
 import 'package:brilliant_mobile/historial_dados_view.dart';
 import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
+import 'package:brilliant_mobile/tabla_puntuacion.dart';
 
 void main() {
   runApp(const BrilliantApp());
@@ -323,7 +324,7 @@ class _TableroPageState extends State<TableroPage> {
   @override
   Widget build(BuildContext context) {
     final movimientosDisponibles = _movimientosDisponibles;
-    final mostrarHistorialLateral = MediaQuery.sizeOf(context).width >= 850;
+    final mostrarHistorialLateral = MediaQuery.sizeOf(context).width >= 700;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tablero'),
@@ -468,15 +469,26 @@ class _TableroPageState extends State<TableroPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Historial de dados',
-                              style: Theme.of(context).textTheme.titleSmall,
-                            ),
-                            const SizedBox(height: 8),
+                            TablaPuntuacion(tablero: _tablero),
                             Expanded(
-                              child: HistorialDadosView(
-                                historial: _dados.historial,
-                                maxAlturaFilas: 300,
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Historial de dados',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleSmall,
+                                    ),
+                                    HistorialDadosView(
+                                      historial: _dados.historial,
+                                      maxAlturaFilas: 300,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -489,9 +501,31 @@ class _TableroPageState extends State<TableroPage> {
             if (_bloc.jugando && !mostrarHistorialLateral)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: HistorialDadosView(
-                  historial: _dados.historial,
-                  maxAlturaFilas: 46,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Historial de dados',
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          HistorialDadosView(
+                            historial: _dados.historial,
+                            maxAlturaFilas: 120,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 7,
+                      child: TablaPuntuacion(tablero: _tablero),
+                    ),
+                  ],
                 ),
               ),
             if (_bloc.jugando)
