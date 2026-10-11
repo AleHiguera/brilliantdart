@@ -4,6 +4,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:brilliantdart/dados.dart';
 import 'package:brilliantdart/validador_anclas.dart';
+import 'package:brilliant_mobile/colores_zonas.dart';
+import 'package:brilliant_mobile/historial_dados_view.dart';
+import 'package:brilliant_mobile/paneles_juego.dart';
 import 'package:brilliant_mobile/sonidos.dart';
 
 class PanelLanzamientoDados extends StatefulWidget {
@@ -87,12 +90,13 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
     _temporizador?.cancel();
     final (resultadoDado1, resultadoDado2) = widget.dados.lanzar();
     widget.onHistorialActualizado();
-    final opcionesAncla =
-      widget.validadorAnclas.obtenerOpciones(resultadoDado1, resultadoDado2);
+    final opcionesAncla = widget.validadorAnclas.obtenerOpciones(
+      resultadoDado1,
+      resultadoDado2,
+    );
     final noHayMovimientos = !opcionesAncla.any(
-      (opcion) => widget.validadorAnclas
-          .obtenerMovimientosPosibles(opcion)
-          .isNotEmpty,
+      (opcion) =>
+          widget.validadorAnclas.obtenerMovimientosPosibles(opcion).isNotEmpty,
     );
     _animacion.stop();
     _animacion.value = 0;
@@ -138,9 +142,12 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
   Widget build(BuildContext context) {
     final valorDado1 = _estaLanzando ? _caraDado1 : _resultadoDado1;
     final valorDado2 = _estaLanzando ? _caraDado2 : _resultadoDado2;
+    final puedeLanzar =
+        !(widget.partidaFinalizada || _estaLanzando || _esperandoDecision);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -151,7 +158,7 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
               animacion: _animacion,
               animando: _estaLanzando,
             ),
-            const SizedBox(width: 24),
+            const SizedBox(width: 20),
             _DadoAnimado(
               nombre: 'Dado 2',
               valor: valorDado2,
@@ -161,71 +168,97 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
           ],
         ),
         const SizedBox(height: 10),
-        Align(
-          alignment: Alignment.center,
-          child: FilledButton.icon(
-            key: const Key('roll-dice-button'),
-            onPressed:
-                widget.partidaFinalizada || _estaLanzando || _esperandoDecision
-                    ? null
-                    : _lanzarDados,
-            icon: const Icon(Icons.casino_outlined),
-            label: const Text('Lanzar dados'),
+        FilledButton.icon(
+          key: const Key('roll-dice-button'),
+          style: estiloBotonPrincipal(),
+          onPressed: puedeLanzar ? _lanzarDados : null,
+          icon: RotationTransition(
+            turns: _animacion,
+            child: const Icon(Icons.casino_outlined),
           ),
-        ),
-        SizedBox(
-          height: 20,
-          child: _estaLanzando
-              ? const Text('Lanzando dados...')
-              : const SizedBox.shrink(),
+          label: Text(_estaLanzando ? 'Lanzando dados...' : 'Lanzar dados'),
         ),
         if (_noHayMovimientos && _esperandoDecision) ...[
-          const SizedBox(height: 8),
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'No se puede realizar ningún movimiento',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Ninguno de los números puede colocarse respetando las reglas del tablero.',
-            ),
-          ),
-          const SizedBox(height: 6),
-          Align(
-            alignment: Alignment.center,
-            child: FilledButton(
-              key: const Key('pass-turn-button'),
-              onPressed: _pasarTurno,
-              child: const Text('Pasar turno'),
+          const SizedBox(height: 10),
+          AsegurarVisible(
+            child: Container(
+              key: const Key('no-moves-panel'),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFDE3E1),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFFF5B7B1)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.block, size: 18, color: Color(0xFFB3261E)),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'No se puede realizar ningún movimiento',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFB3261E),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Ninguno de los números puede colocarse respetando las reglas del tablero.',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF7D1D17)),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton(
+                      key: const Key('pass-turn-button'),
+                      style: estiloBotonPrincipal(),
+                      onPressed: _pasarTurno,
+                      child: const Text('Pasar turno'),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ] else if (_opcionesAncla.isNotEmpty && _esperandoDecision) ...[
-          const SizedBox(height: 4),
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text('Elige cómo usar los dados'),
+          const SizedBox(height: 10),
+          const Text(
+            'Elige cómo usar los dados',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.black54,
+            ),
           ),
           const SizedBox(height: 4),
           for (final opcion in _opcionesAncla)
-            _OpcionAnclaTile(
-              opcion: opcion,
-              seleccionada: identical(_opcionSeleccionada, opcion),
-              habilitada: widget.validadorAnclas.puedeSerAncla(opcion.ancla),
-              onTap: () {
-                setState(() => _opcionSeleccionada = opcion);
-                widget.onOpcionAnclaChanged(opcion);
-              },
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: _OpcionAnclaTile(
+                opcion: opcion,
+                seleccionada: identical(_opcionSeleccionada, opcion),
+                habilitada: widget.validadorAnclas.puedeSerAncla(opcion.ancla),
+                onTap: () {
+                  setState(() => _opcionSeleccionada = opcion);
+                  widget.onOpcionAnclaChanged(opcion);
+                },
+              ),
             ),
-          Align(
-            alignment: Alignment.center,
-            child: TextButton(
-              key: const Key('pass-turn-button'),
-              onPressed: _pasarTurno,
-              child: const Text('Pasar turno'),
+          AsegurarVisible(
+            child: Align(
+              alignment: Alignment.center,
+              child: TextButton(
+                key: const Key('pass-turn-button'),
+                style: TextButton.styleFrom(foregroundColor: Colors.black87),
+                onPressed: _pasarTurno,
+                child: const Text('Pasar turno'),
+              ),
             ),
           ),
         ],
@@ -257,36 +290,67 @@ class _OpcionAnclaTile extends StatelessWidget {
       selected: seleccionada,
       label:
           'Ancla ${opcion.ancla}, colocar ${opcion.numeroAColocar}${habilitada ? '' : ', no disponible'}',
-      child: Material(
-        color: seleccionada ? const Color(0xFFE8F1F4) : Colors.white,
-        borderRadius: BorderRadius.circular(6),
-        child: InkWell(
-          key: Key('anchor-option-${opcion.ancla}'),
-          onTap: habilitada ? onTap : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          color: seleccionada ? const Color(0xFFEDEDE8) : Colors.white,
           borderRadius: BorderRadius.circular(6),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              children: [
-                Icon(
-                  seleccionada
-                      ? Icons.check_circle
-                      : habilitada
+          border: Border.all(
+            color: seleccionada ? Colors.black : colorBordeTarjeta,
+            width: seleccionada ? 1.5 : 1,
+          ),
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            key: Key('anchor-option-${opcion.ancla}'),
+            onTap: habilitada ? onTap : null,
+            borderRadius: BorderRadius.circular(6),
+            child: Opacity(
+              opacity: habilitada ? 1 : 0.55,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      seleccionada
+                          ? Icons.check_circle
+                          : habilitada
                           ? Icons.radio_button_unchecked
                           : Icons.lock_outline,
-                  color: color,
-                  size: 20,
+                      color: color,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    DadoMini(valor: opcion.ancla),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 3),
+                      child: Icon(Icons.arrow_forward, size: 14),
+                    ),
+                    DadoMini(valor: opcion.numeroAColocar),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Ancla: ${opcion.ancla}  ·  Colocar: ${opcion.numeroAColocar}',
+                        style: TextStyle(
+                          color: color,
+                          fontWeight: seleccionada
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                    if (!habilitada)
+                      const Text(
+                        'No disponible',
+                        style: TextStyle(fontSize: 12, color: Colors.black45),
+                      ),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Ancla: ${opcion.ancla}  ·  Colocar: ${opcion.numeroAColocar}',
-                    style: TextStyle(color: color),
-                  ),
-                ),
-                if (!habilitada)
-                  const Text('No disponible', style: TextStyle(color: Colors.black45)),
-              ],
+              ),
             ),
           ),
         ),
@@ -315,7 +379,10 @@ class _DadoAnimado extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('$nombre: ${valor ?? '—'}'),
+          Text(
+            '$nombre: ${valor ?? '—'}',
+            style: const TextStyle(fontSize: 12, color: Colors.black54),
+          ),
           const SizedBox(height: 6),
           AnimatedBuilder(
             animation: animacion,
@@ -355,16 +422,25 @@ class _CaraDado extends StatelessWidget {
     };
 
     return Container(
-      width: 48,
-      height: 48,
-      padding: const EdgeInsets.all(5),
+      width: 52,
+      height: 52,
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFF252525), width: 1.5),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x33000000),
+            blurRadius: 6,
+            offset: Offset(0, 3),
+          ),
+        ],
       ),
       child: valor == null
-          ? const Center(child: Icon(Icons.question_mark, size: 22))
+          ? const Center(
+              child: Icon(Icons.question_mark, size: 22, color: Colors.black38),
+            )
           : GridView.builder(
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -378,7 +454,7 @@ class _CaraDado extends StatelessWidget {
                           color: Color(0xFF252525),
                           shape: BoxShape.circle,
                         ),
-                        child: SizedBox(width: 7, height: 7),
+                        child: SizedBox(width: 8, height: 8),
                       )
                     : const SizedBox.shrink(),
               ),

@@ -163,21 +163,25 @@ class _FilaLanzamiento extends StatelessWidget {
 
 /// Dado pequeño dibujado con puntos, igual que los dados grandes del panel.
 class DadoMini extends StatelessWidget {
-  const DadoMini({super.key, required this.valor});
+  const DadoMini({super.key, required this.valor, this.tamano = 20});
 
   final int valor;
+  final double tamano;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       label: 'Dado $valor',
       child: Container(
-        width: 20,
-        height: 20,
+        width: tamano,
+        height: tamano,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(5),
-          border: Border.all(color: const Color(0xFF252525), width: 1.2),
+          borderRadius: BorderRadius.circular(tamano / 4),
+          border: Border.all(
+            color: const Color(0xFF252525),
+            width: tamano < 30 ? 1.2 : 1.6,
+          ),
         ),
         child: CustomPaint(painter: _PuntosDadoPainter(valor)),
       ),
@@ -210,7 +214,7 @@ class _PuntosDadoPainter extends CustomPainter {
           celda * (indice % 3) + celda / 2,
           celda * (indice ~/ 3) + celda / 2,
         ),
-        1.6,
+        size.width * 0.09,
         pintura,
       );
     }

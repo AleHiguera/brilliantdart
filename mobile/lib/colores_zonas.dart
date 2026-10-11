@@ -53,3 +53,64 @@ class EncabezadoTarjeta extends StatelessWidget {
     );
   }
 }
+
+/// Botón negro principal (Comenzar, Lanzar dados, Confirmar...).
+ButtonStyle estiloBotonPrincipal() => FilledButton.styleFrom(
+      backgroundColor: Colors.black,
+      foregroundColor: Colors.white,
+      disabledBackgroundColor: colorBordeTarjeta,
+      disabledForegroundColor: Colors.black38,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+    );
+
+ButtonStyle estiloBotonElevadoPrincipal() => ElevatedButton.styleFrom(
+      backgroundColor: Colors.black,
+      foregroundColor: Colors.white,
+      disabledBackgroundColor: colorBordeTarjeta,
+      disabledForegroundColor: Colors.black38,
+      elevation: 2,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+    );
+
+/// Aviso corto con icono, para pistas y advertencias durante el turno.
+class AvisoJuego extends StatelessWidget {
+  const AvisoJuego({
+    super.key,
+    required this.icono,
+    required this.texto,
+    this.advertencia = false,
+  });
+
+  final IconData icono;
+  final String texto;
+  final bool advertencia;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = advertencia ? const Color(0xFFB3261E) : Colors.black87;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: advertencia ? const Color(0xFFFDE3E1) : colorTarjeta,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: advertencia ? const Color(0xFFF5B7B1) : colorBordeTarjeta,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icono, size: 18, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(texto, style: TextStyle(fontSize: 13, color: color)),
+          ),
+        ],
+      ),
+    );
+  }
+}
