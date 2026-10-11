@@ -1,17 +1,16 @@
-import 'dart:math';
 
-import 'package:brilliantdart/bloc_valores_iniciales.dart';
-import 'package:brilliantdart/dados.dart';
 import 'package:brilliantdart/historial_dados.dart';
 import 'package:brilliantdart/mapa_uno.dart';
 import 'package:brilliantdart/tablero.dart';
-import 'package:brilliantdart/tipoo.dart';
 import 'package:brilliantdart/validador_anclas.dart';
 import 'package:brilliant_mobile/historial_dados_view.dart';
 import 'package:brilliant_mobile/main.dart';
 import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'helpers.dart';
 
 void main() {
   testWidgets('Passing a turn with a legal move records Turno pasado',
@@ -315,26 +314,24 @@ void main() {
       (tester) async {
     final tablero = tableroCasiLleno();
     final dados = DadosFijos([(1, 3)]);
+    final sonido = SonidoVictoriaFalso();
 
     await tester.pumpWidget(
-      MaterialApp(home: TableroPage(dados: dados, tablero: tablero)),
+      MaterialApp(
+        home: TableroPage(
+          dados: dados,
+          tablero: tablero,
+          sonidoVictoria: sonido,
+        ),
+      ),
     );
 
     await tester.tap(find.text('Comenzar'));
     await tester.pump();
     expect(find.byKey(const Key('game-finished-message')), findsNothing);
 
-    await tester.tap(find.byKey(const Key('roll-dice-button')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 1300));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byKey(const Key('anchor-option-1')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('candidate-cell-4-7')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('confirm-move-button')));
-    await tester.pumpAndSettle();
+    await jugarUltimaCelda(tester);
+    expect(sonido.reproducciones, 1);
 
     expect(tablero.estaLleno, isTrue);
     expect(tablero.puntuacionTotal, 54);
@@ -367,6 +364,101 @@ void main() {
     expect(find.byKey(const Key('roll-dice-button')), findsNothing);
     expect(find.text('Lanza los dados para continuar'), findsNothing);
     expect(dados.historial.lanzamientos, hasLength(1));
+    expect(sonido.reproducciones, 1);
+  });
+
+  testWidgets('Victory sound asset is bundled with the app', (tester) async {
+    final datos = await rootBundle.load('assets/sonidos/victoria.wav');
+
+    expect(datos.lengthInBytes, greaterThan(44));
+    expect(String.fromCharCodes(datos.buffer.asUint8List(0, 4)), 'RIFF');
+  });
+
+  testWidgets('Victory sound does not play before the board is full',
+      (tester) async {
+    final sonido = SonidoVictoriaFalso();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: TableroPage(
+          dados: DadosFijos([(1, 3)]),
+          tablero: tableroCasiLleno(),
+          sonidoVictoria: sonido,
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Comenzar'));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('roll-dice-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1300));
+    await tester.pumpAndSettle();
+
+    expect(sonido.reproducciones, 0);
+    expect(find.byKey(const Key('game-over-dialog')), findsNothing);
+  });
+
+  testWidgets('New game button in the dialog returns to map selection',
+      (tester) async {
+    await tester.pumpWidget(const BrilliantApp());
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => TableroPage(
+          dados: DadosFijos([(1, 3)]),
+          tablero: tableroCasiLleno(),
+          sonidoVictoria: SonidoVictoriaFalso(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Comenzar'));
+    await tester.pump();
+    await jugarUltimaCelda(tester);
+
+    await tester.tap(find.byKey(const Key('new-game-dialog-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Elige tu mapa'), findsOneWidget);
+    expect(find.byType(TableroPage), findsNothing);
+    expect(find.byKey(const Key('game-over-dialog')), findsNothing);
+    expect(navigator.canPop(), isFalse);
+  });
+
+  testWidgets('New game button in the end panel starts a fresh board',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: TableroPage(
+          dados: DadosFijos([(1, 3)]),
+          tablero: tableroCasiLleno(),
+          sonidoVictoria: SonidoVictoriaFalso(),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Comenzar'));
+    await tester.pump();
+    await jugarUltimaCelda(tester);
+    await tester.tap(find.text('Aceptar'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('new-game-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Elige tu mapa'), findsOneWidget);
+    expect(find.byType(TableroPage), findsNothing);
+
+    await tester.tap(find.byKey(const Key('map-choice-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('0/6'), findsOneWidget);
+    expect(find.byKey(const Key('game-finished-message')), findsNothing);
+    expect(
+      find.text('Coloca los 6 números iniciales para comenzar'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('Map selection shows one available map and two locked maps',
@@ -562,54 +654,4 @@ void main() {
       '6 ancla → coloca 4',
     );
   });
-}
-
-/// Mapa uno con todas sus zonas completadas de forma válida excepto la celda
-/// verde (4, 7), que queda vacía para la última jugada.
-Tablero tableroCasiLleno() {
-  final tablero = MapaUno.crearTablero();
-  final bloc = BlocValoresIniciales(tablero);
-  for (var i = 0; i < BlocValoresIniciales.celdasIniciales.length; i++) {
-    final (fila, columna) = BlocValoresIniciales.celdasIniciales[i];
-    bloc.colocarValorInicial(fila, columna, i + 1);
-  }
-
-  for (final region in tablero.regiones) {
-    final existentes = region.obtenerValores();
-    final vacias = region.coordenadas
-        .where((celda) => celda.valor == null && !(celda.x == 3 && celda.y == 6))
-        .toList();
-
-    for (var indice = 0; indice < vacias.length; indice++) {
-      final numero = switch (region.tipo.tipo) {
-        TipoZona.azul => existentes.isEmpty ? 2 : existentes.first,
-        TipoZona.rojo || TipoZona.amarillo => [1, 2, 3, 4, 5, 6]
-            .where((valor) => !existentes.contains(valor))
-            .elementAt(indice),
-        TipoZona.verde => 1,
-        TipoZona.morado => existentes.isEmpty
-            ? (indice == 0 ? 2 : 5)
-            : (indice == 0
-                ? (existentes.first == 1 ? 2 : 1)
-                : existentes.first),
-      };
-      tablero.colocarDato(vacias[indice].x, vacias[indice].y, numero);
-    }
-  }
-
-  return tablero;
-}
-
-class DadosFijos extends Dados {
-  DadosFijos(this.resultados) : super(random: Random(1));
-
-  final List<(int, int)> resultados;
-  int _lanzamientoActual = 0;
-
-  @override
-  (int, int) lanzar() {
-    final resultado = resultados[_lanzamientoActual++];
-    historial.registrarLanzamiento(resultado.$1, resultado.$2);
-    return resultado;
-  }
 }

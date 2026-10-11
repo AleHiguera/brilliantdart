@@ -1,5 +1,6 @@
 import 'package:test/test.dart';
 
+import 'package:brilliantdart/bloc_valores_iniciales.dart';
 import 'package:brilliantdart/mapa_uno.dart';
 import 'package:brilliantdart/tipoo.dart';
 import 'package:brilliantdart/validador_anclas.dart';
@@ -104,6 +105,99 @@ void main() {
       tablero.colocarDato(ultimaCelda.x, ultimaCelda.y, ultimaCelda.valor);
 
       expect(tablero.puntuacionTotal, 54);
+    });
+
+    test('Tiene 9 zonas: 2 azules, 2 rojas, 2 verdes, 2 moradas y 1 amarilla',
+        () {
+      final tablero = MapaUno.crearTablero();
+      int cuantas(TipoZona tipo) =>
+          tablero.regiones.where((zona) => zona.tipo.tipo == tipo).length;
+
+      expect(tablero.regiones, hasLength(9));
+      expect(cuantas(TipoZona.azul), 2);
+      expect(cuantas(TipoZona.rojo), 2);
+      expect(cuantas(TipoZona.verde), 2);
+      expect(cuantas(TipoZona.morado), 2);
+      expect(cuantas(TipoZona.amarillo), 1);
+    });
+
+    test('La zona amarilla une las cuatro esquinas y el centro', () {
+      final tablero = MapaUno.crearTablero();
+      final amarilla = tablero.regiones
+          .singleWhere((zona) => zona.tipo.tipo == TipoZona.amarillo);
+
+      expect(
+        amarilla.coordenadas.map((celda) => (celda.x, celda.y)).toSet(),
+        {(0, 0), (0, 6), (3, 3), (6, 0), (6, 6)},
+      );
+    });
+
+    test('Cada zona es un bloque de celdas vecinas del mismo color', () {
+      final tablero = MapaUno.crearTablero();
+
+      for (final zona in tablero.regiones) {
+        for (final celda in zona.coordenadas) {
+          expect(
+            MapaUno.tiposPorCelda[celda.x][celda.y],
+            zona.tipo.tipo,
+          );
+        }
+        if (zona.tipo.tipo == TipoZona.amarillo) continue;
+
+        final posiciones =
+            zona.coordenadas.map((celda) => (celda.x, celda.y)).toSet();
+        final alcanzadas = {posiciones.first};
+        final pendientes = [posiciones.first];
+        while (pendientes.isNotEmpty) {
+          final (fila, columna) = pendientes.removeLast();
+          for (final vecina in [
+            (fila - 1, columna),
+            (fila + 1, columna),
+            (fila, columna - 1),
+            (fila, columna + 1),
+          ]) {
+            if (posiciones.contains(vecina) && alcanzadas.add(vecina)) {
+              pendientes.add(vecina);
+            }
+          }
+        }
+        expect(alcanzadas, posiciones, reason: 'Zona ${zona.id}');
+      }
+    });
+
+    test('Los puntos de cada color son amarillo 8, verde 4, morado 6, '
+        'azul 7 y rojo 6', () {
+      final tablero = MapaUno.crearTablero();
+      const esperados = {
+        TipoZona.amarillo: 8,
+        TipoZona.verde: 4,
+        TipoZona.morado: 6,
+        TipoZona.azul: 7,
+        TipoZona.rojo: 6,
+      };
+
+      for (final zona in tablero.regiones) {
+        expect(zona.tipo.puntuacion, esperados[zona.tipo.tipo]);
+        expect(zona.tipo.calcularPuntuacion(1), zona.tipo.puntuacion);
+      }
+    });
+
+    test('Ninguna celda inicial está en la zona amarilla', () {
+      for (final (fila, columna) in BlocValoresIniciales.celdasIniciales) {
+        expect(
+          MapaUno.tiposPorCelda[fila - 1][columna - 1],
+          isNot(TipoZona.amarillo),
+        );
+      }
+    });
+
+    test('Cada tablero creado es independiente', () {
+      final primero = MapaUno.crearTablero();
+      final segundo = MapaUno.crearTablero();
+
+      primero.colocarDato(0, 0, 5);
+
+      expect(segundo.obtenerCelda(0, 0).valor, isNull);
     });
   });
 }

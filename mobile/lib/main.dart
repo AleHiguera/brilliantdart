@@ -9,6 +9,7 @@ import 'package:brilliantdart/tipoo.dart';
 import 'package:brilliantdart/validador_anclas.dart';
 import 'package:brilliant_mobile/historial_dados_view.dart';
 import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
+import 'package:brilliant_mobile/sonido_victoria.dart';
 import 'package:brilliant_mobile/tabla_puntuacion.dart';
 
 void main() {
@@ -185,10 +186,16 @@ class _OpcionMapa extends StatelessWidget {
 }
 
 class TableroPage extends StatefulWidget {
-  const TableroPage({super.key, this.dados, this.tablero});
+  const TableroPage({
+    super.key,
+    this.dados,
+    this.tablero,
+    this.sonidoVictoria,
+  });
 
   final Dados? dados;
   final Tablero? tablero;
+  final SonidoVictoria? sonidoVictoria;
 
   static const int tamano = 7;
 
@@ -210,6 +217,8 @@ class TableroPage extends StatefulWidget {
 class _TableroPageState extends State<TableroPage> {
   late final Dados _dados = widget.dados ?? Dados();
   late final Tablero _tablero = widget.tablero ?? MapaUno.crearTablero();
+  late final SonidoVictoria _sonidoVictoria =
+      widget.sonidoVictoria ?? SonidoVictoriaAudio();
   late final BlocValoresIniciales _bloc = BlocValoresIniciales(_tablero);
   late final ValidadorAnclas _validadorAnclas = ValidadorAnclas(_tablero);
   OpcionAncla? _opcionAnclaSeleccionada;
@@ -325,6 +334,7 @@ class _TableroPageState extends State<TableroPage> {
     });
 
     if (_partidaFinalizada) {
+      _sonidoVictoria.reproducir();
       _mostrarFinDePartida();
     }
   }
@@ -332,18 +342,36 @@ class _TableroPageState extends State<TableroPage> {
   Future<void> _mostrarFinDePartida() {
     return showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         key: const Key('game-over-dialog'),
         title: const Text('Fin de la partida'),
         content: Text('Has puntuado ${_tablero.puntuacionTotal} puntos'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Aceptar'),
+          ),
+          FilledButton(
+            key: const Key('new-game-dialog-button'),
+            onPressed: _jugarNuevaPartida,
+            child: const Text('Jugar nueva partida'),
           ),
         ],
       ),
     );
+  }
+
+  void _jugarNuevaPartida() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const SeleccionMapaPage()),
+      (_) => false,
+    );
+  }
+
+  @override
+  void dispose() {
+    _sonidoVictoria.dispose();
+    super.dispose();
   }
 
   @override
@@ -619,6 +647,13 @@ class _TableroPageState extends State<TableroPage> {
                       'El tablero está completo. Ya no puedes lanzar los dados.',
                       textAlign: TextAlign.center,
                     ),
+                    const SizedBox(height: 12),
+                    FilledButton.icon(
+                      key: const Key('new-game-button'),
+                      onPressed: _jugarNuevaPartida,
+                      icon: const Icon(Icons.replay),
+                      label: const Text('Jugar nueva partida'),
+                    ),
                   ],
                 ),
               )
@@ -674,20 +709,23 @@ class _ProgresoIniciales extends StatelessWidget {
             painter: _RuedaProgresoPainter(cantidad),
           ),
           const SizedBox(width: 10),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Números iniciales',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              Text(
-                '$cantidad/6',
-                key: const Key('initial-progress-count'),
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
+          Flexible(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Números iniciales',
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                Text(
+                  '$cantidad/6',
+                  key: const Key('initial-progress-count'),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
           ),
         ],
       ),

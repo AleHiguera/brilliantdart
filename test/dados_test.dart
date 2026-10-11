@@ -47,5 +47,43 @@ void main() {
 
       expect(dados.historial.lanzamientos, hasLength(100));
     });
+
+    test('Con la misma semilla los lanzamientos se repiten', () {
+      final primeros = Dados(random: Random(7));
+      final segundos = Dados(random: Random(7));
+
+      for (var i = 0; i < 20; i++) {
+        expect(primeros.lanzar(), segundos.lanzar());
+      }
+    });
+
+    test('En muchos lanzamientos salen las seis caras en cada dado', () {
+      final dados = Dados(random: Random(3));
+      final caras1 = <int>{};
+      final caras2 = <int>{};
+
+      for (var i = 0; i < 600; i++) {
+        final (valor1, valor2) = dados.lanzar();
+        caras1.add(valor1);
+        caras2.add(valor2);
+      }
+
+      expect(caras1, {1, 2, 3, 4, 5, 6});
+      expect(caras2, {1, 2, 3, 4, 5, 6});
+    });
+
+    test('La lista de dados no se puede modificar', () {
+      final dados = Dados(random: Random(1));
+
+      expect(() => dados.dados.add(Dado(Random(1))), throwsUnsupportedError);
+    });
+
+    test('Un lanzamiento nuevo empieza sin acción registrada', () {
+      final dados = Dados(random: Random(1));
+
+      dados.lanzar();
+
+      expect(dados.historial.lanzamientos.single.accionRealizada, isNull);
+    });
   });
 }

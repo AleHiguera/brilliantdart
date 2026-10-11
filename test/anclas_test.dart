@@ -1,6 +1,7 @@
 import 'package:test/test.dart';
 
 import 'package:brilliantdart/bloc_valores_iniciales.dart';
+import 'package:brilliantdart/mapa_uno.dart';
 import 'package:brilliantdart/tablero.dart';
 import 'package:brilliantdart/validador_anclas.dart';
 
@@ -66,6 +67,102 @@ void main() {
 
       expect(validador.obtenerAnclasPosibles(3, 3), [3]);
       expect(validador.obtenerOpciones(3, 3), hasLength(1));
+    });
+
+    test('Sin números en el tablero no hay ninguna ancla posible', () {
+      final validador = ValidadorAnclas(MapaUno.crearTablero());
+
+      expect(validador.obtenerAnclasPosibles(1, 2), isEmpty);
+      for (final opcion in validador.obtenerOpciones(1, 2)) {
+        expect(opcion.puedeSeleccionarse, isFalse);
+        expect(validador.obtenerMovimientosPosibles(opcion), isEmpty);
+      }
+    });
+  });
+
+  group('Movimientos con ancla en el mapa uno', () {
+    Set<(int, int)> destinos(List<MovimientoAncla> movimientos) =>
+        movimientos.map((m) => (m.destino.x, m.destino.y)).toSet();
+
+    test('Ofrece las cuatro celdas vacías alrededor del ancla', () {
+      final tablero = MapaUno.crearTablero()..colocarDato(3, 3, 1);
+      final validador = ValidadorAnclas(tablero);
+      final opcion = validador.obtenerOpciones(1, 2).first;
+
+      final movimientos = validador.obtenerMovimientosPosibles(opcion);
+
+      expect(destinos(movimientos), {(2, 3), (4, 3), (3, 2), (3, 4)});
+      for (final movimiento in movimientos) {
+        expect(movimiento.ancla.valor, 1);
+        expect(
+          (movimiento.ancla.x - movimiento.destino.x).abs() +
+              (movimiento.ancla.y - movimiento.destino.y).abs(),
+          1,
+        );
+      }
+    });
+
+    test('No ofrece celdas ocupadas', () {
+      final tablero = MapaUno.crearTablero()
+        ..colocarDato(3, 3, 1)
+        ..colocarDato(2, 3, 5);
+      final validador = ValidadorAnclas(tablero);
+
+      final movimientos = validador.obtenerMovimientosPosibles(
+        validador.obtenerOpciones(1, 2).first,
+      );
+
+      expect(destinos(movimientos), {(4, 3), (3, 2), (3, 4)});
+    });
+
+    test('Descarta celdas donde el número rompe la regla de la zona', () {
+      final tablero = MapaUno.crearTablero()..colocarDato(3, 1, 4);
+      final validador = ValidadorAnclas(tablero);
+
+      final movimientos = validador.obtenerMovimientosPosibles(
+        validador.obtenerOpciones(4, 4).single,
+      );
+
+      // (2,1) y (4,1) son rojas y ya tienen un 4; (3,0) es verde y (3,2) morada.
+      expect(destinos(movimientos), {(3, 0), (3, 2)});
+    });
+
+    test('Una celda junto a dos anclas aparece una sola vez', () {
+      final tablero = MapaUno.crearTablero()
+        ..colocarDato(2, 3, 1)
+        ..colocarDato(4, 3, 1);
+      final validador = ValidadorAnclas(tablero);
+
+      final movimientos = validador.obtenerMovimientosPosibles(
+        validador.obtenerOpciones(1, 2).first,
+      );
+
+      expect(
+        movimientos.where((m) => m.destino.x == 3 && m.destino.y == 3),
+        hasLength(1),
+      );
+    });
+
+    test('Una opción marcada como no seleccionable no genera movimientos', () {
+      final tablero = MapaUno.crearTablero()..colocarDato(3, 3, 1);
+      final validador = ValidadorAnclas(tablero);
+
+      expect(
+        validador.obtenerMovimientosPosibles(
+          const OpcionAncla(ancla: 1, numeroAColocar: 2, puedeSeleccionarse: false),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('La lista de movimientos no se puede modificar', () {
+      final tablero = MapaUno.crearTablero()..colocarDato(3, 3, 1);
+      final validador = ValidadorAnclas(tablero);
+      final movimientos = validador.obtenerMovimientosPosibles(
+        validador.obtenerOpciones(1, 2).first,
+      );
+
+      expect(() => movimientos.clear(), throwsUnsupportedError);
     });
   });
 }
