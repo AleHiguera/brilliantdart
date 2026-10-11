@@ -314,7 +314,7 @@ void main() {
       (tester) async {
     final tablero = tableroCasiLleno();
     final dados = DadosFijos([(1, 3)]);
-    final sonido = SonidoVictoriaFalso();
+    final sonido = SonidoFalso();
 
     await tester.pumpWidget(
       MaterialApp(
@@ -376,7 +376,7 @@ void main() {
 
   testWidgets('Victory sound does not play before the board is full',
       (tester) async {
-    final sonido = SonidoVictoriaFalso();
+    final sonido = SonidoFalso();
     await tester.pumpWidget(
       MaterialApp(
         home: TableroPage(
@@ -407,7 +407,7 @@ void main() {
         builder: (_) => TableroPage(
           dados: DadosFijos([(1, 3)]),
           tablero: tableroCasiLleno(),
-          sonidoVictoria: SonidoVictoriaFalso(),
+          sonidoVictoria: SonidoFalso(),
         ),
       ),
     );
@@ -433,7 +433,7 @@ void main() {
         home: TableroPage(
           dados: DadosFijos([(1, 3)]),
           tablero: tableroCasiLleno(),
-          sonidoVictoria: SonidoVictoriaFalso(),
+          sonidoVictoria: SonidoFalso(),
         ),
       ),
     );

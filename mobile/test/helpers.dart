@@ -5,7 +5,7 @@ import 'package:brilliantdart/dados.dart';
 import 'package:brilliantdart/mapa_uno.dart';
 import 'package:brilliantdart/tablero.dart';
 import 'package:brilliantdart/tipoo.dart';
-import 'package:brilliant_mobile/sonido_victoria.dart';
+import 'package:brilliant_mobile/sonidos.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -60,7 +60,7 @@ Future<void> jugarUltimaCelda(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-class SonidoVictoriaFalso extends SonidoVictoria {
+class SonidoFalso extends Sonido {
   int reproducciones = 0;
 
   @override

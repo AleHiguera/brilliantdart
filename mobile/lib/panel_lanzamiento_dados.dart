@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:brilliantdart/dados.dart';
 import 'package:brilliantdart/validador_anclas.dart';
+import 'package:brilliant_mobile/sonidos.dart';
 
 class PanelLanzamientoDados extends StatefulWidget {
   const PanelLanzamientoDados({
@@ -14,6 +15,7 @@ class PanelLanzamientoDados extends StatefulWidget {
     required this.onPasarTurno,
     required this.onHistorialActualizado,
     required this.partidaFinalizada,
+    this.sonidoDados,
   });
 
   final ValidadorAnclas validadorAnclas;
@@ -22,6 +24,7 @@ class PanelLanzamientoDados extends StatefulWidget {
   final VoidCallback onHistorialActualizado;
   final Dados dados;
   final bool partidaFinalizada;
+  final Sonido? sonidoDados;
 
   @override
   State<PanelLanzamientoDados> createState() => _PanelLanzamientoDadosState();
@@ -63,6 +66,7 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
       return;
     }
 
+    widget.sonidoDados?.reproducir();
     widget.onOpcionAnclaChanged(null);
     setState(() {
       _estaLanzando = true;

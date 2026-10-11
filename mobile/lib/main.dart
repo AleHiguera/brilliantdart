@@ -9,7 +9,7 @@ import 'package:brilliantdart/tipoo.dart';
 import 'package:brilliantdart/validador_anclas.dart';
 import 'package:brilliant_mobile/historial_dados_view.dart';
 import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
-import 'package:brilliant_mobile/sonido_victoria.dart';
+import 'package:brilliant_mobile/sonidos.dart';
 import 'package:brilliant_mobile/tabla_puntuacion.dart';
 
 void main() {
@@ -191,11 +191,13 @@ class TableroPage extends StatefulWidget {
     this.dados,
     this.tablero,
     this.sonidoVictoria,
+    this.sonidoDados,
   });
 
   final Dados? dados;
   final Tablero? tablero;
-  final SonidoVictoria? sonidoVictoria;
+  final Sonido? sonidoVictoria;
+  final Sonido? sonidoDados;
 
   static const int tamano = 7;
 
@@ -217,8 +219,10 @@ class TableroPage extends StatefulWidget {
 class _TableroPageState extends State<TableroPage> {
   late final Dados _dados = widget.dados ?? Dados();
   late final Tablero _tablero = widget.tablero ?? MapaUno.crearTablero();
-  late final SonidoVictoria _sonidoVictoria =
-      widget.sonidoVictoria ?? SonidoVictoriaAudio();
+  late final Sonido _sonidoVictoria =
+      widget.sonidoVictoria ?? SonidoAsset(Sonido.victoria);
+  late final Sonido _sonidoDados =
+      widget.sonidoDados ?? SonidoAsset(Sonido.dados);
   late final BlocValoresIniciales _bloc = BlocValoresIniciales(_tablero);
   late final ValidadorAnclas _validadorAnclas = ValidadorAnclas(_tablero);
   OpcionAncla? _opcionAnclaSeleccionada;
@@ -371,6 +375,7 @@ class _TableroPageState extends State<TableroPage> {
   @override
   void dispose() {
     _sonidoVictoria.dispose();
+    _sonidoDados.dispose();
     super.dispose();
   }
 
@@ -594,6 +599,7 @@ class _TableroPageState extends State<TableroPage> {
                       onPasarTurno: _pasarTurno,
                       onHistorialActualizado: _actualizarHistorial,
                       partidaFinalizada: _partidaFinalizada,
+                      sonidoDados: _sonidoDados,
                     ),
                     if (_opcionAnclaSeleccionada != null &&
                         movimientosDisponibles.isEmpty)
