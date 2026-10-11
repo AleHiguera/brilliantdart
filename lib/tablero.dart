@@ -31,6 +31,8 @@ class Tablero {
       .where((region) => region.tipo.tipo == tipo && region.completado)
       .length;
 
+  bool get estaLleno => celdas.every((celda) => celda.valor != null);
+
   Set<int> get valoresColocados =>
       celdas.map((celda) => celda.valor).whereType<int>().toSet();
 

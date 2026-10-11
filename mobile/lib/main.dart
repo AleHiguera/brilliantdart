@@ -185,9 +185,10 @@ class _OpcionMapa extends StatelessWidget {
 }
 
 class TableroPage extends StatefulWidget {
-  const TableroPage({super.key, this.dados});
+  const TableroPage({super.key, this.dados, this.tablero});
 
   final Dados? dados;
+  final Tablero? tablero;
 
   static const int tamano = 7;
 
@@ -208,13 +209,15 @@ class TableroPage extends StatefulWidget {
 
 class _TableroPageState extends State<TableroPage> {
   late final Dados _dados = widget.dados ?? Dados();
-  final Tablero _tablero = MapaUno.crearTablero();
+  late final Tablero _tablero = widget.tablero ?? MapaUno.crearTablero();
   late final BlocValoresIniciales _bloc = BlocValoresIniciales(_tablero);
   late final ValidadorAnclas _validadorAnclas = ValidadorAnclas(_tablero);
   OpcionAncla? _opcionAnclaSeleccionada;
   MovimientoAncla? _movimientoSeleccionado;
   int? _numeroLanzamientoPendiente;
   int _rondaDados = 0;
+
+  bool get _partidaFinalizada => _bloc.jugando && _tablero.estaLleno;
 
   List<MovimientoAncla> get _movimientosDisponibles {
     final opcion = _opcionAnclaSeleccionada;
@@ -291,7 +294,8 @@ class _TableroPageState extends State<TableroPage> {
   void _confirmarMovimiento() {
     final opcion = _opcionAnclaSeleccionada;
     final movimiento = _movimientoSeleccionado;
-    if (opcion == null ||
+    if (_partidaFinalizada ||
+        opcion == null ||
         movimiento == null ||
         _numeroLanzamientoPendiente == null ||
         !_validadorAnclas.puedeSerAncla(opcion.ancla) ||
@@ -319,6 +323,27 @@ class _TableroPageState extends State<TableroPage> {
       _numeroLanzamientoPendiente = null;
       _rondaDados++;
     });
+
+    if (_partidaFinalizada) {
+      _mostrarFinDePartida();
+    }
+  }
+
+  Future<void> _mostrarFinDePartida() {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        key: const Key('game-over-dialog'),
+        title: const Text('Fin de la partida'),
+        content: Text('Has puntuado ${_tablero.puntuacionTotal} puntos'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Aceptar'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -466,32 +491,23 @@ class _TableroPageState extends State<TableroPage> {
                       width: 292,
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(8, 12, 16, 12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            TablaPuntuacion(tablero: _tablero),
-                            Expanded(
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Historial de dados',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleSmall,
-                                    ),
-                                    HistorialDadosView(
-                                      historial: _dados.historial,
-                                      maxAlturaFilas: 300,
-                                    ),
-                                  ],
-                                ),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              TablaPuntuacion(tablero: _tablero),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Historial de dados',
+                                style: Theme.of(context).textTheme.titleSmall,
                               ),
-                            ),
-                          ],
+                              HistorialDadosView(
+                                historial: _dados.historial,
+                                maxAlturaFilas: 300,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -528,7 +544,7 @@ class _TableroPageState extends State<TableroPage> {
                   ],
                 ),
               ),
-            if (_bloc.jugando)
+            if (_bloc.jugando && !_partidaFinalizada)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                 child: Column(
@@ -549,6 +565,7 @@ class _TableroPageState extends State<TableroPage> {
                       onOpcionAnclaChanged: _seleccionarOpcionAncla,
                       onPasarTurno: _pasarTurno,
                       onHistorialActualizado: _actualizarHistorial,
+                      partidaFinalizada: _partidaFinalizada,
                     ),
                     if (_opcionAnclaSeleccionada != null &&
                         movimientosDisponibles.isEmpty)
@@ -569,6 +586,39 @@ class _TableroPageState extends State<TableroPage> {
                         movimiento: _movimientoSeleccionado!,
                         onConfirmar: _confirmarMovimiento,
                       ),
+                  ],
+                ),
+              )
+            else if (_partidaFinalizada)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.emoji_events,
+                      size: 48,
+                      color: Colors.amber,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Fin de la partida',
+                      key: const Key('game-finished-message'),
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Has puntuado ${_tablero.puntuacionTotal} puntos',
+                      key: const Key('game-finished-score'),
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'El tablero está completo. Ya no puedes lanzar los dados.',
+                      textAlign: TextAlign.center,
+                    ),
                   ],
                 ),
               )

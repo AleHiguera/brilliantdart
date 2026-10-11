@@ -196,15 +196,15 @@ void main() {
       expect(verde.calcularPuntuacion(2), equals(3));
     });
 
-    test('Morado en primer lugar puntua 8', () {
+    test('Morado en primer lugar puntua 6', () {
       final morado = Tipo(
         tipo: TipoZona.morado,
         color: 'Morado',
         regla: 'Dos numeros distintos',
-        puntuacion: 8,
+        puntuacion: 6,
       );
 
-      expect(morado.calcularPuntuacion(1), equals(8));
+      expect(morado.calcularPuntuacion(1), equals(6));
     });
 
     test('Amarillo en segundo lugar puntua 6', () {

@@ -13,6 +13,7 @@ class PanelLanzamientoDados extends StatefulWidget {
     required this.onOpcionAnclaChanged,
     required this.onPasarTurno,
     required this.onHistorialActualizado,
+    required this.partidaFinalizada,
   });
 
   final ValidadorAnclas validadorAnclas;
@@ -20,6 +21,7 @@ class PanelLanzamientoDados extends StatefulWidget {
   final VoidCallback onPasarTurno;
   final VoidCallback onHistorialActualizado;
   final Dados dados;
+  final bool partidaFinalizada;
 
   @override
   State<PanelLanzamientoDados> createState() => _PanelLanzamientoDadosState();
@@ -57,7 +59,9 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
   }
 
   Future<void> _lanzarDados() async {
-    if (_estaLanzando || _esperandoDecision) return;
+    if (widget.partidaFinalizada || _estaLanzando || _esperandoDecision) {
+      return;
+    }
 
     widget.onOpcionAnclaChanged(null);
     setState(() {
@@ -157,9 +161,10 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
           alignment: Alignment.center,
           child: FilledButton.icon(
             key: const Key('roll-dice-button'),
-            onPressed: _estaLanzando || _esperandoDecision
-                ? null
-                : _lanzarDados,
+            onPressed:
+                widget.partidaFinalizada || _estaLanzando || _esperandoDecision
+                    ? null
+                    : _lanzarDados,
             icon: const Icon(Icons.casino_outlined),
             label: const Text('Lanzar dados'),
           ),

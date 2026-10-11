@@ -187,6 +187,26 @@ void main() {
       expect(bloc.puedeIniciar, isFalse);
     });
 
+    test('El tablero solo esta lleno cuando las 49 celdas tienen numero', () {
+      final tablero = Tablero();
+
+      expect(tablero.estaLleno, isFalse);
+
+      for (var fila = 0; fila < Tablero.filas; fila++) {
+        for (var columna = 0; columna < Tablero.columnas; columna++) {
+          if (fila == 6 && columna == 6) continue;
+          tablero.colocarDato(fila, columna, 1);
+        }
+      }
+      expect(tablero.estaLleno, isFalse);
+
+      tablero.colocarDato(6, 6, 1);
+      expect(tablero.estaLleno, isTrue);
+
+      tablero.colocarDato(3, 3, null);
+      expect(tablero.estaLleno, isFalse);
+    });
+
     test('Mover un numero inicial despeja su posicion anterior', () {
       final tablero = Tablero();
       final bloc = BlocValoresIniciales(tablero);
