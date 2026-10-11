@@ -7,6 +7,7 @@ import 'package:brilliantdart/mapa_uno.dart';
 import 'package:brilliantdart/tablero.dart';
 import 'package:brilliantdart/tipoo.dart';
 import 'package:brilliantdart/validador_anclas.dart';
+import 'package:brilliant_mobile/colores_zonas.dart' as estilo;
 import 'package:brilliant_mobile/historial_dados_view.dart';
 import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
 import 'package:brilliant_mobile/sonidos.dart';
@@ -201,13 +202,7 @@ class TableroPage extends StatefulWidget {
 
   static const int tamano = 7;
 
-  static const Map<TipoZona, Color> coloresZonas = {
-    TipoZona.azul: Color(0xFF2196F3),
-    TipoZona.rojo: Color(0xFFF44336),
-    TipoZona.verde: Color(0xFF4CAF50),
-    TipoZona.amarillo: Color(0xFFFFEB3B),
-    TipoZona.morado: Color(0xFF9C27B0),
-  };
+  static const Map<TipoZona, Color> coloresZonas = estilo.coloresZonas;
 
   static Color colorEn(int fila, int columna) =>
       coloresZonas[MapaUno.tiposPorCelda[fila][columna]]!;
@@ -530,11 +525,7 @@ class _TableroPageState extends State<TableroPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               TablaPuntuacion(tablero: _tablero),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Historial de dados',
-                                style: Theme.of(context).textTheme.titleSmall,
-                              ),
+                              const SizedBox(height: 10),
                               HistorialDadosView(
                                 historial: _dados.historial,
                                 maxAlturaFilas: 300,
@@ -555,18 +546,9 @@ class _TableroPageState extends State<TableroPage> {
                   children: [
                     Expanded(
                       flex: 5,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Historial de dados',
-                            style: Theme.of(context).textTheme.titleSmall,
-                          ),
-                          HistorialDadosView(
-                            historial: _dados.historial,
-                            maxAlturaFilas: 120,
-                          ),
-                        ],
+                      child: HistorialDadosView(
+                        historial: _dados.historial,
+                        maxAlturaFilas: 120,
                       ),
                     ),
                     const SizedBox(width: 8),

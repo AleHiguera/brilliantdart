@@ -5,6 +5,7 @@ import 'package:brilliantdart/dados.dart';
 import 'package:brilliantdart/mapa_uno.dart';
 import 'package:brilliantdart/tablero.dart';
 import 'package:brilliantdart/tipoo.dart';
+import 'package:brilliant_mobile/historial_dados_view.dart';
 import 'package:brilliant_mobile/sonidos.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -83,3 +84,30 @@ class DadosFijos extends Dados {
 
 /// Mapa uno con todas sus zonas completadas: vale 54 puntos.
 Tablero tableroCompleto() => tableroCasiLleno()..colocarDato(3, 6, 3);
+
+/// Comprueba una fila del historial: sus dos dados y su etiqueta de acción
+/// ("Pendiente" cuando todavía no se decidió el turno).
+void comprobarFilaHistorial(
+  WidgetTester tester,
+  int numero,
+  (int, int) dados, {
+  String accion = 'Pendiente',
+}) {
+  Finder textoEnClave(String clave, String texto) => find.descendant(
+        of: find.byKey(Key(clave)),
+        matching: find.text(texto),
+        matchRoot: true,
+      );
+
+  expect(find.byKey(Key('dice-history-row-$numero')), findsOneWidget);
+  expect(textoEnClave('dice-history-number-$numero', '$numero'), findsOneWidget);
+  expect(
+    tester.widget<DadoMini>(find.byKey(Key('dice-history-die1-$numero'))).valor,
+    dados.$1,
+  );
+  expect(
+    tester.widget<DadoMini>(find.byKey(Key('dice-history-die2-$numero'))).valor,
+    dados.$2,
+  );
+  expect(textoEnClave('dice-history-action-$numero', accion), findsOneWidget);
+}

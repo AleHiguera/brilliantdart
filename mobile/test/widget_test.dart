@@ -64,36 +64,18 @@ void main() {
       ),
     );
 
-    expect(find.byKey(const Key('dice-history-row-1')), findsOneWidget);
-    expect(find.byKey(const Key('dice-history-row-2')), findsOneWidget);
+    comprobarFilaHistorial(tester, 1, (2, 6), accion: '5 ancla → coloca 2');
+    comprobarFilaHistorial(tester, 2, (4, 1));
+    expect(find.text('Historial de dados'), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.byKey(const Key('dice-history-count'))).data,
+      '2',
+    );
 
+    // El lanzamiento más reciente aparece primero.
     expect(
-      find.descendant(
-        of: find.byKey(const Key('dice-history-row-1')),
-        matching: find.text('Lanzamiento 1 — Dados: (2, 6)'),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: find.byKey(const Key('dice-history-row-1')),
-        matching: find.text('Acción: 5 ancla → coloca 2'),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: find.byKey(const Key('dice-history-row-2')),
-        matching: find.text('Lanzamiento 2 — Dados: (4, 1)'),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: find.byKey(const Key('dice-history-row-2')),
-        matching: find.text('Acción: —'),
-      ),
-      findsOneWidget,
+      tester.getTopLeft(find.byKey(const Key('dice-history-row-2'))).dy,
+      lessThan(tester.getTopLeft(find.byKey(const Key('dice-history-row-1'))).dy),
     );
   });
   
@@ -133,40 +115,20 @@ void main() {
       await tester.pump(const Duration(milliseconds: 1300));
       await tester.pumpAndSettle();
 
-      if (indice >= 2) {
-        await tester.drag(
-          find.byKey(const Key('dice-history-list')),
-          const Offset(0, -60),
-        );
-        await tester.pumpAndSettle();
-      }
-
       expect(
         find.text('No se puede realizar ningún movimiento'),
         findsOneWidget,
       );
       final numeroLanzamiento = indice + 1;
-      final registro = find.byKey(
-        Key('dice-history-row-$numeroLanzamiento'),
-      );
-      expect(registro, findsOneWidget);
-      expect(
-        find.descendant(
-          of: registro,
-          matching: find.text(
-            'Lanzamiento $numeroLanzamiento — Dados: '
-            '(${resultados[indice].$1}, ${resultados[indice].$2})',
-          ),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: registro,
-          matching: find.text('Acción: —'),
-        ),
-        findsOneWidget,
-      );
+      comprobarFilaHistorial(tester, numeroLanzamiento, resultados[indice]);
+      if (indice > 0) {
+        comprobarFilaHistorial(
+          tester,
+          numeroLanzamiento - 1,
+          resultados[indice - 1],
+          accion: 'Movimiento inválido',
+        );
+      }
       expect(dados.historial.lanzamientos, hasLength(numeroLanzamiento));
 
       if (indice < resultados.length - 1) {
@@ -612,7 +574,7 @@ void main() {
       dados.historial.lanzamientos[0].accionRealizada,
       '1 ancla → coloca 6',
     );
-    expect(find.text('Acción: 1 ancla → coloca 6'), findsOneWidget);
+    comprobarFilaHistorial(tester, 1, (1, 6), accion: '1 ancla → coloca 6');
     expect(
       tester.widget<FilledButton>(find.byKey(const Key('roll-dice-button')))
           .onPressed,

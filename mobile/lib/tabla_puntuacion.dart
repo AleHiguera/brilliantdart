@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:brilliantdart/tablero.dart';
 import 'package:brilliantdart/tipoo.dart';
+import 'package:brilliant_mobile/colores_zonas.dart';
 
 class TablaPuntuacion extends StatelessWidget {
   const TablaPuntuacion({super.key, required this.tablero});
@@ -17,83 +18,147 @@ class TablaPuntuacion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final maximo = tablero.regiones
+        .fold(0, (total, zona) => total + zona.tipo.puntuacion);
+    final total = tablero.puntuacionTotal;
+
     return Container(
       key: const Key('score-table'),
       width: double.infinity,
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7F7F7),
-        border: Border.all(color: const Color(0xFFBDBDBD)),
-        borderRadius: BorderRadius.circular(4),
-      ),
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+      decoration: decoracionTarjeta(),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Puntuación',
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 2),
-          const Row(
-            children: [
-              Expanded(child: Text('Zona', style: TextStyle(fontSize: 11))),
-              SizedBox(
-                width: 48,
-                child: Text('Hechas', textAlign: TextAlign.center, style: TextStyle(fontSize: 10)),
+          EncabezadoTarjeta(
+            icono: Icons.emoji_events_outlined,
+            titulo: 'Puntuación',
+            extremo: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(10),
               ),
-              SizedBox(
-                width: 34,
-                child: Text('Pts', textAlign: TextAlign.right, style: TextStyle(fontSize: 10)),
-              ),
-            ],
-          ),
-          const Divider(height: 2),
-          for (final tipo in TipoZona.values)
-            Row(
-              key: Key('score-row-${tipo.name}'),
-              children: [
-                Expanded(
-                  child: Text(
-                    _nombres[tipo]!,
-                    style: const TextStyle(fontSize: 10),
-                  ),
-                ),
-                SizedBox(
-                  width: 48,
-                  child: Text(
-                    '${tablero.zonasCompletadasPorTipo(tipo)}/'
-                    '${tablero.regiones.where((zona) => zona.tipo.tipo == tipo).length}',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 10),
-                  ),
-                ),
-                SizedBox(
-                  width: 34,
-                  child: Text(
-                    '${tablero.puntuacionPorTipo(tipo)}',
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(fontSize: 10),
-                  ),
-                ),
-              ],
-            ),
-          const Divider(height: 3),
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Total',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                ),
-              ),
-              Text(
-                '${tablero.puntuacionTotal} pts',
+              child: Text(
+                '$total pts',
                 key: const Key('score-total'),
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(end: maximo == 0 ? 0 : total / maximo),
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeOutCubic,
+              builder: (context, avance, _) => LinearProgressIndicator(
+                key: const Key('score-progress'),
+                value: avance,
+                minHeight: 5,
+                backgroundColor: colorBordeTarjeta,
+                color: Colors.black,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          for (final tipo in TipoZona.values) _filaColor(tipo),
+        ],
+      ),
+    );
+  }
+
+  Widget _filaColor(TipoZona tipo) {
+    final zonas = tablero.regiones
+        .where((zona) => zona.tipo.tipo == tipo)
+        .toList(growable: false);
+    final hechas = tablero.zonasCompletadasPorTipo(tipo);
+    final puntos = tablero.puntuacionPorTipo(tipo);
+    final color = coloresZonas[tipo]!;
+    final completo = zonas.isNotEmpty && hechas == zonas.length;
+
+    return AnimatedContainer(
+      key: Key('score-row-${tipo.name}'),
+      duration: const Duration(milliseconds: 300),
+      margin: const EdgeInsets.only(top: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: completo ? color.withValues(alpha: 0.16) : Colors.white,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(3),
+              border: Border.all(color: Colors.black26, width: 0.5),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              _nombres[tipo]!,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 11),
+            ),
+          ),
+          for (var indice = 0; indice < zonas.length; indice++)
+            Padding(
+              padding: const EdgeInsets.only(left: 3),
+              child: _MarcaZona(color: color, hecha: indice < hechas),
+            ),
+          SizedBox(
+            width: 30,
+            child: Text(
+              '$hechas/${zonas.length}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 10, color: Colors.black54),
+            ),
+          ),
+          SizedBox(
+            width: 24,
+            child: Text(
+              '$puntos',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: puntos > 0 ? Colors.black : Colors.black38,
+              ),
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Circulito por zona: relleno con el color cuando la zona está completa.
+class _MarcaZona extends StatelessWidget {
+  const _MarcaZona({required this.color, required this.hecha});
+
+  final Color color;
+  final bool hecha;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: 9,
+      height: 9,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: hecha ? color : Colors.transparent,
+        border: Border.all(color: hecha ? Colors.black45 : color, width: 1.2),
       ),
     );
   }
