@@ -153,7 +153,9 @@ void main() {
 
     final dados = DadosFijos([])..historial.registrarLanzamiento(2, 6);
     await tester.pumpWidget(
-      MaterialApp(home: TableroPage(dados: dados)),
+      MaterialApp(
+        home: TableroPage(dados: dados, sonidoDados: SonidoFalso()),
+      ),
     );
 
     final tablero = tester.getRect(find.byType(GridView).first);
@@ -284,6 +286,7 @@ void main() {
           dados: dados,
           tablero: tablero,
           sonidoVictoria: sonido,
+          sonidoDados: SonidoFalso(),
         ),
       ),
     );
@@ -345,6 +348,7 @@ void main() {
           dados: DadosFijos([(1, 3)]),
           tablero: tableroCasiLleno(),
           sonidoVictoria: sonido,
+          sonidoDados: SonidoFalso(),
         ),
       ),
     );
@@ -370,6 +374,7 @@ void main() {
           dados: DadosFijos([(1, 3)]),
           tablero: tableroCasiLleno(),
           sonidoVictoria: SonidoFalso(),
+          sonidoDados: SonidoFalso(),
         ),
       ),
     );
@@ -396,6 +401,7 @@ void main() {
           dados: DadosFijos([(1, 3)]),
           tablero: tableroCasiLleno(),
           sonidoVictoria: SonidoFalso(),
+          sonidoDados: SonidoFalso(),
         ),
       ),
     );
@@ -454,7 +460,7 @@ void main() {
     final dados = DadosFijos([(1, 6), (6, 4)]);
     await tester.pumpWidget(
       MaterialApp(
-        home: TableroPage(dados: dados),
+        home: TableroPage(dados: dados, sonidoDados: SonidoFalso()),
       ),
     );
 

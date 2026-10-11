@@ -17,8 +17,8 @@ class SonidoAsset extends Sonido {
 
   @override
   Future<void> reproducir() async {
-    final reproductor = _reproductor ??= AudioPlayer();
     try {
+      final reproductor = _reproductor ??= AudioPlayer();
       await reproductor.stop();
       await reproductor.play(AssetSource(ruta));
     } catch (_) {

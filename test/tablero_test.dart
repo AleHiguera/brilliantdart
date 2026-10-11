@@ -207,6 +207,56 @@ void main() {
       expect(tablero.estaLleno, isFalse);
     });
 
+    test('No permite colocar en una celda que ya tiene numero', () {
+      final tablero = Tablero();
+      tablero.agregarRegion(
+        Zona(
+          id: 1,
+          tipo: tipoVerde(),
+          coordenadas: [tablero.obtenerCelda(0, 0), tablero.obtenerCelda(0, 1)],
+        ),
+      );
+
+      expect(tablero.puedeColocarDato(0, 0, 3), isTrue);
+      tablero.colocarDato(0, 0, 3);
+      expect(tablero.puedeColocarDato(0, 0, 4), isFalse);
+      expect(tablero.puedeColocarDato(0, 1, 4), isTrue);
+    });
+
+    test('No entrega celdas de una region que no es del tablero', () {
+      final tablero = Tablero();
+      final ajena = Zona(
+        id: 9,
+        tipo: tipoVerde(),
+        coordenadas: [Coordenada.xy(0, 0)],
+      );
+
+      expect(() => tablero.obtenerCeldasDeRegion(ajena), throwsArgumentError);
+    });
+
+    test('Rechaza regiones con celdas fuera del tablero', () {
+      final tablero = Tablero();
+
+      expect(
+        () => tablero.agregarRegion(
+          Zona(id: 1, tipo: tipoVerde(), coordenadas: [Coordenada.xy(7, 0)]),
+        ),
+        throwsRangeError,
+      );
+      expect(tablero.regiones, isEmpty);
+    });
+
+    test('La lista de regiones no se puede modificar desde fuera', () {
+      final tablero = Tablero();
+
+      expect(
+        () => tablero.regiones.add(
+          Zona(id: 1, tipo: tipoVerde(), coordenadas: [Coordenada.xy(0, 0)]),
+        ),
+        throwsUnsupportedError,
+      );
+    });
+
     test('Mover un numero inicial despeja su posicion anterior', () {
       final tablero = Tablero();
       final bloc = BlocValoresIniciales(tablero);

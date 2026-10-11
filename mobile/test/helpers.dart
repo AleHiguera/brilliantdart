@@ -63,9 +63,13 @@ Future<void> jugarUltimaCelda(WidgetTester tester) async {
 
 class SonidoFalso extends Sonido {
   int reproducciones = 0;
+  int cierres = 0;
 
   @override
   Future<void> reproducir() async => reproducciones++;
+
+  @override
+  void dispose() => cierres++;
 }
 
 class DadosFijos extends Dados {

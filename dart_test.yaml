@@ -1,0 +1,3 @@
+# Si una prueba se queda colgada, falla tras este tiempo en vez de esperar
+# para siempre.
+timeout: 60s
