@@ -7,11 +7,13 @@ con `WidgetTester` y comprueban lo que se ve.
 - Cada archivo termina en `_widget_test.dart`.
 - Las pruebas de la lógica del juego (sin pantallas) están en `test/` en la
   raíz del proyecto y se ejecutan con `dart test`.
+- Las pruebas unitarias de la app que no dibujan pantallas están en
+  `test/unitarias/`.
 - Las funciones de ayuda compartidas (dados fijos, tablero casi lleno, sonido
   falso) están en `test/helpers.dart`.
 
 Para ejecutarlas, dentro de la carpeta `mobile`:
 
-```
+```bash
 flutter test test/widgets
 ```
