@@ -6,6 +6,7 @@ import 'package:brilliantdart/mapa_uno.dart';
 import 'package:brilliantdart/tablero.dart';
 import 'package:brilliantdart/tipoo.dart';
 import 'package:brilliant_mobile/historial_dados_view.dart';
+import 'package:brilliant_mobile/main.dart';
 import 'package:brilliant_mobile/sonidos.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -115,3 +116,36 @@ void comprobarFilaHistorial(
   );
   expect(textoEnClave('dice-history-action-$numero', accion), findsOneWidget);
 }
+
+/// Toca "Lanzar dados" y espera a que termine la animación.
+Future<void> lanzarDados(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('roll-dice-button')));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 1300));
+  await tester.pumpAndSettle();
+}
+
+/// Abre el tablero casi lleno con dados fijos y pulsa Comenzar.
+Future<void> abrirTableroCasiLleno(
+  WidgetTester tester,
+  List<(int, int)> lanzamientos,
+) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      home: TableroPage(
+        dados: DadosFijos(lanzamientos),
+        tablero: tableroCasiLleno(),
+        sonidoVictoria: SonidoFalso(),
+        sonidoDados: SonidoFalso(),
+      ),
+    ),
+  );
+  await tester.tap(find.text('Comenzar'));
+  await tester.pump();
+}
+
+/// Busca un texto dentro del widget con la clave indicada.
+Finder textoEn(String clave, String texto) => find.descendant(
+      of: find.byKey(Key(clave)),
+      matching: find.text(texto),
+    );
