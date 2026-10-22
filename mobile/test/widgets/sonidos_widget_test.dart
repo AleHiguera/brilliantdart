@@ -22,7 +22,7 @@ void main() {
           body: SingleChildScrollView(
             child: PanelLanzamientoDados(
               dados: DadosFijos(lanzamientos),
-              validadorAnclas: ValidadorAnclas(MapaUno.crearTablero()),
+              validadorAnclas: ValidadorAnclas(mapaUno.crearTablero()),
               onOpcionAnclaChanged: (_) {},
               onPasarTurno: onPasarTurno ?? () {},
               onHistorialActualizado: () {},

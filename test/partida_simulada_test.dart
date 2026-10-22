@@ -53,14 +53,17 @@ int puntosEsperados(Tablero tablero) => tablero.regiones
 /// verifica todas las reglas.
 ResultadoPartida jugarPartida(int semilla) {
   final azar = Random(semilla);
-  final tablero = MapaUno.crearTablero();
-  final bloc = BlocValoresIniciales(tablero);
+  final tablero = mapaUno.crearTablero();
+  final bloc = BlocValoresIniciales(
+    tablero,
+    celdasIniciales: mapaUno.celdasIniciales,
+  );
   final validador = ValidadorAnclas(tablero);
   final dados = Dados(random: Random(semilla * 31 + 7));
 
   final iniciales = [1, 2, 3, 4, 5, 6]..shuffle(azar);
   for (var i = 0; i < iniciales.length; i++) {
-    final (fila, columna) = BlocValoresIniciales.celdasIniciales[i];
+    final (fila, columna) = mapaUno.celdasIniciales[i];
     bloc.colocarValorInicial(fila, columna, iniciales[i]);
   }
   bloc.iniciarPartida();
@@ -69,7 +72,8 @@ ResultadoPartida jugarPartida(int semilla) {
   var turnosSinMovimiento = 0;
   while (!tablero.estaLleno && turnosSinMovimiento < 200) {
     final (dado1, dado2) = dados.lanzar();
-    final numeroLanzamiento = dados.historial.lanzamientos.last.numeroLanzamiento;
+    final numeroLanzamiento =
+        dados.historial.lanzamientos.last.numeroLanzamiento;
     final posibles = [
       for (final opcion in validador.obtenerOpciones(dado1, dado2))
         for (final movimiento in validador.obtenerMovimientosPosibles(opcion))
@@ -126,8 +130,9 @@ void main() {
 
         expect(resultado.jugadas, greaterThan(0), reason: 'Semilla $semilla');
         expect(
-          resultado.dados.historial.lanzamientos
-              .every((lanzamiento) => lanzamiento.accionRealizada != null),
+          resultado.dados.historial.lanzamientos.every(
+            (lanzamiento) => lanzamiento.accionRealizada != null,
+          ),
           isTrue,
           reason: 'Cada lanzamiento debe quedar con su acción en el historial',
         );
@@ -148,8 +153,11 @@ void main() {
         }
       }
 
-      expect(partidasLlenas, greaterThan(0),
-          reason: 'Al menos una partida simulada debe llenar el tablero');
+      expect(
+        partidasLlenas,
+        greaterThan(0),
+        reason: 'Al menos una partida simulada debe llenar el tablero',
+      );
     });
 
     test('La misma semilla juega exactamente la misma partida', () {

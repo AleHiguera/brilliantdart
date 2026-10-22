@@ -1,5 +1,6 @@
 import 'package:test/test.dart';
 import 'package:brilliantdart/bloc_valores_iniciales.dart';
+import 'package:brilliantdart/mapa_uno.dart';
 import 'package:brilliantdart/tablero.dart';
 import 'package:brilliantdart/tipoo.dart';
 import 'package:brilliantdart/zona.dart';
@@ -70,10 +71,7 @@ void main() {
       final region = Zona(
         id: 1,
         tipo: tipoVerde(),
-        coordenadas: [
-          tablero.obtenerCelda(0, 0),
-          tablero.obtenerCelda(0, 1),
-        ],
+        coordenadas: [tablero.obtenerCelda(0, 0), tablero.obtenerCelda(0, 1)],
       );
 
       tablero.agregarRegion(region);
@@ -97,19 +95,13 @@ void main() {
 
       tablero.agregarRegion(primera);
 
-      expect(
-        () => tablero.agregarRegion(segunda),
-        throwsArgumentError,
-      );
+      expect(() => tablero.agregarRegion(segunda), throwsArgumentError);
     });
 
     test('Rechaza coordenadas fuera del tablero', () {
       final tablero = Tablero();
 
-      expect(
-        () => tablero.obtenerCelda(7, 0),
-        throwsRangeError,
-      );
+      expect(() => tablero.obtenerCelda(7, 0), throwsRangeError);
     });
 
     test('Obtiene las cuatro posiciones ortogonales de una celda central', () {
@@ -118,10 +110,12 @@ void main() {
 
       final posiciones = tablero.obtenerPosicionesAdyacentes(3, 4);
 
-      expect(
-        posiciones.map((celda) => (celda.x + 1, celda.y + 1)),
-        [(3, 5), (5, 5), (4, 4), (4, 6)],
-      );
+      expect(posiciones.map((celda) => (celda.x + 1, celda.y + 1)), [
+        (3, 5),
+        (5, 5),
+        (4, 4),
+        (4, 6),
+      ]);
     });
 
     test('Rechaza un repetido en rojo y no modifica la posicion destino', () {
@@ -130,11 +124,7 @@ void main() {
       final destino = tablero.obtenerCelda(2, 1);
       ancla.valor = 5;
       tablero.agregarRegion(
-        Zona(
-          id: 1,
-          tipo: tipoRojo(),
-          coordenadas: [ancla, destino],
-        ),
+        Zona(id: 1, tipo: tipoRojo(), coordenadas: [ancla, destino]),
       );
 
       expect(tablero.puedeColocarDato(2, 1, 5), isFalse);
@@ -154,38 +144,44 @@ void main() {
 
       final posiciones = tablero.obtenerPosicionesAdyacentes(0, 0);
 
-      expect(
-        posiciones.map((celda) => (celda.x + 1, celda.y + 1)),
-        [(2, 1), (1, 2)],
-      );
+      expect(posiciones.map((celda) => (celda.x + 1, celda.y + 1)), [
+        (2, 1),
+        (1, 2),
+      ]);
     });
 
-    test('El juego se bloquea hasta completar las 6 celdas iniciales con 1..6 sin repetir', () {
-      final tablero = Tablero();
-      final bloc = BlocValoresIniciales(tablero);
+    test(
+      'El juego se bloquea hasta completar las 6 celdas iniciales con 1..6 sin repetir',
+      () {
+        final tablero = Tablero();
+        final bloc = BlocValoresIniciales(
+          tablero,
+          celdasIniciales: mapaUno.celdasIniciales,
+        );
 
-      const celdasIniciales = <(int, int)>[
-        (1, 3),
-        (2, 6),
-        (4, 2),
-        (4, 5),
-        (6, 3),
-        (7, 5),
-      ];
+        const celdasIniciales = <(int, int)>[
+          (1, 3),
+          (2, 6),
+          (4, 2),
+          (4, 5),
+          (6, 3),
+          (7, 5),
+        ];
 
-      expect(bloc.puedeIniciar, isFalse);
+        expect(bloc.puedeIniciar, isFalse);
 
-      final valoresCorrectos = [1, 2, 3, 4, 5, 6];
-      for (var i = 0; i < celdasIniciales.length; i++) {
-        final (fila, columna) = celdasIniciales[i];
-        tablero.colocarDato(fila - 1, columna - 1, valoresCorrectos[i]);
-      }
+        final valoresCorrectos = [1, 2, 3, 4, 5, 6];
+        for (var i = 0; i < celdasIniciales.length; i++) {
+          final (fila, columna) = celdasIniciales[i];
+          tablero.colocarDato(fila - 1, columna - 1, valoresCorrectos[i]);
+        }
 
-      expect(bloc.puedeIniciar, isTrue);
+        expect(bloc.puedeIniciar, isTrue);
 
-      tablero.colocarDato(1, 5, 1);
-      expect(bloc.puedeIniciar, isFalse);
-    });
+        tablero.colocarDato(1, 5, 1);
+        expect(bloc.puedeIniciar, isFalse);
+      },
+    );
 
     test('El tablero solo esta lleno cuando las 49 celdas tienen numero', () {
       final tablero = Tablero();
@@ -259,7 +255,10 @@ void main() {
 
     test('Mover un numero inicial despeja su posicion anterior', () {
       final tablero = Tablero();
-      final bloc = BlocValoresIniciales(tablero);
+      final bloc = BlocValoresIniciales(
+        tablero,
+        celdasIniciales: mapaUno.celdasIniciales,
+      );
 
       bloc.colocarValorInicial(1, 3, 4);
       bloc.colocarValorInicial(6, 3, 4);

@@ -26,7 +26,7 @@ void main() {
 
   group('Puntuación del tablero', () {
     test('Un tablero nuevo tiene 0 puntos en todos los colores', () {
-      final tablero = MapaUno.crearTablero();
+      final tablero = mapaUno.crearTablero();
 
       expect(tablero.puntuacionTotal, 0);
       for (final tipo in TipoZona.values) {
@@ -45,7 +45,7 @@ void main() {
 
     for (final MapEntry(key: tipo, value: puntos) in puntosPorColor.entries) {
       test('Completar una zona ${tipo.name} suma $puntos puntos', () {
-        final tablero = MapaUno.crearTablero();
+        final tablero = mapaUno.crearTablero();
 
         completarZona(tablero, primeraZona(tablero, tipo));
 
@@ -58,7 +58,7 @@ void main() {
       });
 
       test('Una zona ${tipo.name} a falta de una celda no suma', () {
-        final tablero = MapaUno.crearTablero();
+        final tablero = mapaUno.crearTablero();
 
         completarZona(tablero, primeraZona(tablero, tipo), dejarUna: true);
 
@@ -68,7 +68,7 @@ void main() {
     }
 
     test('Vaciar una celda de una zona completa le quita sus puntos', () {
-      final tablero = MapaUno.crearTablero();
+      final tablero = mapaUno.crearTablero();
       final azul = primeraZona(tablero, TipoZona.azul);
       completarZona(tablero, azul);
       expect(tablero.puntuacionTotal, 7);
@@ -81,7 +81,7 @@ void main() {
     });
 
     test('Una zona llena que rompe su regla no suma puntos', () {
-      final tablero = MapaUno.crearTablero();
+      final tablero = mapaUno.crearTablero();
       final azul = primeraZona(tablero, TipoZona.azul);
 
       for (var i = 0; i < azul.coordenadas.length; i++) {
@@ -94,7 +94,7 @@ void main() {
     });
 
     test('Completar dos zonas del mismo color suma el doble', () {
-      final tablero = MapaUno.crearTablero();
+      final tablero = mapaUno.crearTablero();
       final rojas = tablero.regiones
           .where((zona) => zona.tipo.tipo == TipoZona.rojo)
           .toList();
@@ -110,7 +110,7 @@ void main() {
     });
 
     test('El total es la suma de las puntuaciones por color', () {
-      final tablero = MapaUno.crearTablero();
+      final tablero = mapaUno.crearTablero();
       completarZona(tablero, primeraZona(tablero, TipoZona.azul));
       completarZona(tablero, primeraZona(tablero, TipoZona.amarillo));
       completarZona(tablero, primeraZona(tablero, TipoZona.morado));

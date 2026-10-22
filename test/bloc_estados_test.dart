@@ -1,13 +1,14 @@
 import 'package:test/test.dart';
 
 import 'package:brilliantdart/bloc_valores_iniciales.dart';
+import 'package:brilliantdart/mapa_uno.dart';
 import 'package:brilliantdart/tablero.dart';
 
 void main() {
   void colocarTodos(BlocValoresIniciales bloc, [List<int>? valores]) {
     final lista = valores ?? [1, 2, 3, 4, 5, 6];
     for (var i = 0; i < 6; i++) {
-      final (fila, columna) = BlocValoresIniciales.celdasIniciales[i];
+      final (fila, columna) = mapaUno.celdasIniciales[i];
       bloc.colocarValorInicial(fila, columna, lista[i]);
     }
   }
@@ -22,11 +23,17 @@ void main() {
     });
 
     test('Solo un indicador de estado es verdadero a la vez', () {
-      final bloc = BlocValoresIniciales(Tablero());
+      final bloc = BlocValoresIniciales(
+        Tablero(),
+        celdasIniciales: mapaUno.celdasIniciales,
+      );
 
       void comprobar() {
-        final activos = [bloc.bloqueado, bloc.puedeIniciar, bloc.jugando]
-            .where((activo) => activo);
+        final activos = [
+          bloc.bloqueado,
+          bloc.puedeIniciar,
+          bloc.jugando,
+        ].where((activo) => activo);
         expect(activos, hasLength(1));
       }
 
@@ -38,14 +45,14 @@ void main() {
     });
 
     test('Las celdas iniciales están dentro del tablero (de 1 a 7)', () {
-      for (final (fila, columna) in BlocValoresIniciales.celdasIniciales) {
+      for (final (fila, columna) in mapaUno.celdasIniciales) {
         expect(fila, inInclusiveRange(1, 7));
         expect(columna, inInclusiveRange(1, 7));
       }
     });
 
     test('Ninguna celda inicial está pegada a otra', () {
-      const celdas = BlocValoresIniciales.celdasIniciales;
+      final celdas = mapaUno.celdasIniciales;
       for (final (fila, columna) in celdas) {
         for (final (otraFila, otraColumna) in celdas) {
           if (fila == otraFila && columna == otraColumna) continue;
@@ -57,12 +64,14 @@ void main() {
     });
 
     for (var i = 0; i < 6; i++) {
-      final (fila, columna) = BlocValoresIniciales.celdasIniciales[i];
+      final (fila, columna) = mapaUno.celdasIniciales[i];
       test('La celda inicial ($fila, $columna) acepta los números 1 a 6', () {
         for (var numero = 1; numero <= 6; numero++) {
           final tablero = Tablero();
-          BlocValoresIniciales(tablero)
-              .colocarValorInicial(fila, columna, numero);
+          BlocValoresIniciales(
+            tablero,
+            celdasIniciales: mapaUno.celdasIniciales,
+          ).colocarValorInicial(fila, columna, numero);
           expect(tablero.obtenerCelda(fila - 1, columna - 1).valor, numero);
         }
       });
@@ -70,29 +79,41 @@ void main() {
 
     test('Vaciar una celda inicial que ya está vacía no da error', () {
       final tablero = Tablero();
-      final bloc = BlocValoresIniciales(tablero);
+      final bloc = BlocValoresIniciales(
+        tablero,
+        celdasIniciales: mapaUno.celdasIniciales,
+      );
 
       expect(() => bloc.colocarValorInicial(1, 3, null), returnsNormally);
       expect(tablero.obtenerCelda(0, 2).valor, isNull);
     });
 
     test('Rechaza la celda (1, 1) y la (7, 7)', () {
-      final bloc = BlocValoresIniciales(Tablero());
+      final bloc = BlocValoresIniciales(
+        Tablero(),
+        celdasIniciales: mapaUno.celdasIniciales,
+      );
 
       expect(() => bloc.colocarValorInicial(1, 1, 1), throwsArgumentError);
       expect(() => bloc.colocarValorInicial(7, 7, 1), throwsArgumentError);
     });
 
     test('Rechaza números negativos', () {
-      final bloc = BlocValoresIniciales(Tablero());
+      final bloc = BlocValoresIniciales(
+        Tablero(),
+        celdasIniciales: mapaUno.celdasIniciales,
+      );
 
       expect(() => bloc.colocarValorInicial(1, 3, -2), throwsArgumentError);
     });
 
     test('Seis números iguales no permiten empezar', () {
       final tablero = Tablero();
-      final bloc = BlocValoresIniciales(tablero);
-      for (final (fila, columna) in BlocValoresIniciales.celdasIniciales) {
+      final bloc = BlocValoresIniciales(
+        tablero,
+        celdasIniciales: mapaUno.celdasIniciales,
+      );
+      for (final (fila, columna) in mapaUno.celdasIniciales) {
         tablero.colocarDato(fila - 1, columna - 1, 3);
       }
 
@@ -101,7 +122,10 @@ void main() {
 
     test('Un número repetido puesto a mano bloquea la partida', () {
       final tablero = Tablero();
-      final bloc = BlocValoresIniciales(tablero);
+      final bloc = BlocValoresIniciales(
+        tablero,
+        celdasIniciales: mapaUno.celdasIniciales,
+      );
       colocarTodos(bloc);
 
       tablero.colocarDato(0, 2, 2);
@@ -111,7 +135,10 @@ void main() {
 
     test('Números fuera de la celda inicial no afectan el estado', () {
       final tablero = Tablero();
-      final bloc = BlocValoresIniciales(tablero);
+      final bloc = BlocValoresIniciales(
+        tablero,
+        celdasIniciales: mapaUno.celdasIniciales,
+      );
       colocarTodos(bloc);
 
       tablero.colocarDato(0, 0, 6);
@@ -123,7 +150,10 @@ void main() {
 
     test('Si se rompe un inicial durante la partida, vuelve a bloqueado', () {
       final tablero = Tablero();
-      final bloc = BlocValoresIniciales(tablero);
+      final bloc = BlocValoresIniciales(
+        tablero,
+        celdasIniciales: mapaUno.celdasIniciales,
+      );
       colocarTodos(bloc);
       bloc.iniciarPartida();
 
@@ -135,8 +165,14 @@ void main() {
     });
 
     test('Dos blocs sobre tableros distintos no se mezclan', () {
-      final primero = BlocValoresIniciales(Tablero());
-      final segundo = BlocValoresIniciales(Tablero());
+      final primero = BlocValoresIniciales(
+        Tablero(),
+        celdasIniciales: mapaUno.celdasIniciales,
+      );
+      final segundo = BlocValoresIniciales(
+        Tablero(),
+        celdasIniciales: mapaUno.celdasIniciales,
+      );
 
       colocarTodos(primero);
 
@@ -145,7 +181,10 @@ void main() {
     });
 
     test('Se puede reiniciar y volver a iniciar', () {
-      final bloc = BlocValoresIniciales(Tablero());
+      final bloc = BlocValoresIniciales(
+        Tablero(),
+        celdasIniciales: mapaUno.celdasIniciales,
+      );
       colocarTodos(bloc);
       bloc.iniciarPartida();
 
@@ -156,7 +195,10 @@ void main() {
     });
 
     test('Reiniciar un bloc bloqueado lo deja bloqueado', () {
-      final bloc = BlocValoresIniciales(Tablero())..reiniciar();
+      final bloc = BlocValoresIniciales(
+        Tablero(),
+        celdasIniciales: mapaUno.celdasIniciales,
+      )..reiniciar();
 
       expect(bloc.bloqueado, isTrue);
     });

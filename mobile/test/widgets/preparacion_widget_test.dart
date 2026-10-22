@@ -1,9 +1,9 @@
-import 'package:brilliantdart/bloc_valores_iniciales.dart';
 import 'package:brilliant_mobile/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers.dart';
+import 'package:brilliantdart/mapa_uno.dart';
 
 void main() {
   group('Widgets: preparación de la partida', () {
@@ -24,7 +24,7 @@ void main() {
     testWidgets('Las seis celdas iniciales muestran un +', (tester) async {
       await tester.pumpWidget(const MaterialApp(home: TableroPage()));
 
-      for (final (fila, columna) in BlocValoresIniciales.celdasIniciales) {
+      for (final (fila, columna) in mapaUno.celdasIniciales) {
         expect(textoEn('initial-cell-$fila-$columna', '+'), findsOneWidget);
       }
       expect(find.text('+'), findsNWidgets(6));
@@ -56,7 +56,7 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: TableroPage()));
 
       for (var i = 0; i < 5; i++) {
-        final (fila, columna) = BlocValoresIniciales.celdasIniciales[i];
+        final (fila, columna) = mapaUno.celdasIniciales[i];
         await tester.tap(find.byKey(Key('initial-cell-$fila-$columna')));
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(Key('initial-value-${i + 1}')));

@@ -1,25 +1,27 @@
 import 'tablero.dart';
 
-enum EstadoInicialPartida {
-  bloqueado,
-  inicializado,
-  jugando,
-}
+enum EstadoInicialPartida { bloqueado, inicializado, jugando }
 
 class BlocValoresIniciales {
-  BlocValoresIniciales(this.tablero);
+  /// [celdasIniciales] son las 6 celdas del mapa donde van los números
+  /// iniciales, contando filas y columnas desde 1.
+  BlocValoresIniciales(
+    this.tablero, {
+    required List<(int, int)> celdasIniciales,
+  }) : celdasIniciales = List.unmodifiable(celdasIniciales) {
+    if (this.celdasIniciales.length != 6 ||
+        this.celdasIniciales.toSet().length != 6) {
+      throw ArgumentError.value(
+        celdasIniciales,
+        'celdasIniciales',
+        'Deben ser 6 celdas distintas, una por cada número del 1 al 6.',
+      );
+    }
+  }
 
   final Tablero tablero;
+  final List<(int, int)> celdasIniciales;
   EstadoInicialPartida _estado = EstadoInicialPartida.bloqueado;
-
-  static const List<(int, int)> celdasIniciales = [
-    (1, 3),
-    (2, 6),
-    (4, 2),
-    (4, 5),
-    (6, 3),
-    (7, 5),
-  ];
 
   EstadoInicialPartida get estado => _actualizarEstado();
 

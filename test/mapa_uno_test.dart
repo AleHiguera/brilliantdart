@@ -1,6 +1,5 @@
 import 'package:test/test.dart';
 
-import 'package:brilliantdart/bloc_valores_iniciales.dart';
 import 'package:brilliantdart/mapa_uno.dart';
 import 'package:brilliantdart/tipoo.dart';
 import 'package:brilliantdart/validador_anclas.dart';
@@ -8,7 +7,7 @@ import 'package:brilliantdart/validador_anclas.dart';
 void main() {
   group('Mapa uno', () {
     test('Registra zonas para las 49 celdas del tablero', () {
-      final tablero = MapaUno.crearTablero();
+      final tablero = mapaUno.crearTablero();
       final posiciones = tablero.regiones
           .expand((region) => region.coordenadas)
           .map((celda) => (celda.x, celda.y))
@@ -19,7 +18,7 @@ void main() {
     });
 
     test('Aplica la regla roja y registra el número colocado como ancla', () {
-      final tablero = MapaUno.crearTablero();
+      final tablero = mapaUno.crearTablero();
       final ancla = tablero.obtenerCelda(3, 1);
       ancla.valor = 5;
 
@@ -32,7 +31,7 @@ void main() {
     });
 
     test('Los amarillos comparten la regla de no repetir', () {
-      final tablero = MapaUno.crearTablero();
+      final tablero = mapaUno.crearTablero();
       final ancla = tablero.obtenerCelda(0, 0);
       ancla.valor = 3;
 
@@ -41,7 +40,7 @@ void main() {
     });
 
     test('La ultima casilla morada debe completar dos numeros diferentes', () {
-      final tablero = MapaUno.crearTablero();
+      final tablero = mapaUno.crearTablero();
       final zonaMorada = tablero.regiones.firstWhere(
         (region) =>
             region.tipo.tipo == TipoZona.morado && region.tamanoRegion == 6,
@@ -55,15 +54,12 @@ void main() {
         tablero.puedeColocarDato(ultimaCelda.x, ultimaCelda.y, 2),
         isFalse,
       );
-      expect(
-        tablero.puedeColocarDato(ultimaCelda.x, ultimaCelda.y, 3),
-        isTrue,
-      );
+      expect(tablero.puedeColocarDato(ultimaCelda.x, ultimaCelda.y, 3), isTrue);
       expect(ultimaCelda.valor, isNull);
     });
 
     test('El mapa conserva el tipo de zona esperado en las celdas', () {
-      final tablero = MapaUno.crearTablero();
+      final tablero = mapaUno.crearTablero();
       final roja = tablero.regiones.singleWhere(
         (region) => region.contieneCoordenada(3, 1),
       );
@@ -76,7 +72,7 @@ void main() {
     });
 
     test('Suma 54 puntos al completar cada zona una sola vez', () {
-      final tablero = MapaUno.crearTablero();
+      final tablero = mapaUno.crearTablero();
 
       expect(tablero.puntuacionTotal, 0);
 
@@ -107,45 +103,49 @@ void main() {
       expect(tablero.puntuacionTotal, 54);
     });
 
-    test('Tiene 9 zonas: 2 azules, 2 rojas, 2 verdes, 2 moradas y 1 amarilla',
-        () {
-      final tablero = MapaUno.crearTablero();
-      int cuantas(TipoZona tipo) =>
-          tablero.regiones.where((zona) => zona.tipo.tipo == tipo).length;
+    test(
+      'Tiene 9 zonas: 2 azules, 2 rojas, 2 verdes, 2 moradas y 1 amarilla',
+      () {
+        final tablero = mapaUno.crearTablero();
+        int cuantas(TipoZona tipo) =>
+            tablero.regiones.where((zona) => zona.tipo.tipo == tipo).length;
 
-      expect(tablero.regiones, hasLength(9));
-      expect(cuantas(TipoZona.azul), 2);
-      expect(cuantas(TipoZona.rojo), 2);
-      expect(cuantas(TipoZona.verde), 2);
-      expect(cuantas(TipoZona.morado), 2);
-      expect(cuantas(TipoZona.amarillo), 1);
-    });
+        expect(tablero.regiones, hasLength(9));
+        expect(cuantas(TipoZona.azul), 2);
+        expect(cuantas(TipoZona.rojo), 2);
+        expect(cuantas(TipoZona.verde), 2);
+        expect(cuantas(TipoZona.morado), 2);
+        expect(cuantas(TipoZona.amarillo), 1);
+      },
+    );
 
     test('La zona amarilla une las cuatro esquinas y el centro', () {
-      final tablero = MapaUno.crearTablero();
-      final amarilla = tablero.regiones
-          .singleWhere((zona) => zona.tipo.tipo == TipoZona.amarillo);
-
-      expect(
-        amarilla.coordenadas.map((celda) => (celda.x, celda.y)).toSet(),
-        {(0, 0), (0, 6), (3, 3), (6, 0), (6, 6)},
+      final tablero = mapaUno.crearTablero();
+      final amarilla = tablero.regiones.singleWhere(
+        (zona) => zona.tipo.tipo == TipoZona.amarillo,
       );
+
+      expect(amarilla.coordenadas.map((celda) => (celda.x, celda.y)).toSet(), {
+        (0, 0),
+        (0, 6),
+        (3, 3),
+        (6, 0),
+        (6, 6),
+      });
     });
 
     test('Cada zona es un bloque de celdas vecinas del mismo color', () {
-      final tablero = MapaUno.crearTablero();
+      final tablero = mapaUno.crearTablero();
 
       for (final zona in tablero.regiones) {
         for (final celda in zona.coordenadas) {
-          expect(
-            MapaUno.tiposPorCelda[celda.x][celda.y],
-            zona.tipo.tipo,
-          );
+          expect(mapaUno.tiposPorCelda[celda.x][celda.y], zona.tipo.tipo);
         }
         if (zona.tipo.tipo == TipoZona.amarillo) continue;
 
-        final posiciones =
-            zona.coordenadas.map((celda) => (celda.x, celda.y)).toSet();
+        final posiciones = zona.coordenadas
+            .map((celda) => (celda.x, celda.y))
+            .toSet();
         final alcanzadas = {posiciones.first};
         final pendientes = [posiciones.first];
         while (pendientes.isNotEmpty) {
@@ -167,7 +167,7 @@ void main() {
 
     test('Los puntos de cada color son amarillo 8, verde 4, morado 6, '
         'azul 7 y rojo 6', () {
-      final tablero = MapaUno.crearTablero();
+      final tablero = mapaUno.crearTablero();
       const esperados = {
         TipoZona.amarillo: 8,
         TipoZona.verde: 4,
@@ -183,17 +183,17 @@ void main() {
     });
 
     test('Ninguna celda inicial está en la zona amarilla', () {
-      for (final (fila, columna) in BlocValoresIniciales.celdasIniciales) {
+      for (final (fila, columna) in mapaUno.celdasIniciales) {
         expect(
-          MapaUno.tiposPorCelda[fila - 1][columna - 1],
+          mapaUno.tiposPorCelda[fila - 1][columna - 1],
           isNot(TipoZona.amarillo),
         );
       }
     });
 
     test('Cada tablero creado es independiente', () {
-      final primero = MapaUno.crearTablero();
-      final segundo = MapaUno.crearTablero();
+      final primero = mapaUno.crearTablero();
+      final segundo = mapaUno.crearTablero();
 
       primero.colocarDato(0, 0, 5);
 

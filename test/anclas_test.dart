@@ -7,22 +7,29 @@ import 'package:brilliantdart/validador_anclas.dart';
 
 void main() {
   group('Validador de anclas', () {
-    test('Los dos dados pueden ser anclas si ambos valores están en el tablero', () {
-      final tablero = Tablero();
-      final validador = ValidadorAnclas(tablero);
-      tablero.colocarDato(0, 2, 6);
-      tablero.colocarDato(1, 5, 1);
+    test(
+      'Los dos dados pueden ser anclas si ambos valores están en el tablero',
+      () {
+        final tablero = Tablero();
+        final validador = ValidadorAnclas(tablero);
+        tablero.colocarDato(0, 2, 6);
+        tablero.colocarDato(1, 5, 1);
 
-      expect(validador.obtenerAnclasPosibles(6, 1), [6, 1]);
-      expect(
-        validador.obtenerOpciones(6, 1).map((opcion) => (
-              opcion.ancla,
-              opcion.numeroAColocar,
-              opcion.puedeSeleccionarse,
-            )),
-        [(6, 1, true), (1, 6, true)],
-      );
-    });
+        expect(validador.obtenerAnclasPosibles(6, 1), [6, 1]);
+        expect(
+          validador
+              .obtenerOpciones(6, 1)
+              .map(
+                (opcion) => (
+                  opcion.ancla,
+                  opcion.numeroAColocar,
+                  opcion.puedeSeleccionarse,
+                ),
+              ),
+          [(6, 1, true), (1, 6, true)],
+        );
+      },
+    );
 
     test('Solo permite como ancla el valor de dado presente en el tablero', () {
       final tablero = Tablero();
@@ -31,24 +38,29 @@ void main() {
 
       expect(validador.obtenerAnclasPosibles(2, 4), [2]);
       expect(
-        validador.obtenerOpciones(2, 4).map((opcion) => (
-              opcion.ancla,
-              opcion.numeroAColocar,
-              opcion.puedeSeleccionarse,
-            )),
+        validador
+            .obtenerOpciones(2, 4)
+            .map(
+              (opcion) => (
+                opcion.ancla,
+                opcion.numeroAColocar,
+                opcion.puedeSeleccionarse,
+              ),
+            ),
         [(2, 4, true), (4, 2, false)],
       );
     });
 
     test('Reconoce valores iniciales y valores agregados después', () {
       final tablero = Tablero();
-      final bloc = BlocValoresIniciales(tablero);
+      final bloc = BlocValoresIniciales(
+        tablero,
+        celdasIniciales: mapaUno.celdasIniciales,
+      );
       final validador = ValidadorAnclas(tablero);
 
-      for (var index = 0;
-          index < BlocValoresIniciales.celdasIniciales.length;
-          index++) {
-        final (fila, columna) = BlocValoresIniciales.celdasIniciales[index];
+      for (var index = 0; index < mapaUno.celdasIniciales.length; index++) {
+        final (fila, columna) = mapaUno.celdasIniciales[index];
         bloc.colocarValorInicial(fila, columna, index + 1);
       }
 
@@ -61,16 +73,19 @@ void main() {
       expect(validador.obtenerAnclasPosibles(2, 4), [2, 4]);
     });
 
-    test('Un mismo número mostrado en ambos dados aparece como una sola ancla', () {
-      final tablero = Tablero()..colocarDato(0, 0, 3);
-      final validador = ValidadorAnclas(tablero);
+    test(
+      'Un mismo número mostrado en ambos dados aparece como una sola ancla',
+      () {
+        final tablero = Tablero()..colocarDato(0, 0, 3);
+        final validador = ValidadorAnclas(tablero);
 
-      expect(validador.obtenerAnclasPosibles(3, 3), [3]);
-      expect(validador.obtenerOpciones(3, 3), hasLength(1));
-    });
+        expect(validador.obtenerAnclasPosibles(3, 3), [3]);
+        expect(validador.obtenerOpciones(3, 3), hasLength(1));
+      },
+    );
 
     test('Sin números en el tablero no hay ninguna ancla posible', () {
-      final validador = ValidadorAnclas(MapaUno.crearTablero());
+      final validador = ValidadorAnclas(mapaUno.crearTablero());
 
       expect(validador.obtenerAnclasPosibles(1, 2), isEmpty);
       for (final opcion in validador.obtenerOpciones(1, 2)) {
@@ -85,7 +100,7 @@ void main() {
         movimientos.map((m) => (m.destino.x, m.destino.y)).toSet();
 
     test('Ofrece las cuatro celdas vacías alrededor del ancla', () {
-      final tablero = MapaUno.crearTablero()..colocarDato(3, 3, 1);
+      final tablero = mapaUno.crearTablero()..colocarDato(3, 3, 1);
       final validador = ValidadorAnclas(tablero);
       final opcion = validador.obtenerOpciones(1, 2).first;
 
@@ -103,7 +118,7 @@ void main() {
     });
 
     test('No ofrece celdas ocupadas', () {
-      final tablero = MapaUno.crearTablero()
+      final tablero = mapaUno.crearTablero()
         ..colocarDato(3, 3, 1)
         ..colocarDato(2, 3, 5);
       final validador = ValidadorAnclas(tablero);
@@ -116,7 +131,7 @@ void main() {
     });
 
     test('Descarta celdas donde el número rompe la regla de la zona', () {
-      final tablero = MapaUno.crearTablero()..colocarDato(3, 1, 4);
+      final tablero = mapaUno.crearTablero()..colocarDato(3, 1, 4);
       final validador = ValidadorAnclas(tablero);
 
       final movimientos = validador.obtenerMovimientosPosibles(
@@ -128,7 +143,7 @@ void main() {
     });
 
     test('Una celda junto a dos anclas aparece una sola vez', () {
-      final tablero = MapaUno.crearTablero()
+      final tablero = mapaUno.crearTablero()
         ..colocarDato(2, 3, 1)
         ..colocarDato(4, 3, 1);
       final validador = ValidadorAnclas(tablero);
@@ -144,19 +159,23 @@ void main() {
     });
 
     test('Una opción marcada como no seleccionable no genera movimientos', () {
-      final tablero = MapaUno.crearTablero()..colocarDato(3, 3, 1);
+      final tablero = mapaUno.crearTablero()..colocarDato(3, 3, 1);
       final validador = ValidadorAnclas(tablero);
 
       expect(
         validador.obtenerMovimientosPosibles(
-          const OpcionAncla(ancla: 1, numeroAColocar: 2, puedeSeleccionarse: false),
+          const OpcionAncla(
+            ancla: 1,
+            numeroAColocar: 2,
+            puedeSeleccionarse: false,
+          ),
         ),
         isEmpty,
       );
     });
 
     test('La lista de movimientos no se puede modificar', () {
-      final tablero = MapaUno.crearTablero()..colocarDato(3, 3, 1);
+      final tablero = mapaUno.crearTablero()..colocarDato(3, 3, 1);
       final validador = ValidadorAnclas(tablero);
       final movimientos = validador.obtenerMovimientosPosibles(
         validador.obtenerOpciones(1, 2).first,

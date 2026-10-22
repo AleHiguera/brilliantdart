@@ -37,9 +37,9 @@ class SeleccionMapaPage extends StatelessWidget {
   const SeleccionMapaPage({super.key});
 
   void _abrirMapa(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const TableroPage()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const TableroPage()));
   }
 
   @override
@@ -142,17 +142,16 @@ class _CabeceraSeleccion extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           'Elige tu mapa',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
           'Selecciona un mapa para preparar la partida.',
-          style: Theme.of(context)
-              .textTheme
-              .bodyLarge
-              ?.copyWith(color: Colors.black54),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyLarge?.copyWith(color: Colors.black54),
         ),
       ],
     );
@@ -178,7 +177,9 @@ class _OpcionMapa extends StatelessWidget {
     return Semantics(
       button: disponible,
       enabled: disponible,
-      label: disponible ? 'Mapa $numero, disponible' : 'Mapa $numero, bloqueado',
+      label: disponible
+          ? 'Mapa $numero, disponible'
+          : 'Mapa $numero, bloqueado',
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
@@ -217,14 +218,16 @@ class _OpcionMapa extends StatelessWidget {
                               physics: const NeverScrollableScrollPhysics(),
                               gridDelegate:
                                   const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 7,
-                              ),
+                                    crossAxisCount: 7,
+                                  ),
                               itemCount: 49,
                               itemBuilder: (context, index) => DecoratedBox(
                                 key: Key('map-preview-cell-$index'),
                                 decoration: BoxDecoration(
                                   color: TableroPage.colorEn(
-                                      index ~/ 7, index % 7),
+                                    index ~/ 7,
+                                    index % 7,
+                                  ),
                                   border: Border.all(
                                     color: Colors.black12,
                                     width: 0.3,
@@ -252,9 +255,7 @@ class _OpcionMapa extends StatelessWidget {
                       children: [
                         Text(
                           'Mapa $numero',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
+                          style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(
                                 color: foreground,
                                 fontWeight: FontWeight.bold,
@@ -400,7 +401,7 @@ class TableroPage extends StatefulWidget {
   static const Map<TipoZona, Color> coloresZonas = estilo.coloresZonas;
 
   static Color colorEn(int fila, int columna) =>
-      coloresZonas[MapaUno.tiposPorCelda[fila][columna]]!;
+      coloresZonas[mapaUno.tiposPorCelda[fila][columna]]!;
 
   @override
   State<TableroPage> createState() => _TableroPageState();
@@ -408,12 +409,15 @@ class TableroPage extends StatefulWidget {
 
 class _TableroPageState extends State<TableroPage> {
   late final Dados _dados = widget.dados ?? Dados();
-  late final Tablero _tablero = widget.tablero ?? MapaUno.crearTablero();
+  late final Tablero _tablero = widget.tablero ?? mapaUno.crearTablero();
   late final Sonido _sonidoVictoria =
       widget.sonidoVictoria ?? SonidoAsset(Sonido.victoria);
   late final Sonido _sonidoDados =
       widget.sonidoDados ?? SonidoAsset(Sonido.dados);
-  late final BlocValoresIniciales _bloc = BlocValoresIniciales(_tablero);
+  late final BlocValoresIniciales _bloc = BlocValoresIniciales(
+    _tablero,
+    celdasIniciales: mapaUno.celdasIniciales,
+  );
   late final ValidadorAnclas _validadorAnclas = ValidadorAnclas(_tablero);
   OpcionAncla? _opcionAnclaSeleccionada;
   MovimientoAncla? _movimientoSeleccionado;
@@ -432,9 +436,9 @@ class _TableroPageState extends State<TableroPage> {
   }
 
   Set<int> get _valoresIniciales => {
-        for (final (fila, columna) in BlocValoresIniciales.celdasIniciales)
-          ?_tablero.obtenerCelda(fila - 1, columna - 1).valor,
-      };
+    for (final (fila, columna) in mapaUno.celdasIniciales)
+      ?_tablero.obtenerCelda(fila - 1, columna - 1).valor,
+  };
 
   int get _turnoActual =>
       _dados.historial.lanzamientos.length +
@@ -467,19 +471,19 @@ class _TableroPageState extends State<TableroPage> {
     final Widget? aviso = opcion == null
         ? null
         : movimientosDisponibles.isEmpty
-            ? const estilo.AvisoJuego(
-                key: ValueKey('aviso-sin-posiciones'),
-                icono: Icons.do_not_disturb_alt,
-                texto: 'No hay posiciones válidas para esta opción.',
-                advertencia: true,
-              )
-            : movimiento == null
-                ? const estilo.AvisoJuego(
-                    key: ValueKey('aviso-tocar-celda'),
-                    icono: Icons.touch_app_outlined,
-                    texto: 'Toca una posición resaltada del tablero.',
-                  )
-                : null;
+        ? const estilo.AvisoJuego(
+            key: ValueKey('aviso-sin-posiciones'),
+            icono: Icons.do_not_disturb_alt,
+            texto: 'No hay posiciones válidas para esta opción.',
+            advertencia: true,
+          )
+        : movimiento == null
+        ? const estilo.AvisoJuego(
+            key: ValueKey('aviso-tocar-celda'),
+            icono: Icons.touch_app_outlined,
+            texto: 'Toca una posición resaltada del tablero.',
+          )
+        : null;
 
     return KeyedSubtree(
       key: const ValueKey('fase-juego'),
@@ -642,125 +646,122 @@ class _TableroPageState extends State<TableroPage> {
 
   Widget _construirTablero(List<MovimientoAncla> movimientosDisponibles) {
     return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: AspectRatio(
-                          aspectRatio: 1,
-                          child: GridView.builder(
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: TableroPage.tamano,
-                      ),
-                      itemCount: TableroPage.tamano * TableroPage.tamano,
-                      itemBuilder: (context, index) {
-                        final filaIndice = index ~/ TableroPage.tamano;
-                        final columnaIndice = index % TableroPage.tamano;
-                        final fila = filaIndice + 1;
-                        final columna = columnaIndice + 1;
-                        final posicionInicial =
-                            BlocValoresIniciales.celdasIniciales.indexOf(
-                          (fila, columna),
-                        );
-                        final esInicial = posicionInicial >= 0;
-                        final celda =
-                            _tablero.obtenerCelda(filaIndice, columnaIndice);
-                        final valor = celda.valor;
-                        MovimientoAncla? movimientoDestino;
-                        for (final movimiento in movimientosDisponibles) {
-                          if (identical(movimiento.destino, celda)) {
-                            movimientoDestino = movimiento;
-                            break;
-                          }
-                        }
-                        final esDestinoPosible = movimientoDestino != null;
-                        final esDestinoSeleccionado =
-                            identical(_movimientoSeleccionado?.destino, celda);
-                        final color =
-                            TableroPage.colorEn(filaIndice, columnaIndice);
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: TableroPage.tamano,
+            ),
+            itemCount: TableroPage.tamano * TableroPage.tamano,
+            itemBuilder: (context, index) {
+              final filaIndice = index ~/ TableroPage.tamano;
+              final columnaIndice = index % TableroPage.tamano;
+              final fila = filaIndice + 1;
+              final columna = columnaIndice + 1;
+              final posicionInicial = mapaUno.celdasIniciales.indexOf((
+                fila,
+                columna,
+              ));
+              final esInicial = posicionInicial >= 0;
+              final celda = _tablero.obtenerCelda(filaIndice, columnaIndice);
+              final valor = celda.valor;
+              MovimientoAncla? movimientoDestino;
+              for (final movimiento in movimientosDisponibles) {
+                if (identical(movimiento.destino, celda)) {
+                  movimientoDestino = movimiento;
+                  break;
+                }
+              }
+              final esDestinoPosible = movimientoDestino != null;
+              final esDestinoSeleccionado = identical(
+                _movimientoSeleccionado?.destino,
+                celda,
+              );
+              final color = TableroPage.colorEn(filaIndice, columnaIndice);
 
-                        return Material(
-                          color: color,
-                          child: InkWell(
-                            key: esInicial
-                                ? Key('initial-cell-$fila-$columna')
-                                : esDestinoPosible
-                                    ? Key('candidate-cell-$fila-$columna')
-                                    : Key('board-cell-$fila-$columna'),
-                            onTap: !_bloc.jugando && esInicial
-                                ? () => _mostrarSelector(fila, columna)
-                                : _bloc.jugando && esDestinoPosible
-                                    ? () =>
-                                        _seleccionarDestino(movimientoDestino!)
-                                    : null,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                border: Border.fromBorderSide(
-                                  BorderSide(
-                                    color: esDestinoSeleccionado
-                                        ? Colors.black
-                                        : esDestinoPosible || esInicial
-                                            ? Colors.white
-                                            : Colors.black,
-                                    width: esDestinoSeleccionado
-                                        ? 3
-                                        : esDestinoPosible || esInicial
-                                            ? 2
-                                            : 1,
-                                  ),
-                                ),
-                              ),
-                              child: valor != null
-                                  ? Center(
-                                      child: Text(
-                                        valor.toString(),
-                                        style: TextStyle(
-                                          color: color.computeLuminance() > 0.5
-                                              ? Colors.black
-                                              : Colors.white,
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    )
-                                  : esDestinoPosible
-                                      ? Center(
-                                          child: esDestinoSeleccionado
-                                              ? Text(
-                                                  _opcionAnclaSeleccionada!
-                                                      .numeroAColocar
-                                                      .toString(),
-                                                  style: const TextStyle(
-                                                    color: Colors.black,
-                                                    fontSize: 24,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                )
-                                              : const Icon(
-                                                  Icons.add_circle_outline,
-                                                  color: Colors.white,
-                                                ),
-                                        )
-                                        : esInicial
-                                            ? const Center(
-                                                child: Text(
-                                                  '+',
-                                                  style: TextStyle(
-                                                    color: Colors.black87,
-                                                    fontSize: 20,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              )
-                                  : null,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                          ),
+              return Material(
+                color: color,
+                child: InkWell(
+                  key: esInicial
+                      ? Key('initial-cell-$fila-$columna')
+                      : esDestinoPosible
+                      ? Key('candidate-cell-$fila-$columna')
+                      : Key('board-cell-$fila-$columna'),
+                  onTap: !_bloc.jugando && esInicial
+                      ? () => _mostrarSelector(fila, columna)
+                      : _bloc.jugando && esDestinoPosible
+                      ? () => _seleccionarDestino(movimientoDestino!)
+                      : null,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.fromBorderSide(
+                        BorderSide(
+                          color: esDestinoSeleccionado
+                              ? Colors.black
+                              : esDestinoPosible || esInicial
+                              ? Colors.white
+                              : Colors.black,
+                          width: esDestinoSeleccionado
+                              ? 3
+                              : esDestinoPosible || esInicial
+                              ? 2
+                              : 1,
                         ),
-                      );
+                      ),
+                    ),
+                    child: valor != null
+                        ? Center(
+                            child: Text(
+                              valor.toString(),
+                              style: TextStyle(
+                                color: color.computeLuminance() > 0.5
+                                    ? Colors.black
+                                    : Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                        : esDestinoPosible
+                        ? Center(
+                            child: esDestinoSeleccionado
+                                ? Text(
+                                    _opcionAnclaSeleccionada!.numeroAColocar
+                                        .toString(),
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.add_circle_outline,
+                                    color: Colors.white,
+                                  ),
+                          )
+                        : esInicial
+                        ? const Center(
+                            child: Text(
+                              '+',
+                              style: TextStyle(
+                                color: Colors.black87,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -822,8 +823,9 @@ class _TableroPageState extends State<TableroPage> {
               children: [
                 Expanded(child: tablero),
                 ConstrainedBox(
-                  constraints:
-                      BoxConstraints(maxHeight: limites.maxHeight * 0.5),
+                  constraints: BoxConstraints(
+                    maxHeight: limites.maxHeight * 0.5,
+                  ),
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                     child: Column(

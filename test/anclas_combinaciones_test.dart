@@ -8,10 +8,13 @@ import 'package:brilliantdart/validador_anclas.dart';
 void main() {
   /// Mapa uno con los 6 números iniciales colocados del 1 al 6.
   Tablero tableroInicial() {
-    final tablero = MapaUno.crearTablero();
-    final bloc = BlocValoresIniciales(tablero);
+    final tablero = mapaUno.crearTablero();
+    final bloc = BlocValoresIniciales(
+      tablero,
+      celdasIniciales: mapaUno.celdasIniciales,
+    );
     for (var i = 0; i < 6; i++) {
-      final (fila, columna) = BlocValoresIniciales.celdasIniciales[i];
+      final (fila, columna) = mapaUno.celdasIniciales[i];
       bloc.colocarValorInicial(fila, columna, i + 1);
     }
     return tablero;
@@ -73,8 +76,10 @@ void main() {
       for (final (dado1, dado2) in combinaciones) {
         final hayMovimiento = validador
             .obtenerOpciones(dado1, dado2)
-            .any((opcion) =>
-                validador.obtenerMovimientosPosibles(opcion).isNotEmpty);
+            .any(
+              (opcion) =>
+                  validador.obtenerMovimientosPosibles(opcion).isNotEmpty,
+            );
         expect(hayMovimiento, isTrue, reason: '($dado1, $dado2)');
       }
     });
@@ -85,8 +90,9 @@ void main() {
 
       for (final (dado1, dado2) in combinaciones) {
         for (final opcion in validador.obtenerOpciones(dado1, dado2)) {
-          for (final movimiento
-              in validador.obtenerMovimientosPosibles(opcion)) {
+          for (final movimiento in validador.obtenerMovimientosPosibles(
+            opcion,
+          )) {
             expect(
               tablero.puedeColocarDato(
                 movimiento.destino.x,
@@ -105,8 +111,9 @@ void main() {
 
       for (final (dado1, dado2) in combinaciones) {
         for (final opcion in validador.obtenerOpciones(dado1, dado2)) {
-          for (final movimiento
-              in validador.obtenerMovimientosPosibles(opcion)) {
+          for (final movimiento in validador.obtenerMovimientosPosibles(
+            opcion,
+          )) {
             expect(movimiento.destino.valor, isNull);
             expect(movimiento.ancla.valor, opcion.ancla);
             expect(
@@ -159,7 +166,7 @@ void main() {
     });
 
     test('Con el tablero lleno no hay ningún movimiento', () {
-      final tablero = MapaUno.crearTablero();
+      final tablero = mapaUno.crearTablero();
       for (final celda in tablero.celdas) {
         tablero.colocarDato(celda.x, celda.y, 1);
       }
@@ -186,8 +193,11 @@ void main() {
     });
 
     test('Una OpcionAncla guarda sus tres datos', () {
-      const opcion =
-          OpcionAncla(ancla: 3, numeroAColocar: 5, puedeSeleccionarse: true);
+      const opcion = OpcionAncla(
+        ancla: 3,
+        numeroAColocar: 5,
+        puedeSeleccionarse: true,
+      );
 
       expect(opcion.ancla, 3);
       expect(opcion.numeroAColocar, 5);

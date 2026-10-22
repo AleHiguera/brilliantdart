@@ -144,7 +144,7 @@ void main() {
     });
 
     test('Cada zona recibe el tipo del color de sus celdas', () {
-      final tipos = MapaUno.tiposPorCelda;
+      final tipos = mapaUno.tiposPorCelda;
       final tablero = construir(tipos, unidos: {TipoZona.amarillo});
 
       for (final zona in tablero.regiones) {
@@ -156,7 +156,7 @@ void main() {
 
     test('Cada celda queda en exactamente una zona', () {
       final tablero = construir(
-        MapaUno.tiposPorCelda,
+        mapaUno.tiposPorCelda,
         unidos: {TipoZona.amarillo},
       );
 
@@ -223,9 +223,9 @@ void main() {
     });
 
     test('Con el dibujo del mapa uno da las mismas zonas que MapaUno', () {
-      final esperado = MapaUno.crearTablero();
+      final esperado = mapaUno.crearTablero();
       final construido = construir(
-        MapaUno.tiposPorCelda,
+        mapaUno.tiposPorCelda,
         unidos: {TipoZona.amarillo},
       );
 

@@ -15,10 +15,13 @@ void main() {
     ) async {
       // Se planea la partida sobre un tablero de prueba con las mismas reglas
       // y luego se reproduce tocando la pantalla como lo haría un jugador.
-      final planificado = MapaUno.crearTablero();
-      final bloc = BlocValoresIniciales(planificado);
+      final planificado = mapaUno.crearTablero();
+      final bloc = BlocValoresIniciales(
+        planificado,
+        celdasIniciales: mapaUno.celdasIniciales,
+      );
       for (var i = 0; i < 6; i++) {
-        final (fila, columna) = BlocValoresIniciales.celdasIniciales[i];
+        final (fila, columna) = mapaUno.celdasIniciales[i];
         bloc.colocarValorInicial(fila, columna, i + 1);
       }
       final validador = ValidadorAnclas(planificado);
@@ -52,7 +55,7 @@ void main() {
         reason: 'La partida planeada debe poder terminarse',
       );
 
-      final tablero = MapaUno.crearTablero();
+      final tablero = mapaUno.crearTablero();
       final sonido = SonidoFalso();
       final dados = DadosFijos(lanzamientos);
       await tester.pumpWidget(
@@ -67,7 +70,7 @@ void main() {
       );
 
       for (var i = 0; i < 6; i++) {
-        final (fila, columna) = BlocValoresIniciales.celdasIniciales[i];
+        final (fila, columna) = mapaUno.celdasIniciales[i];
         await tester.tap(find.byKey(Key('initial-cell-$fila-$columna')));
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(Key('initial-value-${i + 1}')));

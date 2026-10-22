@@ -12,7 +12,7 @@ void main() {
     testWidgets(
       'Pasar turno con un movimiento válido registra "Turno pasado"',
       (tester) async {
-        final tablero = MapaUno.crearTablero();
+        final tablero = mapaUno.crearTablero();
         tablero.colocarDato(0, 2, 2);
         final dados = DadosFijos([(2, 6)]);
         final validador = ValidadorAnclas(tablero);

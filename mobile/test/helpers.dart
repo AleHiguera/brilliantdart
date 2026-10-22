@@ -14,31 +14,42 @@ import 'package:flutter_test/flutter_test.dart';
 /// Mapa uno con todas sus zonas completadas de forma válida excepto la celda
 /// verde (4, 7), que queda vacía para la última jugada.
 Tablero tableroCasiLleno() {
-  final tablero = MapaUno.crearTablero();
-  final bloc = BlocValoresIniciales(tablero);
-  for (var i = 0; i < BlocValoresIniciales.celdasIniciales.length; i++) {
-    final (fila, columna) = BlocValoresIniciales.celdasIniciales[i];
+  final tablero = mapaUno.crearTablero();
+  final bloc = BlocValoresIniciales(
+    tablero,
+    celdasIniciales: mapaUno.celdasIniciales,
+  );
+  for (var i = 0; i < mapaUno.celdasIniciales.length; i++) {
+    final (fila, columna) = mapaUno.celdasIniciales[i];
     bloc.colocarValorInicial(fila, columna, i + 1);
   }
 
   for (final region in tablero.regiones) {
     final existentes = region.obtenerValores();
     final vacias = region.coordenadas
-        .where((celda) => celda.valor == null && !(celda.x == 3 && celda.y == 6))
+        .where(
+          (celda) => celda.valor == null && !(celda.x == 3 && celda.y == 6),
+        )
         .toList();
 
     for (var indice = 0; indice < vacias.length; indice++) {
       final numero = switch (region.tipo.tipo) {
         TipoZona.azul => existentes.isEmpty ? 2 : existentes.first,
-        TipoZona.rojo || TipoZona.amarillo => [1, 2, 3, 4, 5, 6]
-            .where((valor) => !existentes.contains(valor))
-            .elementAt(indice),
+        TipoZona.rojo || TipoZona.amarillo => [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+        ].where((valor) => !existentes.contains(valor)).elementAt(indice),
         TipoZona.verde => 1,
-        TipoZona.morado => existentes.isEmpty
-            ? (indice == 0 ? 2 : 5)
-            : (indice == 0
-                ? (existentes.first == 1 ? 2 : 1)
-                : existentes.first),
+        TipoZona.morado =>
+          existentes.isEmpty
+              ? (indice == 0 ? 2 : 5)
+              : (indice == 0
+                    ? (existentes.first == 1 ? 2 : 1)
+                    : existentes.first),
       };
       tablero.colocarDato(vacias[indice].x, vacias[indice].y, numero);
     }
@@ -99,13 +110,16 @@ void comprobarFilaHistorial(
   String accion = 'Pendiente',
 }) {
   Finder textoEnClave(String clave, String texto) => find.descendant(
-        of: find.byKey(Key(clave)),
-        matching: find.text(texto),
-        matchRoot: true,
-      );
+    of: find.byKey(Key(clave)),
+    matching: find.text(texto),
+    matchRoot: true,
+  );
 
   expect(find.byKey(Key('dice-history-row-$numero')), findsOneWidget);
-  expect(textoEnClave('dice-history-number-$numero', '$numero'), findsOneWidget);
+  expect(
+    textoEnClave('dice-history-number-$numero', '$numero'),
+    findsOneWidget,
+  );
   expect(
     tester.widget<DadoMini>(find.byKey(Key('dice-history-die1-$numero'))).valor,
     dados.$1,
@@ -145,7 +159,5 @@ Future<void> abrirTableroCasiLleno(
 }
 
 /// Busca un texto dentro del widget con la clave indicada.
-Finder textoEn(String clave, String texto) => find.descendant(
-      of: find.byKey(Key(clave)),
-      matching: find.text(texto),
-    );
+Finder textoEn(String clave, String texto) =>
+    find.descendant(of: find.byKey(Key(clave)), matching: find.text(texto));

@@ -12,7 +12,7 @@ void main() {
     testWidgets('Una opción cuyo número no está en el tablero sale bloqueada', (
       tester,
     ) async {
-      final tablero = MapaUno.crearTablero()..colocarDato(3, 3, 2);
+      final tablero = mapaUno.crearTablero()..colocarDato(3, 3, 2);
       final opcionesElegidas = <OpcionAncla?>[];
 
       await tester.pumpWidget(

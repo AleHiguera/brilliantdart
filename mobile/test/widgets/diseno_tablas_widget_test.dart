@@ -29,7 +29,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: TablaPuntuacion(tablero: MapaUno.crearTablero()),
+            body: TablaPuntuacion(tablero: mapaUno.crearTablero()),
           ),
         ),
       );
