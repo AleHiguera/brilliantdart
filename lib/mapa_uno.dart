@@ -1,6 +1,6 @@
+import 'constructor_tablero.dart';
 import 'tablero.dart';
 import 'tipoo.dart';
-import 'zona.dart';
 
 class MapaUno {
   static const List<List<TipoZona>> tiposPorCelda = [
@@ -14,83 +14,11 @@ class MapaUno {
   ];
 
   static Tablero crearTablero() {
-    final tablero = Tablero();
-    final visitadas = <(int, int)>{};
-    var siguienteId = 1;
-
-    for (var fila = 0; fila < Tablero.filas; fila++) {
-      for (var columna = 0; columna < Tablero.columnas; columna++) {
-        final tipoZona = tiposPorCelda[fila][columna];
-        if (visitadas.contains((fila, columna))) continue;
-
-        final posiciones = tipoZona == TipoZona.amarillo
-            ? _obtenerTodasLasPosicionesAmarillas(visitadas)
-            : _obtenerComponente(fila, columna, tipoZona, visitadas);
-
-        tablero.agregarRegion(
-          Zona(
-            id: siguienteId++,
-            tipo: _crearTipo(tipoZona),
-            coordenadas: posiciones
-                .map((posicion) =>
-                    tablero.obtenerCelda(posicion.$1, posicion.$2))
-                .toList(growable: false),
-          ),
-        );
-      }
-    }
-
-    return tablero;
-  }
-
-  static List<(int, int)> _obtenerTodasLasPosicionesAmarillas(
-    Set<(int, int)> visitadas,
-  ) {
-    final posiciones = <(int, int)>[];
-    for (var fila = 0; fila < Tablero.filas; fila++) {
-      for (var columna = 0; columna < Tablero.columnas; columna++) {
-        if (tiposPorCelda[fila][columna] == TipoZona.amarillo) {
-          final posicion = (fila, columna);
-          if (visitadas.add(posicion)) posiciones.add(posicion);
-        }
-      }
-    }
-    return posiciones;
-  }
-
-  static List<(int, int)> _obtenerComponente(
-    int filaInicial,
-    int columnaInicial,
-    TipoZona tipoZona,
-    Set<(int, int)> visitadas,
-  ) {
-    final pendientes = <(int, int)>[(filaInicial, columnaInicial)];
-    final posiciones = <(int, int)>[];
-    visitadas.add((filaInicial, columnaInicial));
-
-    for (var indice = 0; indice < pendientes.length; indice++) {
-      final (fila, columna) = pendientes[indice];
-      posiciones.add((fila, columna));
-
-      for (final vecina in <(int, int)>[
-        (fila - 1, columna),
-        (fila + 1, columna),
-        (fila, columna - 1),
-        (fila, columna + 1),
-      ]) {
-        if (vecina.$1 < 0 ||
-            vecina.$1 >= Tablero.filas ||
-            vecina.$2 < 0 ||
-            vecina.$2 >= Tablero.columnas ||
-            tiposPorCelda[vecina.$1][vecina.$2] != tipoZona ||
-            !visitadas.add(vecina)) {
-          continue;
-        }
-        pendientes.add(vecina);
-      }
-    }
-
-    return posiciones;
+    return const ConstructorTablero(
+      tiposPorCelda: tiposPorCelda,
+      crearTipo: _crearTipo,
+      tiposUnidos: {TipoZona.amarillo},
+    ).construir();
   }
 
   static Tipo _crearTipo(TipoZona tipoZona) {
