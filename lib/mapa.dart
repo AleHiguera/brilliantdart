@@ -25,6 +25,15 @@ abstract class Mapa {
   /// Regla y puntos de un color en este mapa.
   Tipo crearTipo(TipoZona tipo);
 
+  /// Colores que aparecen en el dibujo, en el orden de [TipoZona].
+  List<TipoZona> get tiposPresentes {
+    final presentes = {for (final fila in tiposPorCelda) ...fila};
+    return [
+      for (final tipo in TipoZona.values)
+        if (presentes.contains(tipo)) tipo,
+    ];
+  }
+
   /// Color de la celda indicada (filas y columnas desde 0).
   TipoZona tipoEn(int fila, int columna) => tiposPorCelda[fila][columna];
 

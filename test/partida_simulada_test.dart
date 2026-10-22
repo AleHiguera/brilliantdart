@@ -29,7 +29,7 @@ void verificarReglas(Tablero tablero) {
     final motivo = 'Zona ${zona.id} (${zona.tipo.color}): $valores';
 
     switch (zona.tipo.tipo) {
-      case TipoZona.azul:
+      case TipoZona.azul || TipoZona.gris:
         expect(distintos, lessThanOrEqualTo(1), reason: motivo);
       case TipoZona.rojo || TipoZona.amarillo:
         expect(distintos, valores.length, reason: motivo);

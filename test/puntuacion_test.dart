@@ -11,7 +11,7 @@ void main() {
     final total = zona.coordenadas.length - (dejarUna ? 1 : 0);
     for (var indice = 0; indice < total; indice++) {
       final numero = switch (zona.tipo.tipo) {
-        TipoZona.azul => 2,
+        TipoZona.azul || TipoZona.gris => 2,
         TipoZona.rojo || TipoZona.amarillo => indice + 1,
         TipoZona.verde => 6,
         TipoZona.morado => indice == 0 ? 2 : 5,

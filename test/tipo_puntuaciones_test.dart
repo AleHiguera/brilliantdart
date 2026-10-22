@@ -7,13 +7,13 @@ void main() {
       Tipo(tipo: tipo, color: tipo.name, regla: 'regla', puntuacion: 1);
 
   group('Tipos de zona', () {
-    test('Hay exactamente 5 colores', () {
-      expect(TipoZona.values, hasLength(5));
+    test('Hay exactamente 6 colores', () {
+      expect(TipoZona.values, hasLength(6));
     });
 
-    test('Los colores son azul, rojo, verde, amarillo y morado', () {
+    test('Los colores son azul, rojo, verde, amarillo, morado y gris', () {
       expect(TipoZona.values.map((tipo) => tipo.name).toSet(),
-          {'azul', 'rojo', 'verde', 'amarillo', 'morado'});
+          {'azul', 'rojo', 'verde', 'amarillo', 'morado', 'gris'});
     });
 
     for (final tipo in TipoZona.values) {

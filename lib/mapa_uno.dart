@@ -126,6 +126,11 @@ class MapaUno extends Mapa {
         regla: 'Debe contener exactamente dos numeros diferentes',
         puntuacion: 6,
       ),
+      TipoZona.gris => throw ArgumentError.value(
+        tipoZona,
+        'tipoZona',
+        'El Mapa 1 no tiene zonas grises.',
+      ),
     };
   }
 }

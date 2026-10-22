@@ -34,7 +34,7 @@ Tablero tableroCasiLleno() {
 
     for (var indice = 0; indice < vacias.length; indice++) {
       final numero = switch (region.tipo.tipo) {
-        TipoZona.azul => existentes.isEmpty ? 2 : existentes.first,
+        TipoZona.azul || TipoZona.gris => existentes.isEmpty ? 2 : existentes.first,
         TipoZona.rojo || TipoZona.amarillo => [
           1,
           2,

@@ -79,7 +79,7 @@ void main() {
       for (final region in tablero.regiones) {
         for (var indice = 0; indice < region.coordenadas.length; indice++) {
           final numero = switch (region.tipo.tipo) {
-            TipoZona.azul => 2,
+            TipoZona.azul || TipoZona.gris => 2,
             TipoZona.rojo || TipoZona.amarillo => indice + 1,
             TipoZona.verde => indice % 3 + 1,
             TipoZona.morado => indice == 0 ? 2 : 5,

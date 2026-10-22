@@ -81,9 +81,33 @@ void main() {
     });
 
     test('Cada color tiene la regla de su tipo', () {
-      for (final tipo in TipoZona.values) {
+      for (final tipo in mapaUno.tiposPresentes) {
         expect(mapaUno.crearTipo(tipo).tipo, tipo);
       }
+    });
+
+    test('Usa los 5 colores de siempre y no tiene gris', () {
+      expect(mapaUno.tiposPresentes, [
+        TipoZona.azul,
+        TipoZona.rojo,
+        TipoZona.verde,
+        TipoZona.amarillo,
+        TipoZona.morado,
+      ]);
+      expect(mapaUno.tiposPresentes, isNot(contains(TipoZona.gris)));
+    });
+
+    test('Pedirle el gris al Mapa 1 es un error', () {
+      expect(() => mapaUno.crearTipo(TipoZona.gris), throwsArgumentError);
+    });
+
+    test('Ninguna zona del Mapa 1 es gris', () {
+      final tablero = mapaUno.crearTablero();
+
+      expect(
+        tablero.regiones.where((zona) => zona.tipo.tipo == TipoZona.gris),
+        isEmpty,
+      );
     });
 
     test('Puntos: amarillo 8, verde 4, morado 6, azul 7 y rojo 6', () {
@@ -119,6 +143,10 @@ void main() {
         TipoZona.rojo,
         TipoZona.verde,
       ]);
+    });
+
+    test('Sus colores presentes salen de su dibujo', () {
+      expect(mapa.tiposPresentes, [TipoZona.rojo, TipoZona.verde]);
     });
 
     test('Usa sus propios puntos', () {

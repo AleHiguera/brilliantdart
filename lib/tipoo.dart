@@ -4,6 +4,7 @@ enum TipoZona {
   verde,
   amarillo,
   morado,
+  gris,
 }
 
 abstract class Tipo {
@@ -56,6 +57,12 @@ abstract class Tipo {
           regla: regla,
           puntuacion: puntuacion,
         );
+      case TipoZona.gris:
+        return TipoGris(
+          color: color,
+          regla: regla,
+          puntuacion: puntuacion,
+        );
     }
   }
 
@@ -66,6 +73,7 @@ abstract class Tipo {
   bool validarMovimiento(List<int> valores) {
     switch (tipo) {
       case TipoZona.azul:
+      case TipoZona.gris:
         if (valores.isEmpty) {
           return true;
         }
@@ -212,5 +220,30 @@ class TipoAmarillo extends Tipo {
   @override
   bool esPosibleAgregar(List<int> actuales, int posible) {
     return actuales.isEmpty || actuales.every((valor) => valor != posible);
+  }
+}
+
+/// Gris: todas sus celdas llevan el mismo número, aunque estén separadas,
+/// porque en el mapa forman una sola zona.
+class TipoGris extends Tipo {
+  const TipoGris({
+    required super.color,
+    required super.regla,
+    required super.puntuacion,
+  }) : super._(tipo: TipoZona.gris);
+
+  @override
+  Map<int, int> get puntuaciones => {
+        1: 3,
+        2: 2,
+        3: 1,
+      };
+
+  @override
+  bool esPosibleAgregar(List<int> actuales, int posible) {
+    if (actuales.isEmpty) {
+      return true;
+    }
+    return actuales.every((valor) => valor == posible);
   }
 }

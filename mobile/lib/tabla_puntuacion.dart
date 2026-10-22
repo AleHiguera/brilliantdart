@@ -14,6 +14,7 @@ class TablaPuntuacion extends StatelessWidget {
     TipoZona.verde: 'Verde',
     TipoZona.azul: 'Azul',
     TipoZona.rojo: 'Roja',
+    TipoZona.gris: 'Gris',
   };
 
   @override
@@ -21,6 +22,10 @@ class TablaPuntuacion extends StatelessWidget {
     final maximo = tablero.regiones
         .fold(0, (total, zona) => total + zona.tipo.puntuacion);
     final total = tablero.puntuacionTotal;
+    // Solo los colores que tiene este tablero (el Mapa 1 no tiene gris).
+    final colores = TipoZona.values.where(
+      (tipo) => tablero.regiones.any((zona) => zona.tipo.tipo == tipo),
+    );
 
     return Container(
       key: const Key('score-table'),
@@ -68,7 +73,7 @@ class TablaPuntuacion extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          for (final tipo in TipoZona.values) _filaColor(tipo),
+          for (final tipo in colores) _filaColor(tipo),
         ],
       ),
     );
