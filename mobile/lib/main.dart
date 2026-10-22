@@ -457,10 +457,7 @@ class _TableroPageState extends State<TableroPage> {
         key: const ValueKey('fase-fin'),
         child: PanelFinPartida(
           puntos: _tablero.puntuacionTotal,
-          maximo: _tablero.regiones.fold(
-            0,
-            (total, zona) => total + zona.tipo.puntuacion,
-          ),
+          maximo: _tablero.puntuacionMaxima,
           onNuevaPartida: _jugarNuevaPartida,
         ),
       );

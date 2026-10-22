@@ -159,8 +159,9 @@ void main() {
           isFalse);
     });
 
-    test('Amarillo con cinco números distintos pasa validarAmarillo', () {
-      expect(crear(TipoZona.amarillo).validarAmarillo([6, 1, 5, 2, 4]), isTrue);
+    test('Amarillo con cinco números distintos es válido', () {
+      expect(
+          crear(TipoZona.amarillo).validarMovimiento([6, 1, 5, 2, 4]), isTrue);
     });
   });
 }

@@ -1,5 +1,6 @@
 import 'package:test/test.dart';
 
+import 'package:brilliantdart/mapa_dos.dart';
 import 'package:brilliantdart/mapa_uno.dart';
 import 'package:brilliantdart/region.dart';
 import 'package:brilliantdart/tablero.dart';
@@ -121,6 +122,49 @@ void main() {
 
       expect(tablero.puntuacionTotal, 7 + 8 + 6);
       expect(tablero.puntuacionTotal, suma);
+    });
+  });
+
+  group('Puntuación máxima del tablero', () {
+    test('El Mapa 1 puede dar hasta 54 puntos', () {
+      expect(mapaUno.crearTablero().puntuacionMaxima, 54);
+    });
+
+    test('El Mapa 2 puede dar hasta 55 puntos', () {
+      expect(mapaDos.crearTablero().puntuacionMaxima, 55);
+    });
+
+    test('Un tablero sin zonas tiene máximo 0', () {
+      expect(Tablero().puntuacionMaxima, 0);
+    });
+
+    test('Es la suma de los puntos de todas sus zonas', () {
+      final tablero = mapaDos.crearTablero();
+      var suma = 0;
+      for (final zona in tablero.regiones) {
+        suma += zona.tipo.puntuacion;
+      }
+
+      expect(tablero.puntuacionMaxima, suma);
+    });
+
+    test('No cambia al ir colocando números', () {
+      final tablero = mapaUno.crearTablero();
+      final azul = primeraZona(tablero, TipoZona.azul);
+
+      completarZona(tablero, azul);
+
+      expect(tablero.puntuacionTotal, 7);
+      expect(tablero.puntuacionMaxima, 54);
+    });
+
+    test('Completar todo el Mapa 1 llega justo al máximo', () {
+      final tablero = mapaUno.crearTablero();
+      for (final zona in tablero.regiones) {
+        completarZona(tablero, zona);
+      }
+
+      expect(tablero.puntuacionTotal, tablero.puntuacionMaxima);
     });
   });
 }
