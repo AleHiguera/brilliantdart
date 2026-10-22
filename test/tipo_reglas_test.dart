@@ -95,12 +95,12 @@ void main() {
       expect(morado.validarMovimiento([1, 2, 3]), isFalse);
     });
 
-    test('validarAmarillo detecta repetidos solo en zonas amarillas', () {
+    test('Amarillo detecta repetidos; el verde sí los permite', () {
       final amarillo = crear(TipoZona.amarillo);
 
-      expect(amarillo.validarAmarillo([1, 2, 3, 4, 5]), isTrue);
-      expect(amarillo.validarAmarillo([1, 2, 1]), isFalse);
-      expect(crear(TipoZona.verde).validarAmarillo([1, 2, 3]), isFalse);
+      expect(amarillo.validarMovimiento([1, 2, 3, 4, 5]), isTrue);
+      expect(amarillo.validarMovimiento([1, 2, 1]), isFalse);
+      expect(crear(TipoZona.verde).validarMovimiento([1, 2, 1]), isTrue);
     });
   });
 

@@ -116,14 +116,14 @@ void main() {
 
     test('Amarillo permite numeros diferentes', () {
       expect(
-        amarillo.validarAmarillo([1, 3, 5, 7]),
+        amarillo.validarMovimiento([1, 3, 5, 7]),
         isTrue,
       );
     });
 
     test('Amarillo no permite numeros repetidos', () {
       expect(
-        amarillo.validarAmarillo([1, 3, 5, 3]),
+        amarillo.validarMovimiento([1, 3, 5, 3]),
         isFalse,
       );
     });

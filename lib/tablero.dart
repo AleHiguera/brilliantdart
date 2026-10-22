@@ -9,25 +9,27 @@ class Tablero {
   final List<Region> _regiones = [];
 
   Tablero()
-      : _celdas = List.generate(
-          filas,
-          (fila) => List.generate(
-            columnas,
-            (columna) => Coordenada.xy(fila, columna),
-          ),
-        );
+    : _celdas = List.generate(
+        filas,
+        (fila) =>
+            List.generate(columnas, (columna) => Coordenada.xy(fila, columna)),
+      );
 
   List<Region> get regiones => List.unmodifiable(_regiones);
 
-    int get puntuacionTotal => _regiones
+  /// Lo más que se puede sacar: la suma de los puntos de todas las zonas.
+  int get puntuacionMaxima =>
+      _regiones.fold(0, (total, region) => total + region.tipo.puntuacion);
+
+  int get puntuacionTotal => _regiones
       .where((region) => region.completado)
       .fold(0, (total, region) => total + region.tipo.puntuacion);
 
-    int puntuacionPorTipo(TipoZona tipo) => _regiones
+  int puntuacionPorTipo(TipoZona tipo) => _regiones
       .where((region) => region.tipo.tipo == tipo && region.completado)
       .fold(0, (total, region) => total + region.tipo.puntuacion);
 
-    int zonasCompletadasPorTipo(TipoZona tipo) => _regiones
+  int zonasCompletadasPorTipo(TipoZona tipo) => _regiones
       .where((region) => region.tipo.tipo == tipo && region.completado)
       .length;
 
@@ -37,10 +39,9 @@ class Tablero {
       celdas.map((celda) => celda.valor).whereType<int>().toSet();
 
   List<Coordenada> get celdas => [
-        for (final fila in _celdas)
-          for (final celda in fila)
-            celda,
-      ];
+    for (final fila in _celdas)
+      for (final celda in fila) celda,
+  ];
 
   Coordenada obtenerCelda(int fila, int columna) {
     _validarCoordenada(fila, columna);
@@ -84,11 +85,13 @@ class Tablero {
     ];
 
     return vecinas
-        .where((posicion) =>
-            posicion.$1 >= 0 &&
-            posicion.$1 < filas &&
-            posicion.$2 >= 0 &&
-            posicion.$2 < columnas)
+        .where(
+          (posicion) =>
+              posicion.$1 >= 0 &&
+              posicion.$1 < filas &&
+              posicion.$2 >= 0 &&
+              posicion.$2 < columnas,
+        )
         .map((posicion) => obtenerCelda(posicion.$1, posicion.$2))
         .toList(growable: false);
   }
@@ -131,4 +134,3 @@ class Tablero {
     }
   }
 }
-

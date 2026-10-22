@@ -1,11 +1,4 @@
-enum TipoZona {
-  azul,
-  rojo,
-  verde,
-  amarillo,
-  morado,
-  gris,
-}
+enum TipoZona { azul, rojo, verde, amarillo, morado, gris }
 
 abstract class Tipo {
   final TipoZona tipo;
@@ -28,41 +21,17 @@ abstract class Tipo {
   }) {
     switch (tipo) {
       case TipoZona.azul:
-        return TipoAzul(
-          color: color,
-          regla: regla,
-          puntuacion: puntuacion,
-        );
+        return TipoAzul(color: color, regla: regla, puntuacion: puntuacion);
       case TipoZona.rojo:
-        return TipoRojo(
-          color: color,
-          regla: regla,
-          puntuacion: puntuacion,
-        );
+        return TipoRojo(color: color, regla: regla, puntuacion: puntuacion);
       case TipoZona.verde:
-        return TipoVerde(
-          color: color,
-          regla: regla,
-          puntuacion: puntuacion,
-        );
+        return TipoVerde(color: color, regla: regla, puntuacion: puntuacion);
       case TipoZona.amarillo:
-        return TipoAmarillo(
-          color: color,
-          regla: regla,
-          puntuacion: puntuacion,
-        );
+        return TipoAmarillo(color: color, regla: regla, puntuacion: puntuacion);
       case TipoZona.morado:
-        return TipoMorado(
-          color: color,
-          regla: regla,
-          puntuacion: puntuacion,
-        );
+        return TipoMorado(color: color, regla: regla, puntuacion: puntuacion);
       case TipoZona.gris:
-        return TipoGris(
-          color: color,
-          regla: regla,
-          puntuacion: puntuacion,
-        );
+        return TipoGris(color: color, regla: regla, puntuacion: puntuacion);
     }
   }
 
@@ -70,35 +39,8 @@ abstract class Tipo {
 
   bool esPosibleAgregar(List<int> actuales, int posible);
 
-  bool validarMovimiento(List<int> valores) {
-    switch (tipo) {
-      case TipoZona.azul:
-      case TipoZona.gris:
-        if (valores.isEmpty) {
-          return true;
-        }
-        return valores.every((numero) => numero == valores.first);
-
-      case TipoZona.rojo:
-        return valores.toSet().length == valores.length;
-
-      case TipoZona.verde:
-        return true;
-
-      case TipoZona.amarillo:
-        return true;
-
-      case TipoZona.morado:
-        return valores.toSet().length == 2;
-    }
-  }
-
-  bool validarAmarillo(List<int> valores) {
-    if (tipo != TipoZona.amarillo) {
-      return false;
-    }
-    return valores.toSet().length == valores.length;
-  }
+  /// Regla del color para una zona llena: cada color la define a su manera.
+  bool validarMovimiento(List<int> valores);
 
   int calcularPuntuacion([int posicion = 1]) {
     final puntos = puntuaciones[posicion];
@@ -127,11 +69,12 @@ class TipoAzul extends Tipo {
   }) : super._(tipo: TipoZona.azul);
 
   @override
-  Map<int, int> get puntuaciones => {
-        1: 7,
-        2: 5,
-        3: 3,
-      };
+  Map<int, int> get puntuaciones => {1: 7, 2: 5, 3: 3};
+
+  /// Todos los números deben ser iguales.
+  @override
+  bool validarMovimiento(List<int> valores) =>
+      valores.every((numero) => numero == valores.first);
 
   @override
   bool esPosibleAgregar(List<int> actuales, int posible) {
@@ -150,11 +93,12 @@ class TipoRojo extends Tipo {
   }) : super._(tipo: TipoZona.rojo);
 
   @override
-  Map<int, int> get puntuaciones => {
-        1: 6,
-        2: 4,
-        3: 2,
-      };
+  Map<int, int> get puntuaciones => {1: 6, 2: 4, 3: 2};
+
+  /// Todos los números deben ser diferentes.
+  @override
+  bool validarMovimiento(List<int> valores) =>
+      valores.toSet().length == valores.length;
 
   @override
   bool esPosibleAgregar(List<int> actuales, int posible) {
@@ -170,11 +114,11 @@ class TipoVerde extends Tipo {
   }) : super._(tipo: TipoZona.verde);
 
   @override
-  Map<int, int> get puntuaciones => {
-        1: 4,
-        2: 3,
-        3: 2,
-      };
+  Map<int, int> get puntuaciones => {1: 4, 2: 3, 3: 2};
+
+  /// Cualquier combinación de números vale.
+  @override
+  bool validarMovimiento(List<int> valores) => true;
 
   @override
   bool esPosibleAgregar(List<int> actuales, int posible) {
@@ -190,11 +134,11 @@ class TipoMorado extends Tipo {
   }) : super._(tipo: TipoZona.morado);
 
   @override
-  Map<int, int> get puntuaciones => {
-        1: 6,
-        2: 4,
-        3: 2,
-      };
+  Map<int, int> get puntuaciones => {1: 6, 2: 4, 3: 2};
+
+  /// Debe tener exactamente dos números distintos.
+  @override
+  bool validarMovimiento(List<int> valores) => valores.toSet().length == 2;
 
   @override
   bool esPosibleAgregar(List<int> actuales, int posible) {
@@ -211,11 +155,12 @@ class TipoAmarillo extends Tipo {
   }) : super._(tipo: TipoZona.amarillo);
 
   @override
-  Map<int, int> get puntuaciones => {
-        1: 8,
-        2: 6,
-        3: 4,
-      };
+  Map<int, int> get puntuaciones => {1: 8, 2: 6, 3: 4};
+
+  /// Ningún número puede repetirse entre todas las celdas amarillas.
+  @override
+  bool validarMovimiento(List<int> valores) =>
+      valores.toSet().length == valores.length;
 
   @override
   bool esPosibleAgregar(List<int> actuales, int posible) {
@@ -233,11 +178,12 @@ class TipoGris extends Tipo {
   }) : super._(tipo: TipoZona.gris);
 
   @override
-  Map<int, int> get puntuaciones => {
-        1: 3,
-        2: 2,
-        3: 1,
-      };
+  Map<int, int> get puntuaciones => {1: 3, 2: 2, 3: 1};
+
+  /// Todos los números deben ser iguales.
+  @override
+  bool validarMovimiento(List<int> valores) =>
+      valores.every((numero) => numero == valores.first);
 
   @override
   bool esPosibleAgregar(List<int> actuales, int posible) {
