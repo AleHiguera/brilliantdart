@@ -32,8 +32,10 @@ class HistorialDadosView extends StatelessWidget {
             extremo: lanzamientos.isEmpty
                 ? null
                 : Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 1,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
@@ -98,7 +100,8 @@ class _FilaLanzamiento extends StatelessWidget {
     final numero = lanzamiento.numeroLanzamiento;
 
     return Semantics(
-      label: 'Lanzamiento $numero, dados ${lanzamiento.resultadoDado1} y '
+      label:
+          'Lanzamiento $numero, dados ${lanzamiento.resultadoDado1} y '
           '${lanzamiento.resultadoDado2}, '
           '${lanzamiento.accionRealizada ?? 'acción pendiente'}',
       child: Container(
@@ -234,29 +237,29 @@ class _EtiquetaAccion extends StatelessWidget {
   Widget build(BuildContext context) {
     final (texto, fondo, color, icono) = switch (accion) {
       null => (
-          'Pendiente',
-          const Color(0xFFFFF4CC),
-          const Color(0xFF7A5C00),
-          Icons.hourglass_empty,
-        ),
+        'Pendiente',
+        const Color(0xFFFFF4CC),
+        const Color(0xFF7A5C00),
+        Icons.hourglass_empty,
+      ),
       'Movimiento inválido' => (
-          accion!,
-          const Color(0xFFFDE3E1),
-          const Color(0xFFB3261E),
-          Icons.block,
-        ),
+        accion!,
+        const Color(0xFFFDE3E1),
+        const Color(0xFFB3261E),
+        Icons.block,
+      ),
       'Turno pasado' => (
-          accion!,
-          colorBordeTarjeta,
-          Colors.black87,
-          Icons.skip_next,
-        ),
+        accion!,
+        colorBordeTarjeta,
+        Colors.black87,
+        Icons.skip_next,
+      ),
       _ => (
-          accion!,
-          const Color(0xFFE2F4E3),
-          const Color(0xFF1E6B23),
-          Icons.check,
-        ),
+        accion!,
+        const Color(0xFFE2F4E3),
+        const Color(0xFF1E6B23),
+        Icons.check,
+      ),
     };
 
     return Container(

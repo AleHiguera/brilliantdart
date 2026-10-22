@@ -4,8 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:brilliant_mobile/main.dart';
 
 void main() {
-  testWidgets('El contador de números iniciales aumenta',
-      (WidgetTester tester) async {
+  testWidgets('El contador de números iniciales aumenta', (
+    WidgetTester tester,
+  ) async {
     // Construimos la app y dibujamos el primer cuadro.
     await tester.pumpWidget(const BrilliantApp());
 

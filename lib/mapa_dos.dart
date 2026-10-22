@@ -52,7 +52,7 @@ class MapaDos extends Mapa {
     (4, 3),
     (5, 6),
     (6, 2),
-    (6, 5),
+    (7, 5),
   ];
 
   /// Los amarillos y los grises forman una sola zona aunque estén separados.

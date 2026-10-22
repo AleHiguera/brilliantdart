@@ -126,7 +126,7 @@ void main() {
         (4, 3),
         (5, 6),
         (6, 2),
-        (6, 5),
+        (7, 5),
       ]);
     });
 
@@ -303,7 +303,7 @@ void main() {
           TipoZona.rojo,
           TipoZona.rojo,
           TipoZona.amarillo,
-          TipoZona.azul,
+          TipoZona.morado,
         ],
       );
     });
@@ -330,7 +330,7 @@ void main() {
       expect(bloc.puedeIniciar, isTrue);
       expect(bloc.obtenerValoresIniciales(), [1, 2, 3, 4, 5, 6]);
       expect(tablero.obtenerCelda(0, 4).valor, 1);
-      expect(tablero.obtenerCelda(5, 4).valor, 6);
+      expect(tablero.obtenerCelda(6, 4).valor, 6);
     });
 
     test('El bloc rechaza las celdas iniciales del Mapa 1', () {
@@ -340,11 +340,32 @@ void main() {
       );
 
       for (final (fila, columna) in mapaUno.celdasIniciales) {
+        if (mapaDos.celdasIniciales.contains((fila, columna))) continue;
         expect(
           () => bloc.colocarValorInicial(fila, columna, 1),
           throwsArgumentError,
         );
       }
+    });
+
+    test('La (7, 5) es celda inicial en los dos mapas', () {
+      expect(mapaUno.celdasIniciales, contains((7, 5)));
+      expect(mapaDos.celdasIniciales, contains((7, 5)));
+      expect(mapaDos.celdasIniciales, isNot(contains((6, 5))));
+    });
+
+    test('La (7, 5) es morada y la (6, 5) es una celda azul normal', () {
+      final tablero = mapaDos.crearTablero();
+      final bloc = BlocValoresIniciales(
+        tablero,
+        celdasIniciales: mapaDos.celdasIniciales,
+      );
+
+      expect(mapaDos.tipoEn(6, 4), TipoZona.morado);
+      expect(mapaDos.tipoEn(5, 4), TipoZona.azul);
+      bloc.colocarValorInicial(7, 5, 6);
+      expect(tablero.obtenerCelda(6, 4).valor, 6);
+      expect(() => bloc.colocarValorInicial(6, 5, 6), throwsArgumentError);
     });
   });
 

@@ -4,11 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('Widgets: selección de mapa', () {
-    testWidgets('Los mapas bloqueados no abren ningún tablero', (tester) async {
+    testWidgets('El mapa bloqueado no abre ningún tablero', (tester) async {
       await tester.pumpWidget(const BrilliantApp());
 
-      await tester.tap(find.byKey(const Key('map-choice-2')));
-      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('map-choice-3')));
       await tester.pumpAndSettle();
 

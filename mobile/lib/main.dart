@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:brilliantdart/bloc_valores_iniciales.dart';
 import 'package:brilliantdart/dados.dart';
+import 'package:brilliantdart/mapa.dart';
+import 'package:brilliantdart/mapa_dos.dart';
 import 'package:brilliantdart/mapa_uno.dart';
 import 'package:brilliantdart/tablero.dart';
 import 'package:brilliantdart/tipoo.dart';
@@ -36,10 +38,10 @@ class BrilliantApp extends StatelessWidget {
 class SeleccionMapaPage extends StatelessWidget {
   const SeleccionMapaPage({super.key});
 
-  void _abrirMapa(BuildContext context) {
+  void _abrirMapa(BuildContext context, Mapa mapa) {
     Navigator.of(
       context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const TableroPage()));
+    ).push(MaterialPageRoute<void>(builder: (_) => TableroPage(mapa: mapa)));
   }
 
   @override
@@ -66,20 +68,22 @@ class SeleccionMapaPage extends StatelessWidget {
                   child: _OpcionMapa(
                     key: const Key('map-option-1'),
                     numero: 1,
-                    disponible: true,
-                    onTap: () => _abrirMapa(context),
+                    mapa: mapaUno,
+                    onTap: () => _abrirMapa(context, mapaUno),
                   ),
                 ),
                 const SizedBox(height: 12),
-                const _Aparecer(
+                _Aparecer(
                   indice: 2,
-                  child: _OpcionMapa(numero: 2, disponible: false),
+                  child: _OpcionMapa(
+                    key: const Key('map-option-2'),
+                    numero: 2,
+                    mapa: mapaDos,
+                    onTap: () => _abrirMapa(context, mapaDos),
+                  ),
                 ),
                 const SizedBox(height: 12),
-                const _Aparecer(
-                  indice: 3,
-                  child: _OpcionMapa(numero: 3, disponible: false),
-                ),
+                const _Aparecer(indice: 3, child: _OpcionMapa(numero: 3)),
                 const SizedBox(height: 24),
                 const _Aparecer(indice: 4, child: _ComoSeJuega()),
               ],
@@ -159,16 +163,15 @@ class _CabeceraSeleccion extends StatelessWidget {
 }
 
 class _OpcionMapa extends StatelessWidget {
-  const _OpcionMapa({
-    super.key,
-    required this.numero,
-    required this.disponible,
-    this.onTap,
-  });
+  const _OpcionMapa({super.key, required this.numero, this.mapa, this.onTap});
 
   final int numero;
-  final bool disponible;
+
+  /// El mapa que abre esta opción; sin mapa, la opción está bloqueada.
+  final Mapa? mapa;
   final VoidCallback? onTap;
+
+  bool get disponible => mapa != null;
 
   @override
   Widget build(BuildContext context) {
@@ -227,6 +230,7 @@ class _OpcionMapa extends StatelessWidget {
                                   color: TableroPage.colorEn(
                                     index ~/ 7,
                                     index % 7,
+                                    mapa: mapa!,
                                   ),
                                   border: Border.all(
                                     color: Colors.black12,
@@ -389,8 +393,11 @@ class TableroPage extends StatefulWidget {
     this.tablero,
     this.sonidoVictoria,
     this.sonidoDados,
+    this.mapa = mapaUno,
   });
 
+  /// El mapa que se juega; el Mapa 1 si no se indica otro.
+  final Mapa mapa;
   final Dados? dados;
   final Tablero? tablero;
   final Sonido? sonidoVictoria;
@@ -400,8 +407,8 @@ class TableroPage extends StatefulWidget {
 
   static const Map<TipoZona, Color> coloresZonas = estilo.coloresZonas;
 
-  static Color colorEn(int fila, int columna) =>
-      coloresZonas[mapaUno.tiposPorCelda[fila][columna]]!;
+  static Color colorEn(int fila, int columna, {Mapa mapa = mapaUno}) =>
+      coloresZonas[mapa.tipoEn(fila, columna)]!;
 
   @override
   State<TableroPage> createState() => _TableroPageState();
@@ -409,14 +416,14 @@ class TableroPage extends StatefulWidget {
 
 class _TableroPageState extends State<TableroPage> {
   late final Dados _dados = widget.dados ?? Dados();
-  late final Tablero _tablero = widget.tablero ?? mapaUno.crearTablero();
+  late final Tablero _tablero = widget.tablero ?? widget.mapa.crearTablero();
   late final Sonido _sonidoVictoria =
       widget.sonidoVictoria ?? SonidoAsset(Sonido.victoria);
   late final Sonido _sonidoDados =
       widget.sonidoDados ?? SonidoAsset(Sonido.dados);
   late final BlocValoresIniciales _bloc = BlocValoresIniciales(
     _tablero,
-    celdasIniciales: mapaUno.celdasIniciales,
+    celdasIniciales: widget.mapa.celdasIniciales,
   );
   late final ValidadorAnclas _validadorAnclas = ValidadorAnclas(_tablero);
   OpcionAncla? _opcionAnclaSeleccionada;
@@ -436,7 +443,7 @@ class _TableroPageState extends State<TableroPage> {
   }
 
   Set<int> get _valoresIniciales => {
-    for (final (fila, columna) in mapaUno.celdasIniciales)
+    for (final (fila, columna) in widget.mapa.celdasIniciales)
       ?_tablero.obtenerCelda(fila - 1, columna - 1).valor,
   };
 
@@ -450,6 +457,10 @@ class _TableroPageState extends State<TableroPage> {
         key: const ValueKey('fase-fin'),
         child: PanelFinPartida(
           puntos: _tablero.puntuacionTotal,
+          maximo: _tablero.regiones.fold(
+            0,
+            (total, zona) => total + zona.tipo.puntuacion,
+          ),
           onNuevaPartida: _jugarNuevaPartida,
         ),
       );
@@ -661,7 +672,7 @@ class _TableroPageState extends State<TableroPage> {
               final columnaIndice = index % TableroPage.tamano;
               final fila = filaIndice + 1;
               final columna = columnaIndice + 1;
-              final posicionInicial = mapaUno.celdasIniciales.indexOf((
+              final posicionInicial = widget.mapa.celdasIniciales.indexOf((
                 fila,
                 columna,
               ));
@@ -680,7 +691,11 @@ class _TableroPageState extends State<TableroPage> {
                 _movimientoSeleccionado?.destino,
                 celda,
               );
-              final color = TableroPage.colorEn(filaIndice, columnaIndice);
+              final color = TableroPage.colorEn(
+                filaIndice,
+                columnaIndice,
+                mapa: widget.mapa,
+              );
 
               return Material(
                 color: color,

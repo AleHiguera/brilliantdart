@@ -19,8 +19,10 @@ class TablaPuntuacion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maximo = tablero.regiones
-        .fold(0, (total, zona) => total + zona.tipo.puntuacion);
+    final maximo = tablero.regiones.fold(
+      0,
+      (total, zona) => total + zona.tipo.puntuacion,
+    );
     final total = tablero.puntuacionTotal;
     // Solo los colores que tiene este tablero (el Mapa 1 no tiene gris).
     final colores = TipoZona.values.where(

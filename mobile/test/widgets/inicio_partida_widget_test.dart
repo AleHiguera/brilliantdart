@@ -6,7 +6,7 @@ import '../helpers.dart';
 
 void main() {
   group('Widgets: inicio de la partida', () {
-    testWidgets('La selección muestra un mapa disponible y dos bloqueados', (
+    testWidgets('La selección muestra dos mapas disponibles y uno bloqueado', (
       tester,
     ) async {
       await tester.pumpWidget(const BrilliantApp());
@@ -15,7 +15,8 @@ void main() {
       expect(find.text('Mapa 1'), findsOneWidget);
       expect(find.text('Mapa 2'), findsOneWidget);
       expect(find.text('Mapa 3'), findsOneWidget);
-      expect(find.text('Próximamente'), findsNWidgets(2));
+      expect(find.text('Próximamente'), findsOneWidget);
+      expect(find.text('Disponible'), findsNWidgets(2));
 
       await tester.tap(find.byKey(const Key('map-choice-1')));
       await tester.pumpAndSettle();

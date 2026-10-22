@@ -441,10 +441,7 @@ class ResumenMovimiento extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            dato(
-              DadoMini(valor: opcion.ancla),
-              'Ancla: ${opcion.ancla}',
-            ),
+            dato(DadoMini(valor: opcion.ancla), 'Ancla: ${opcion.ancla}'),
             dato(
               DadoMini(valor: opcion.numeroAColocar),
               'Número a colocar: ${opcion.numeroAColocar}',
@@ -469,10 +466,14 @@ class PanelFinPartida extends StatelessWidget {
   const PanelFinPartida({
     super.key,
     required this.puntos,
+    required this.maximo,
     required this.onNuevaPartida,
   });
 
   final int puntos;
+
+  /// Lo más que se puede sacar en este mapa (54 en el Mapa 1, 55 en el 2).
+  final int maximo;
   final VoidCallback onNuevaPartida;
 
   @override
@@ -523,7 +524,7 @@ class PanelFinPartida extends StatelessWidget {
               key: const Key('game-finished-score'),
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
-            if (puntos == 54) ...[
+            if (puntos == maximo) ...[
               const SizedBox(height: 4),
               const Text(
                 '¡Puntuación perfecta! Completaste todas las zonas.',

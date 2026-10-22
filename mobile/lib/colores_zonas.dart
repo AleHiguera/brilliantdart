@@ -15,10 +15,10 @@ const Color colorTarjeta = Color(0xFFF4F4F0);
 const Color colorBordeTarjeta = Color(0xFFE2E2DC);
 
 BoxDecoration decoracionTarjeta() => BoxDecoration(
-      color: colorTarjeta,
-      borderRadius: BorderRadius.circular(6),
-      border: Border.all(color: colorBordeTarjeta),
-    );
+  color: colorTarjeta,
+  borderRadius: BorderRadius.circular(6),
+  border: Border.all(color: colorBordeTarjeta),
+);
 
 /// Encabezado común de las tarjetas: icono, título y algo a la derecha.
 class EncabezadoTarjeta extends StatelessWidget {
@@ -46,10 +46,7 @@ class EncabezadoTarjeta extends StatelessWidget {
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
           ),
         ),
-        if (extremo != null) ...[
-          const SizedBox(width: 6),
-          extremo!,
-        ],
+        if (extremo != null) ...[const SizedBox(width: 6), extremo!],
       ],
     );
   }
@@ -57,25 +54,25 @@ class EncabezadoTarjeta extends StatelessWidget {
 
 /// Botón negro principal (Comenzar, Lanzar dados, Confirmar...).
 ButtonStyle estiloBotonPrincipal() => FilledButton.styleFrom(
-      backgroundColor: Colors.black,
-      foregroundColor: Colors.white,
-      disabledBackgroundColor: colorBordeTarjeta,
-      disabledForegroundColor: Colors.black38,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-    );
+  backgroundColor: Colors.black,
+  foregroundColor: Colors.white,
+  disabledBackgroundColor: colorBordeTarjeta,
+  disabledForegroundColor: Colors.black38,
+  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+  textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+);
 
 ButtonStyle estiloBotonElevadoPrincipal() => ElevatedButton.styleFrom(
-      backgroundColor: Colors.black,
-      foregroundColor: Colors.white,
-      disabledBackgroundColor: colorBordeTarjeta,
-      disabledForegroundColor: Colors.black38,
-      elevation: 2,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-    );
+  backgroundColor: Colors.black,
+  foregroundColor: Colors.white,
+  disabledBackgroundColor: colorBordeTarjeta,
+  disabledForegroundColor: Colors.black38,
+  elevation: 2,
+  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+  textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+);
 
 /// Aviso corto con icono, para pistas y advertencias durante el turno.
 class AvisoJuego extends StatelessWidget {

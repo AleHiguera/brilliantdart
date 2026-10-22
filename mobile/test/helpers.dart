@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:brilliantdart/bloc_valores_iniciales.dart';
 import 'package:brilliantdart/dados.dart';
+import 'package:brilliantdart/mapa.dart';
 import 'package:brilliantdart/mapa_uno.dart';
 import 'package:brilliantdart/tablero.dart';
 import 'package:brilliantdart/tipoo.dart';
@@ -11,16 +12,17 @@ import 'package:brilliant_mobile/sonidos.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Mapa uno con todas sus zonas completadas de forma válida excepto la celda
-/// verde (4, 7), que queda vacía para la última jugada.
-Tablero tableroCasiLleno() {
-  final tablero = mapaUno.crearTablero();
+/// Un mapa (el uno si no se indica) con todas sus zonas completadas de forma
+/// válida excepto la celda verde [vacia] (desde 1), que queda vacía para la
+/// última jugada. Por defecto es la (4, 7) del Mapa 1.
+Tablero tableroCasiLleno({Mapa mapa = mapaUno, (int, int) vacia = (4, 7)}) {
+  final tablero = mapa.crearTablero();
   final bloc = BlocValoresIniciales(
     tablero,
-    celdasIniciales: mapaUno.celdasIniciales,
+    celdasIniciales: mapa.celdasIniciales,
   );
-  for (var i = 0; i < mapaUno.celdasIniciales.length; i++) {
-    final (fila, columna) = mapaUno.celdasIniciales[i];
+  for (var i = 0; i < mapa.celdasIniciales.length; i++) {
+    final (fila, columna) = mapa.celdasIniciales[i];
     bloc.colocarValorInicial(fila, columna, i + 1);
   }
 
@@ -28,13 +30,14 @@ Tablero tableroCasiLleno() {
     final existentes = region.obtenerValores();
     final vacias = region.coordenadas
         .where(
-          (celda) => celda.valor == null && !(celda.x == 3 && celda.y == 6),
+          (celda) => celda.valor == null && (celda.x + 1, celda.y + 1) != vacia,
         )
         .toList();
 
     for (var indice = 0; indice < vacias.length; indice++) {
       final numero = switch (region.tipo.tipo) {
-        TipoZona.azul || TipoZona.gris => existentes.isEmpty ? 2 : existentes.first,
+        TipoZona.azul ||
+        TipoZona.gris => existentes.isEmpty ? 2 : existentes.first,
         TipoZona.rojo || TipoZona.amarillo => [
           1,
           2,
@@ -58,8 +61,12 @@ Tablero tableroCasiLleno() {
   return tablero;
 }
 
-/// Lanza (1, 3), usa el 1 como ancla y coloca el 3 en la celda vacía (4, 7).
-Future<void> jugarUltimaCelda(WidgetTester tester) async {
+/// Lanza (1, 3), usa el 1 como ancla y coloca el 3 en la celda vacía
+/// ([celda], la (4, 7) del Mapa 1 si no se indica otra).
+Future<void> jugarUltimaCelda(
+  WidgetTester tester, {
+  String celda = '4-7',
+}) async {
   await tester.tap(find.byKey(const Key('roll-dice-button')));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 1300));
@@ -67,7 +74,7 @@ Future<void> jugarUltimaCelda(WidgetTester tester) async {
 
   await tester.tap(find.byKey(const Key('anchor-option-1')));
   await tester.pumpAndSettle();
-  await tester.tap(find.byKey(const Key('candidate-cell-4-7')));
+  await tester.tap(find.byKey(Key('candidate-cell-$celda')));
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('confirm-move-button')));
   await tester.pumpAndSettle();
