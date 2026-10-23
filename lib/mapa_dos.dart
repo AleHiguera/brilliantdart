@@ -1,3 +1,4 @@
+import 'dibujo_mapa.dart';
 import 'mapa.dart';
 import 'tipoo.dart';
 
@@ -23,21 +24,10 @@ class MapaDos extends Mapa {
     'VVVGMMM',
   ];
 
-  static const Map<String, TipoZona> letras = {
-    'M': TipoZona.morado,
-    'G': TipoZona.gris,
-    'V': TipoZona.verde,
-    'A': TipoZona.amarillo,
-    'R': TipoZona.rojo,
-    'Z': TipoZona.azul,
-  };
+  /// Qué color significa cada letra (compartido por todos los mapas).
+  static const Map<String, TipoZona> letras = letrasDeColores;
 
-  static final List<List<TipoZona>> _tiposPorCelda = List.unmodifiable([
-    for (final fila in dibujo)
-      List<TipoZona>.unmodifiable([
-        for (final letra in fila.split('')) letras[letra]!,
-      ]),
-  ]);
+  static final List<List<TipoZona>> _tiposPorCelda = leerDibujo(dibujo);
 
   @override
   int get numero => 2;
