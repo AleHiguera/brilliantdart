@@ -22,6 +22,11 @@ abstract class Mapa {
   /// Colores cuyas celdas forman una sola zona aunque estén separadas.
   Set<TipoZona> get tiposUnidos;
 
+  /// Pedazos sueltos de un mismo color que cuentan como una sola zona:
+  /// cada grupo lista una celda de cada pedazo (filas y columnas desde 1).
+  /// Ningún mapa los usa salvo que lo diga.
+  List<List<(int, int)>> get partesUnidas => const [];
+
   /// Regla y puntos de un color en este mapa.
   Tipo crearTipo(TipoZona tipo);
 
@@ -41,5 +46,9 @@ abstract class Mapa {
     tiposPorCelda: tiposPorCelda,
     crearTipo: crearTipo,
     tiposUnidos: tiposUnidos,
+    partesUnidas: [
+      for (final grupo in partesUnidas)
+        [for (final (fila, columna) in grupo) (fila - 1, columna - 1)],
+    ],
   ).construir();
 }
