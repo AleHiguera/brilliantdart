@@ -39,8 +39,8 @@ void main() {
 
       expect(find.byKey(const Key('how-to-play')), findsOneWidget);
       expect(find.text('Cómo se juega'), findsOneWidget);
-      expect(find.text('Disponible'), findsNWidgets(2));
-      expect(find.text('Muy pronto podrás jugarlo.'), findsOneWidget);
+      expect(find.text('Disponible'), findsNWidgets(3));
+      expect(find.text('Muy pronto podrás jugarlo.'), findsNothing);
       final textosMapa1 = tester
           .widgetList<Text>(
             find.descendant(

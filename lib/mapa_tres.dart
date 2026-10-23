@@ -39,7 +39,7 @@ class MapaTres extends Mapa {
     (4, 4),
     (5, 2),
     (5, 7),
-    (6, 3),
+    (7, 3),
   ];
 
   /// Los amarillos y los grises forman una sola zona aunque estén separados.

@@ -3,6 +3,7 @@ import 'package:brilliantdart/bloc_valores_iniciales.dart';
 import 'package:brilliantdart/dados.dart';
 import 'package:brilliantdart/mapa.dart';
 import 'package:brilliantdart/mapa_dos.dart';
+import 'package:brilliantdart/mapa_tres.dart';
 import 'package:brilliantdart/mapa_uno.dart';
 import 'package:brilliantdart/tablero.dart';
 import 'package:brilliantdart/tipoo.dart';
@@ -83,7 +84,15 @@ class SeleccionMapaPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const _Aparecer(indice: 3, child: _OpcionMapa(numero: 3)),
+                _Aparecer(
+                  indice: 3,
+                  child: _OpcionMapa(
+                    key: const Key('map-option-3'),
+                    numero: 3,
+                    mapa: mapaTres,
+                    onTap: () => _abrirMapa(context, mapaTres),
+                  ),
+                ),
                 const SizedBox(height: 24),
                 const _Aparecer(indice: 4, child: _ComoSeJuega()),
               ],

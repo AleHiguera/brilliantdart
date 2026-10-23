@@ -109,7 +109,7 @@ void main() {
         (4, 4),
         (5, 2),
         (5, 7),
-        (6, 3),
+        (7, 3),
       ]);
     });
 
@@ -266,15 +266,41 @@ void main() {
           TipoZona.gris,
           TipoZona.azul,
           TipoZona.verde,
-          TipoZona.verde,
+          TipoZona.morado,
         ],
       );
     });
 
-    test('(5, 7) y (6, 3) caen en la misma zona verde', () {
+    test('Cada celda inicial cae en una zona distinta', () {
+      final tablero = mapaTres.crearTablero();
+      final zonas = {
+        for (final (fila, columna) in mapaTres.celdasIniciales)
+          zonaEn(tablero, fila, columna).id,
+      };
+
+      expect(zonas, hasLength(6));
+    });
+
+    test('La (7, 3) es inicial y está en la zona morada de abajo', () {
       final tablero = mapaTres.crearTablero();
 
-      expect(zonaEn(tablero, 5, 7), same(zonaEn(tablero, 6, 3)));
+      expect(mapaTres.celdasIniciales, contains((7, 3)));
+      expect(mapaTres.celdasIniciales, isNot(contains((6, 3))));
+      expect(zonaEn(tablero, 7, 3), same(zonaEn(tablero, 7, 5)));
+    });
+
+    test('La (6, 3) ya no es inicial: el bloc la rechaza', () {
+      final tablero = mapaTres.crearTablero();
+      final bloc = BlocValoresIniciales(
+        tablero,
+        celdasIniciales: mapaTres.celdasIniciales,
+      );
+
+      expect(() => bloc.colocarValorInicial(6, 3, 1), throwsArgumentError);
+      expect(tablero.obtenerCelda(5, 2).valor, isNull);
+
+      bloc.colocarValorInicial(7, 3, 6);
+      expect(tablero.obtenerCelda(6, 2).valor, 6);
     });
 
     test('El bloc acepta los 6 números en sus celdas iniciales', () {

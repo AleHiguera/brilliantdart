@@ -1,18 +1,26 @@
+import 'package:brilliantdart/mapa_dos.dart';
+import 'package:brilliantdart/mapa_tres.dart';
+import 'package:brilliantdart/mapa_uno.dart';
 import 'package:brilliant_mobile/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('Widgets: selección de mapa', () {
-    testWidgets('El mapa bloqueado no abre ningún tablero', (tester) async {
-      await tester.pumpWidget(const BrilliantApp());
+    for (final (numero, mapa) in [(1, mapaUno), (2, mapaDos), (3, mapaTres)]) {
+      testWidgets('El Mapa $numero abre su propio tablero', (tester) async {
+        await tester.pumpWidget(const BrilliantApp());
 
-      await tester.tap(find.byKey(const Key('map-choice-3')));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(Key('map-choice-$numero')));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Elige tu mapa'), findsOneWidget);
-      expect(find.byType(TableroPage), findsNothing);
-    });
+        expect(find.text('Elige tu mapa'), findsNothing);
+        expect(
+          tester.widget<TableroPage>(find.byType(TableroPage)).mapa,
+          same(mapa),
+        );
+      });
+    }
 
     testWidgets('La vista previa del mapa 1 tiene las 49 celdas', (
       tester,
