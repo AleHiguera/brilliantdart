@@ -88,6 +88,11 @@ class MapaDos extends Mapa {
         regla: 'Todos los numeros grises deben ser iguales',
         puntuacion: 3,
       ),
+      TipoZona.naranja => throw ArgumentError.value(
+        tipoZona,
+        'tipoZona',
+        'El Mapa 2 no tiene zonas naranjas.',
+      ),
     };
   }
 }

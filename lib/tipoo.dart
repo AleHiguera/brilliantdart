@@ -1,4 +1,4 @@
-enum TipoZona { azul, rojo, verde, amarillo, morado, gris }
+enum TipoZona { azul, rojo, verde, amarillo, morado, gris, naranja }
 
 abstract class Tipo {
   final TipoZona tipo;
@@ -32,6 +32,8 @@ abstract class Tipo {
         return TipoMorado(color: color, regla: regla, puntuacion: puntuacion);
       case TipoZona.gris:
         return TipoGris(color: color, regla: regla, puntuacion: puntuacion);
+      case TipoZona.naranja:
+        return TipoNaranja(color: color, regla: regla, puntuacion: puntuacion);
     }
   }
 
@@ -192,4 +194,42 @@ class TipoGris extends Tipo {
     }
     return actuales.every((valor) => valor == posible);
   }
+}
+
+/// Naranja: todos sus números deben estar en un rango (por ejemplo, del 4 al
+/// 6). Se pueden repetir y no hace falta que aparezcan todos los del rango.
+///
+/// Cada zona naranja puede tener su propio rango; el mapa lo decide.
+class TipoNaranja extends Tipo {
+  TipoNaranja({
+    required super.color,
+    required super.regla,
+    required super.puntuacion,
+    this.minimo = 1,
+    this.maximo = 6,
+  }) : super._(tipo: TipoZona.naranja) {
+    if (minimo < 1 || maximo > 6 || minimo > maximo) {
+      throw ArgumentError(
+        'El rango del naranja debe estar entre 1 y 6 (es $minimo a $maximo).',
+      );
+    }
+  }
+
+  /// El número más chico que acepta esta zona.
+  final int minimo;
+
+  /// El número más grande que acepta esta zona.
+  final int maximo;
+
+  bool _enRango(int numero) => numero >= minimo && numero <= maximo;
+
+  @override
+  Map<int, int> get puntuaciones => {1: 6, 2: 4, 3: 3};
+
+  /// Todos los números deben estar dentro del rango.
+  @override
+  bool validarMovimiento(List<int> valores) => valores.every(_enRango);
+
+  @override
+  bool esPosibleAgregar(List<int> actuales, int posible) => _enRango(posible);
 }

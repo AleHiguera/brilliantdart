@@ -15,6 +15,7 @@ class TablaPuntuacion extends StatelessWidget {
     TipoZona.azul: 'Azul',
     TipoZona.rojo: 'Roja',
     TipoZona.gris: 'Gris',
+    TipoZona.naranja: 'Naranja',
   };
 
   @override

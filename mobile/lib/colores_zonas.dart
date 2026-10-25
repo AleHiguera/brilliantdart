@@ -8,6 +8,7 @@ const Map<TipoZona, Color> coloresZonas = {
   TipoZona.amarillo: Color(0xFFFFEB3B),
   TipoZona.morado: Color(0xFF9C27B0),
   TipoZona.gris: Color(0xFF9E9E9E),
+  TipoZona.naranja: Color(0xFFFF9800),
 };
 
 /// Fondo de las tarjetas, el mismo que las opciones de mapa.

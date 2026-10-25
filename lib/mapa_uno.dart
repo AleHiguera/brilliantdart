@@ -131,6 +131,11 @@ class MapaUno extends Mapa {
         'tipoZona',
         'El Mapa 1 no tiene zonas grises.',
       ),
+      TipoZona.naranja => throw ArgumentError.value(
+        tipoZona,
+        'tipoZona',
+        'El Mapa 1 no tiene zonas naranjas.',
+      ),
     };
   }
 }
