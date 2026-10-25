@@ -30,6 +30,12 @@ abstract class Mapa {
   /// Regla y puntos de un color en este mapa.
   Tipo crearTipo(TipoZona tipo);
 
+  /// Regla y puntos de una zona concreta, por si dos zonas del mismo color
+  /// tienen reglas distintas (filas y columnas desde 1). Si el mapa no dice
+  /// otra cosa, cada zona usa la regla de su color.
+  Tipo crearTipoDeZona(TipoZona tipo, List<(int, int)> celdas) =>
+      crearTipo(tipo);
+
   /// Colores que aparecen en el dibujo, en el orden de [TipoZona].
   List<TipoZona> get tiposPresentes {
     final presentes = {for (final fila in tiposPorCelda) ...fila};
@@ -50,5 +56,8 @@ abstract class Mapa {
       for (final grupo in partesUnidas)
         [for (final (fila, columna) in grupo) (fila - 1, columna - 1)],
     ],
+    crearTipoDeZona: (tipo, posiciones) => crearTipoDeZona(tipo, [
+      for (final (fila, columna) in posiciones) (fila + 1, columna + 1),
+    ]),
   ).construir();
 }

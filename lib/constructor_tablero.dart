@@ -14,13 +14,16 @@ import 'zona.dart';
 ///   morados de abajo del Mapa 3), sin unir los demás pedazos de ese color.
 ///
 /// Qué regla y cuántos puntos tiene cada color lo decide [crearTipo], que
-/// entrega cada mapa.
+/// entrega cada mapa. Si una zona necesita una regla propia (por ejemplo, los
+/// dos naranjas del Mapa 4), el mapa entrega [crearTipoDeZona], que además
+/// recibe las celdas de la zona.
 class ConstructorTablero {
   const ConstructorTablero({
     required this.tiposPorCelda,
     required this.crearTipo,
     this.tiposUnidos = const {},
     this.partesUnidas = const [],
+    this.crearTipoDeZona,
   });
 
   final List<List<TipoZona>> tiposPorCelda;
@@ -30,6 +33,11 @@ class ConstructorTablero {
   /// Grupos de celdas (filas y columnas desde 0), una celda por pedazo:
   /// los pedazos de cada grupo forman una sola zona.
   final List<List<(int, int)>> partesUnidas;
+
+  /// Opcional: regla y puntos de una zona según su color y sus celdas
+  /// (filas y columnas desde 0). Si no se da, se usa [crearTipo].
+  final Tipo Function(TipoZona tipo, List<(int, int)> posiciones)?
+  crearTipoDeZona;
 
   Tablero construir() {
     _validarDimensiones();
@@ -51,7 +59,7 @@ class ConstructorTablero {
         tablero.agregarRegion(
           Zona(
             id: siguienteId++,
-            tipo: crearTipo(tipoZona),
+            tipo: _crearTipo(tipoZona, posiciones),
             coordenadas: posiciones
                 .map(
                   (posicion) => tablero.obtenerCelda(posicion.$1, posicion.$2),
@@ -63,6 +71,13 @@ class ConstructorTablero {
     }
 
     return tablero;
+  }
+
+  Tipo _crearTipo(TipoZona tipoZona, List<(int, int)> posiciones) {
+    final porZona = crearTipoDeZona;
+    return porZona == null
+        ? crearTipo(tipoZona)
+        : porZona(tipoZona, List.unmodifiable(posiciones));
   }
 
   void _validarDimensiones() {
