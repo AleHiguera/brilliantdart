@@ -1,3 +1,4 @@
+import 'package:brilliantdart/mapa_cuatro.dart';
 import 'package:brilliantdart/mapa_dos.dart';
 import 'package:brilliantdart/mapa_tres.dart';
 import 'package:brilliantdart/mapa_uno.dart';
@@ -7,10 +8,17 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('Widgets: selección de mapa', () {
-    for (final (numero, mapa) in [(1, mapaUno), (2, mapaDos), (3, mapaTres)]) {
+    for (final (numero, mapa) in [
+      (1, mapaUno),
+      (2, mapaDos),
+      (3, mapaTres),
+      (4, mapaCuatro),
+    ]) {
       testWidgets('El Mapa $numero abre su propio tablero', (tester) async {
         await tester.pumpWidget(const BrilliantApp());
 
+        await tester.ensureVisible(find.byKey(Key('map-choice-$numero')));
+        await tester.pumpAndSettle();
         await tester.tap(find.byKey(Key('map-choice-$numero')));
         await tester.pumpAndSettle();
 
