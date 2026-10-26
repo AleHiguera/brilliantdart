@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:brilliantdart/bloc_valores_iniciales.dart';
 import 'package:brilliantdart/dados.dart';
 import 'package:brilliantdart/mapa.dart';
+import 'package:brilliantdart/mapa_cuatro.dart';
 import 'package:brilliantdart/mapa_dos.dart';
 import 'package:brilliantdart/mapa_tres.dart';
 import 'package:brilliantdart/mapa_uno.dart';
@@ -93,8 +94,18 @@ class SeleccionMapaPage extends StatelessWidget {
                     onTap: () => _abrirMapa(context, mapaTres),
                   ),
                 ),
+                const SizedBox(height: 12),
+                _Aparecer(
+                  indice: 4,
+                  child: _OpcionMapa(
+                    key: const Key('map-option-4'),
+                    numero: 4,
+                    mapa: mapaCuatro,
+                    onTap: () => _abrirMapa(context, mapaCuatro),
+                  ),
+                ),
                 const SizedBox(height: 24),
-                const _Aparecer(indice: 4, child: _ComoSeJuega()),
+                const _Aparecer(indice: 5, child: _ComoSeJuega()),
               ],
             ),
           ),
@@ -545,6 +556,7 @@ class _TableroPageState extends State<TableroPage> {
       builder: (context) => SelectorValorInicial(
         valorActual: _tablero.obtenerCelda(fila - 1, columna - 1).valor,
         valoresColocados: _valoresIniciales,
+        permitidos: _bloc.valoresPermitidos(fila, columna),
       ),
     );
 

@@ -241,10 +241,15 @@ class SelectorValorInicial extends StatelessWidget {
     super.key,
     required this.valorActual,
     required this.valoresColocados,
+    this.permitidos = const {1, 2, 3, 4, 5, 6},
   });
 
   final int? valorActual;
   final Set<int> valoresColocados;
+
+  /// Los números que acepta la zona de esta celda; los demás salen
+  /// desactivados (por ejemplo, en un naranja del 4 al 6).
+  final Set<int> permitidos;
 
   @override
   Widget build(BuildContext context) {
@@ -280,6 +285,7 @@ class SelectorValorInicial extends StatelessWidget {
                 actual: numero == valorActual,
                 enOtraCelda:
                     numero != valorActual && valoresColocados.contains(numero),
+                permitido: permitidos.contains(numero),
               ),
           ],
         ),
@@ -303,21 +309,32 @@ class _OpcionNumero extends StatelessWidget {
     required this.numero,
     required this.actual,
     required this.enOtraCelda,
+    this.permitido = true,
   });
 
   final int numero;
   final bool actual;
   final bool enOtraCelda;
 
+  /// Si la zona de la celda acepta este número.
+  final bool permitido;
+
   @override
   Widget build(BuildContext context) {
+    return Opacity(
+      opacity: permitido ? 1 : 0.35,
+      child: _boton(context),
+    );
+  }
+
+  Widget _boton(BuildContext context) {
     return Material(
       color: actual ? Colors.black : colorTarjeta,
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         key: Key('initial-value-$numero'),
         borderRadius: BorderRadius.circular(10),
-        onTap: () => Navigator.pop(context, numero),
+        onTap: permitido ? () => Navigator.pop(context, numero) : null,
         child: Container(
           width: 72,
           padding: const EdgeInsets.symmetric(vertical: 10),
@@ -343,6 +360,8 @@ class _OpcionNumero extends StatelessWidget {
               Text(
                 actual
                     ? 'Actual'
+                    : !permitido
+                    ? 'No va aquí'
                     : enOtraCelda
                     ? 'En uso'
                     : 'Libre',
