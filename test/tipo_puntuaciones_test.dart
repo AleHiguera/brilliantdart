@@ -7,14 +7,24 @@ void main() {
       Tipo(tipo: tipo, color: tipo.name, regla: 'regla', puntuacion: 1);
 
   group('Tipos de zona', () {
-    test('Hay exactamente 6 colores', () {
-      expect(TipoZona.values, hasLength(6));
+    test('Hay exactamente 7 colores', () {
+      expect(TipoZona.values, hasLength(7));
     });
 
-    test('Los colores son azul, rojo, verde, amarillo, morado y gris', () {
-      expect(TipoZona.values.map((tipo) => tipo.name).toSet(),
-          {'azul', 'rojo', 'verde', 'amarillo', 'morado', 'gris'});
-    });
+    test(
+      'Los colores son azul, rojo, verde, amarillo, morado, gris y naranja',
+      () {
+        expect(TipoZona.values.map((tipo) => tipo.name).toSet(), {
+          'azul',
+          'rojo',
+          'verde',
+          'amarillo',
+          'morado',
+          'gris',
+          'naranja',
+        });
+      },
+    );
 
     for (final tipo in TipoZona.values) {
       group(tipo.name, () {
@@ -54,10 +64,7 @@ void main() {
         });
 
         test('obtenerInformacion tiene tres líneas', () {
-          final lineas = crear(tipo)
-              .obtenerInformacion()
-              .trim()
-              .split('\n');
+          final lineas = crear(tipo).obtenerInformacion().trim().split('\n');
 
           expect(lineas, hasLength(3));
           expect(lineas[0], startsWith('Tipo: '));
@@ -72,34 +79,44 @@ void main() {
     test('Azul con [3] solo acepta el 3', () {
       final azul = crear(TipoZona.azul);
       for (var numero = 1; numero <= 6; numero++) {
-        expect(azul.esPosibleAgregar([3], numero), numero == 3,
-            reason: 'número $numero');
+        expect(
+          azul.esPosibleAgregar([3], numero),
+          numero == 3,
+          reason: 'número $numero',
+        );
       }
     });
 
     test('Rojo con [1, 4] acepta todo menos el 1 y el 4', () {
       final rojo = crear(TipoZona.rojo);
       for (var numero = 1; numero <= 6; numero++) {
-        expect(rojo.esPosibleAgregar([1, 4], numero), numero != 1 && numero != 4,
-            reason: 'número $numero');
+        expect(
+          rojo.esPosibleAgregar([1, 4], numero),
+          numero != 1 && numero != 4,
+          reason: 'número $numero',
+        );
       }
     });
 
     test('Amarillo con [2, 3, 5] acepta solo el 1, 4 y 6', () {
       final amarillo = crear(TipoZona.amarillo);
       for (var numero = 1; numero <= 6; numero++) {
-        expect(amarillo.esPosibleAgregar([2, 3, 5], numero),
-            {1, 4, 6}.contains(numero),
-            reason: 'número $numero');
+        expect(
+          amarillo.esPosibleAgregar([2, 3, 5], numero),
+          {1, 4, 6}.contains(numero),
+          reason: 'número $numero',
+        );
       }
     });
 
     test('Morado con [2, 6] solo acepta el 2 y el 6', () {
       final morado = crear(TipoZona.morado);
       for (var numero = 1; numero <= 6; numero++) {
-        expect(morado.esPosibleAgregar([2, 6], numero),
-            numero == 2 || numero == 6,
-            reason: 'número $numero');
+        expect(
+          morado.esPosibleAgregar([2, 6], numero),
+          numero == 2 || numero == 6,
+          reason: 'número $numero',
+        );
       }
     });
 
@@ -136,32 +153,44 @@ void main() {
 
     test('Rojo [6, 5, 4, 3, 2, 1] es válido', () {
       expect(
-          crear(TipoZona.rojo).validarMovimiento([6, 5, 4, 3, 2, 1]), isTrue);
+        crear(TipoZona.rojo).validarMovimiento([6, 5, 4, 3, 2, 1]),
+        isTrue,
+      );
     });
 
     test('Rojo [1, 2, 3, 4, 5, 5] no es válido', () {
       expect(
-          crear(TipoZona.rojo).validarMovimiento([1, 2, 3, 4, 5, 5]), isFalse);
+        crear(TipoZona.rojo).validarMovimiento([1, 2, 3, 4, 5, 5]),
+        isFalse,
+      );
     });
 
     test('Verde [1, 1, 1, 1, 1, 1] es válido', () {
       expect(
-          crear(TipoZona.verde).validarMovimiento([1, 1, 1, 1, 1, 1]), isTrue);
+        crear(TipoZona.verde).validarMovimiento([1, 1, 1, 1, 1, 1]),
+        isTrue,
+      );
     });
 
     test('Morado [1, 1, 1, 1, 1, 2] es válido', () {
-      expect(crear(TipoZona.morado).validarMovimiento([1, 1, 1, 1, 1, 2]),
-          isTrue);
+      expect(
+        crear(TipoZona.morado).validarMovimiento([1, 1, 1, 1, 1, 2]),
+        isTrue,
+      );
     });
 
     test('Morado [1, 2, 1, 2, 1, 3] no es válido', () {
-      expect(crear(TipoZona.morado).validarMovimiento([1, 2, 1, 2, 1, 3]),
-          isFalse);
+      expect(
+        crear(TipoZona.morado).validarMovimiento([1, 2, 1, 2, 1, 3]),
+        isFalse,
+      );
     });
 
     test('Amarillo con cinco números distintos es válido', () {
       expect(
-          crear(TipoZona.amarillo).validarMovimiento([6, 1, 5, 2, 4]), isTrue);
+        crear(TipoZona.amarillo).validarMovimiento([6, 1, 5, 2, 4]),
+        isTrue,
+      );
     });
   });
 }

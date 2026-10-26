@@ -38,6 +38,8 @@ void verificarReglas(Tablero tablero) {
         if (llena) expect(distintos, 2, reason: motivo);
       case TipoZona.verde:
         break;
+      case TipoZona.naranja:
+        expect(zona.tipo.validarMovimiento(valores), isTrue, reason: motivo);
     }
 
     expect(zona.completado, llena, reason: motivo);
