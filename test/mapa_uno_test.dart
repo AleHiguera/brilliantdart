@@ -82,6 +82,7 @@ void main() {
             TipoZona.azul || TipoZona.gris => 2,
             TipoZona.rojo || TipoZona.amarillo => indice + 1,
             TipoZona.verde => indice % 3 + 1,
+            TipoZona.naranja => (region.tipo as TipoNaranja).minimo,
             TipoZona.morado => indice == 0 ? 2 : 5,
           };
           final celda = region.coordenadas[indice];

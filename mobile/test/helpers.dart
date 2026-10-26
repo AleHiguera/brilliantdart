@@ -14,8 +14,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Un mapa (el uno si no se indica) con todas sus zonas completadas de forma
 /// válida excepto la celda verde [vacia] (desde 1), que queda vacía para la
-/// última jugada. Por defecto es la (4, 7) del Mapa 1.
-Tablero tableroCasiLleno({Mapa mapa = mapaUno, (int, int) vacia = (4, 7)}) {
+/// última jugada. Por defecto es la (4, 7) del Mapa 1. Los números iniciales
+/// van en orden ([valoresIniciales], del 1 al 6 si no se indica otro).
+Tablero tableroCasiLleno({
+  Mapa mapa = mapaUno,
+  (int, int) vacia = (4, 7),
+  List<int> valoresIniciales = const [1, 2, 3, 4, 5, 6],
+}) {
   final tablero = mapa.crearTablero();
   final bloc = BlocValoresIniciales(
     tablero,
@@ -23,7 +28,7 @@ Tablero tableroCasiLleno({Mapa mapa = mapaUno, (int, int) vacia = (4, 7)}) {
   );
   for (var i = 0; i < mapa.celdasIniciales.length; i++) {
     final (fila, columna) = mapa.celdasIniciales[i];
-    bloc.colocarValorInicial(fila, columna, i + 1);
+    bloc.colocarValorInicial(fila, columna, valoresIniciales[i]);
   }
 
   for (final region in tablero.regiones) {
@@ -47,6 +52,7 @@ Tablero tableroCasiLleno({Mapa mapa = mapaUno, (int, int) vacia = (4, 7)}) {
           6,
         ].where((valor) => !existentes.contains(valor)).elementAt(indice),
         TipoZona.verde => 1,
+        TipoZona.naranja => (region.tipo as TipoNaranja).minimo,
         TipoZona.morado =>
           existentes.isEmpty
               ? (indice == 0 ? 2 : 5)
