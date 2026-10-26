@@ -19,6 +19,7 @@ void main() {
       TipoZona.amarillo: false,
       TipoZona.verde: true,
       TipoZona.morado: false,
+      TipoZona.naranja: true,
     },
     [1, 2, 3]: {
       TipoZona.azul: false,
@@ -27,6 +28,7 @@ void main() {
       TipoZona.amarillo: true,
       TipoZona.verde: true,
       TipoZona.morado: false,
+      TipoZona.naranja: true,
     },
     [2, 5, 2, 5]: {
       TipoZona.azul: false,
@@ -35,6 +37,7 @@ void main() {
       TipoZona.amarillo: false,
       TipoZona.verde: true,
       TipoZona.morado: true,
+      TipoZona.naranja: true,
     },
     [4, 4, 6]: {
       TipoZona.azul: false,
@@ -43,6 +46,7 @@ void main() {
       TipoZona.amarillo: false,
       TipoZona.verde: true,
       TipoZona.morado: true,
+      TipoZona.naranja: true,
     },
     [6]: {
       TipoZona.azul: true,
@@ -51,6 +55,7 @@ void main() {
       TipoZona.amarillo: true,
       TipoZona.verde: true,
       TipoZona.morado: false,
+      TipoZona.naranja: true,
     },
   };
 
@@ -66,7 +71,7 @@ void main() {
       }
     }
 
-    test('Los casos cubren los 6 colores', () {
+    test('Los casos cubren los 7 colores', () {
       for (final esperado in casos.values) {
         expect(esperado.keys.toSet(), TipoZona.values.toSet());
       }

@@ -15,10 +15,11 @@ void main() {
         'A': TipoZona.amarillo,
         'R': TipoZona.rojo,
         'Z': TipoZona.azul,
+        'N': TipoZona.naranja,
       });
     });
 
-    test('Hay una letra para cada uno de los 6 colores', () {
+    test('Hay una letra para cada uno de los 7 colores', () {
       expect(letrasDeColores.values.toSet(), TipoZona.values.toSet());
     });
 

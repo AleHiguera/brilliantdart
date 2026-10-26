@@ -15,6 +15,7 @@ void main() {
         TipoZona.azul || TipoZona.gris => 2,
         TipoZona.rojo || TipoZona.amarillo => indice + 1,
         TipoZona.verde => 6,
+        TipoZona.naranja => (zona.tipo as TipoNaranja).minimo,
         TipoZona.morado => indice == 0 ? 2 : 5,
       };
       final celda = zona.coordenadas[indice];

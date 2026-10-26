@@ -31,6 +31,7 @@ void main() {
           TipoZona.azul || TipoZona.gris => 4,
           TipoZona.rojo || TipoZona.amarillo => indice + 1,
           TipoZona.verde => indice % 3 + 1,
+          TipoZona.naranja => (zona.tipo as TipoNaranja).minimo,
           TipoZona.morado => indice == 0 ? 2 : 5,
         };
         final celda = zona.coordenadas[indice];
@@ -86,6 +87,7 @@ void main() {
         'A': TipoZona.amarillo,
         'R': TipoZona.rojo,
         'Z': TipoZona.azul,
+        'N': TipoZona.naranja,
       });
     });
 
@@ -102,7 +104,15 @@ void main() {
     });
 
     test('Usa los 6 colores, incluido el gris', () {
-      expect(mapaDos.tiposPresentes.toSet(), TipoZona.values.toSet());
+      expect(mapaDos.tiposPresentes.toSet(), {
+        TipoZona.azul,
+        TipoZona.rojo,
+        TipoZona.verde,
+        TipoZona.amarillo,
+        TipoZona.morado,
+        TipoZona.gris,
+      });
+      expect(mapaDos.tiposPresentes, isNot(contains(TipoZona.naranja)));
     });
 
     test('Cuántas celdas tiene cada color', () {
@@ -158,7 +168,7 @@ void main() {
     });
 
     test('Cada color tiene nombre y regla escritos', () {
-      for (final tipo in TipoZona.values) {
+      for (final tipo in mapaDos.tiposPresentes) {
         expect(mapaDos.crearTipo(tipo).color, isNotEmpty);
         expect(mapaDos.crearTipo(tipo).regla, isNotEmpty);
       }

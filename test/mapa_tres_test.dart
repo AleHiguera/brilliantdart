@@ -32,6 +32,7 @@ void main() {
           TipoZona.azul || TipoZona.gris => 4,
           TipoZona.rojo || TipoZona.amarillo => indice + 1,
           TipoZona.verde => indice % 3 + 1,
+          TipoZona.naranja => (zona.tipo as TipoNaranja).minimo,
           TipoZona.morado => indice == 0 ? 2 : 5,
         };
         final celda = zona.coordenadas[indice];
@@ -85,7 +86,15 @@ void main() {
     });
 
     test('Usa los 6 colores', () {
-      expect(mapaTres.tiposPresentes.toSet(), TipoZona.values.toSet());
+      expect(mapaTres.tiposPresentes.toSet(), {
+        TipoZona.azul,
+        TipoZona.rojo,
+        TipoZona.verde,
+        TipoZona.amarillo,
+        TipoZona.morado,
+        TipoZona.gris,
+      });
+      expect(mapaTres.tiposPresentes, isNot(contains(TipoZona.naranja)));
     });
 
     test('Cuántas celdas tiene cada color', () {
