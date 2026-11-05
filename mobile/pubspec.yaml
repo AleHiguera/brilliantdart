@@ -15,6 +15,7 @@ dependencies:
   brilliantdart:
     path: ..
   audioplayers: ^6.8.1
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:

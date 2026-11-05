@@ -11,29 +11,42 @@ import 'package:brilliantdart/tipoo.dart';
 import 'package:brilliantdart/validador_anclas.dart';
 import 'package:brilliant_mobile/colores_zonas.dart' as estilo;
 import 'package:brilliant_mobile/historial_dados_view.dart';
+import 'package:brilliant_mobile/inicio_sesion.dart';
 import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
 import 'package:brilliant_mobile/paneles_juego.dart';
+import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/sonidos.dart';
 import 'package:brilliant_mobile/tabla_puntuacion.dart';
 
 void main() {
-  runApp(const BrilliantApp());
+  runApp(BrilliantApp(auth: ServicioAuth()));
 }
 
 class BrilliantApp extends StatelessWidget {
-  const BrilliantApp({super.key});
+  const BrilliantApp({super.key, this.auth});
+
+  /// Con [auth] hay que iniciar sesión en el servidor antes de jugar; sin él
+  /// (como en las pruebas) se entra directo a elegir el mapa.
+  final ServicioAuth? auth;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    final auth = this.auth;
+    final app = MaterialApp(
       title: 'Brilliant',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.black),
         scaffoldBackgroundColor: Colors.white,
       ),
-      home: const SeleccionMapaPage(),
+      home: auth == null
+          ? const SeleccionMapaPage()
+          : InicioSesionPage(
+              auth: auth,
+              siguiente: (_) => const SeleccionMapaPage(),
+            ),
     );
+    return auth == null ? app : ProveedorAuth(auth: auth, child: app);
   }
 }
 
@@ -46,8 +59,25 @@ class SeleccionMapaPage extends StatelessWidget {
     ).push(MaterialPageRoute<void>(builder: (_) => TableroPage(mapa: mapa)));
   }
 
+  Future<void> _cerrarSesion(BuildContext context, ServicioAuth auth) async {
+    final navegador = Navigator.of(context);
+    await auth.cerrarSesion();
+    navegador.pushAndRemoveUntil(
+      MaterialPageRoute<void>(
+        builder: (_) => InicioSesionPage(
+          auth: auth,
+          siguiente: (_) => const SeleccionMapaPage(),
+        ),
+      ),
+      (_) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final auth = ProveedorAuth.maybeOf(context);
+    final sesion = auth?.sesion;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Brilliant'),
@@ -55,6 +85,15 @@ class SeleccionMapaPage extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
+        actions: [
+          if (auth != null && sesion != null)
+            IconButton(
+              key: const Key('logout-button'),
+              tooltip: 'Cerrar sesión (${sesion.nombre})',
+              icon: const Icon(Icons.logout),
+              onPressed: () => _cerrarSesion(context, auth),
+            ),
+        ],
       ),
       body: SafeArea(
         child: Center(
