@@ -30,9 +30,12 @@ class Sesion {
 }
 
 class ErrorAuth implements Exception {
-  const ErrorAuth(this.mensaje);
+  const ErrorAuth(this.mensaje, {this.codigo});
 
   final String mensaje;
+
+  /// Código HTTP con el que el servidor rechazó la petición, si llegó a responder.
+  final int? codigo;
 
   @override
   String toString() => mensaje;
@@ -83,6 +86,24 @@ class ServicioAuth {
       nombre: respuesta['nombre'] as String,
       token: respuesta['token'] as String,
     );
+  }
+
+  /// Avisa al servidor de que la sesión sigue abierta. Devuelve false solo si
+  /// el servidor dice que ya no vale; sin conexión se sigue intentando.
+  Future<bool> mantenerSesion() async {
+    final actual = sesion;
+    if (actual == null) return true;
+    try {
+      await _enviar(
+        'latido',
+        cabeceras: {'Authorization': 'Bearer ${actual.token}'},
+      );
+      return true;
+    } on ErrorAuth catch (e) {
+      if (e.codigo != 401 || !identical(sesion, actual)) return true;
+      sesion = null;
+      return false;
+    }
   }
 
   Future<void> cerrarSesion() async {
@@ -136,7 +157,10 @@ class ServicioAuth {
       throw const ErrorAuth('Respuesta inesperada del servidor.');
     }
     if (datos['ok'] != true) {
-      throw ErrorAuth(datos['mensaje'] as String? ?? 'Error del servidor.');
+      throw ErrorAuth(
+        datos['mensaje'] as String? ?? 'Error del servidor.',
+        codigo: respuesta.statusCode,
+      );
     }
     return datos;
   }

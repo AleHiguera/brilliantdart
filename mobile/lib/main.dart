@@ -12,6 +12,7 @@ import 'package:brilliantdart/validador_anclas.dart';
 import 'package:brilliant_mobile/colores_zonas.dart' as estilo;
 import 'package:brilliant_mobile/historial_dados_view.dart';
 import 'package:brilliant_mobile/inicio_sesion.dart';
+import 'package:brilliant_mobile/latido_sesion.dart';
 import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
 import 'package:brilliant_mobile/paneles_juego.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
@@ -43,11 +44,38 @@ class BrilliantApp extends StatelessWidget {
           ? const SeleccionMapaPage()
           : InicioSesionPage(
               auth: auth,
-              siguiente: (_) => const SeleccionMapaPage(),
+              siguiente: (_) => _mapasConSesion(auth),
             ),
     );
     return auth == null ? app : ProveedorAuth(auth: auth, child: app);
   }
+}
+
+Widget _mapasConSesion(ServicioAuth auth) => LatidoSesion(
+  auth: auth,
+  alPerderSesion: (context) => _volverAlInicio(
+    Navigator.of(context),
+    auth,
+    aviso: 'Tu sesión ya no está activa, inicia sesión de nuevo.',
+  ),
+  child: const SeleccionMapaPage(),
+);
+
+void _volverAlInicio(
+  NavigatorState navegador,
+  ServicioAuth auth, {
+  String? aviso,
+}) {
+  navegador.pushAndRemoveUntil(
+    MaterialPageRoute<void>(
+      builder: (_) => InicioSesionPage(
+        auth: auth,
+        siguiente: (_) => _mapasConSesion(auth),
+        aviso: aviso,
+      ),
+    ),
+    (_) => false,
+  );
 }
 
 class SeleccionMapaPage extends StatelessWidget {
@@ -83,15 +111,7 @@ class SeleccionMapaPage extends StatelessWidget {
     );
     if (confirmado != true) return;
     await auth.cerrarSesion();
-    navegador.pushAndRemoveUntil(
-      MaterialPageRoute<void>(
-        builder: (_) => InicioSesionPage(
-          auth: auth,
-          siguiente: (_) => const SeleccionMapaPage(),
-        ),
-      ),
-      (_) => false,
-    );
+    _volverAlInicio(navegador, auth);
   }
 
   @override

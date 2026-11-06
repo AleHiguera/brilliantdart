@@ -11,10 +11,14 @@ class InicioSesionPage extends StatefulWidget {
     super.key,
     required this.auth,
     required this.siguiente,
+    this.aviso,
   });
 
   final ServicioAuth auth;
   final WidgetBuilder siguiente;
+
+  /// Motivo por el que se volvió a esta pantalla, como una sesión perdida.
+  final String? aviso;
 
   @override
   State<InicioSesionPage> createState() => _InicioSesionPageState();
@@ -26,7 +30,7 @@ class _InicioSesionPageState extends State<InicioSesionPage> {
   final _pin = TextEditingController();
   late final _servidor = TextEditingController(text: widget.auth.servidor);
   bool _enviando = false;
-  String? _error;
+  late String? _error = widget.aviso;
 
   @override
   void dispose() {

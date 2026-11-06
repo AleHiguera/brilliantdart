@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:brilliant_mobile/latido_sesion.dart';
 import 'package:brilliant_mobile/main.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:flutter/material.dart';
@@ -8,13 +9,19 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 /// Servidor falso: acepta solo a "ana" con el PIN 1234.
-ServicioAuth authFalso({List<String>? peticiones}) {
+ServicioAuth authFalso({List<String>? peticiones, int codigoLatido = 200}) {
   return ServicioAuth(
     servidor: 'https://servidor:8443',
     cliente: MockClient((peticion) async {
       peticiones?.add(peticion.url.path);
       if (peticion.url.path == '/api/logout') {
         return respuesta({'ok': true, 'mensaje': 'Sesión cerrada.'}, 200);
+      }
+      if (peticion.url.path == '/api/latido') {
+        return respuesta({
+          'ok': codigoLatido == 200,
+          'mensaje': 'Latido.',
+        }, codigoLatido);
       }
       final datos = peticion.bodyFields;
       if (peticion.url.path == '/api/registro') {
@@ -145,6 +152,54 @@ void main() {
 
       expect(find.text('Elige tu mapa'), findsOneWidget);
       expect(auth.sesion, isNotNull);
+    });
+
+    testWidgets('Con la sesión abierta se envían latidos al servidor', (
+      tester,
+    ) async {
+      final peticiones = <String>[];
+      await tester.pumpWidget(
+        BrilliantApp(auth: authFalso(peticiones: peticiones)),
+      );
+      await entrar(tester, 'ana', '1234');
+
+      await tester.pump(LatidoSesion.intervalo);
+      await esperarServidor(tester);
+
+      expect(peticiones, ['/api/login', '/api/latido']);
+      expect(find.text('Elige tu mapa'), findsOneWidget);
+    });
+
+    testWidgets('Si el servidor no responde al latido se sigue jugando', (
+      tester,
+    ) async {
+      final auth = authFalso(codigoLatido: 503);
+      await tester.pumpWidget(BrilliantApp(auth: auth));
+      await entrar(tester, 'ana', '1234');
+
+      await tester.pump(LatidoSesion.intervalo);
+      await esperarServidor(tester);
+
+      expect(find.text('Elige tu mapa'), findsOneWidget);
+      expect(auth.sesion, isNotNull);
+    });
+
+    testWidgets('Si el servidor rechaza el latido se vuelve al inicio', (
+      tester,
+    ) async {
+      final auth = authFalso(codigoLatido: 401);
+      await tester.pumpWidget(BrilliantApp(auth: auth));
+      await entrar(tester, 'ana', '1234');
+
+      await tester.pump(LatidoSesion.intervalo);
+      await esperarServidor(tester);
+
+      expect(find.text('Inicia sesión'), findsOneWidget);
+      expect(
+        find.text('Tu sesión ya no está activa, inicia sesión de nuevo.'),
+        findsOneWidget,
+      );
+      expect(auth.sesion, isNull);
     });
   });
 
