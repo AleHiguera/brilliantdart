@@ -15,9 +15,11 @@ import 'package:brilliant_mobile/inicio_sesion.dart';
 import 'package:brilliant_mobile/latido_sesion.dart';
 import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
 import 'package:brilliant_mobile/paneles_juego.dart';
+import 'package:brilliant_mobile/seccion_multijugador.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/sonidos.dart';
 import 'package:brilliant_mobile/tabla_puntuacion.dart';
+import 'package:brilliant_mobile/vista_mapa.dart';
 
 void main() {
   runApp(BrilliantApp(auth: ServicioAuth()));
@@ -198,8 +200,12 @@ class SeleccionMapaPage extends StatelessWidget {
                     onTap: () => _abrirMapa(context, mapaCuatro),
                   ),
                 ),
+                if (auth != null) ...[
+                  const SizedBox(height: 24),
+                  _Aparecer(indice: 5, child: SeccionMultijugador(auth: auth)),
+                ],
                 const SizedBox(height: 24),
-                const _Aparecer(indice: 5, child: _ComoSeJuega()),
+                const _Aparecer(indice: 6, child: _ComoSeJuega()),
               ],
             ),
           ),
@@ -329,31 +335,7 @@ class _OpcionMapa extends StatelessWidget {
                     width: 84,
                     height: 84,
                     child: disponible
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                            child: GridView.builder(
-                              physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 7,
-                                  ),
-                              itemCount: 49,
-                              itemBuilder: (context, index) => DecoratedBox(
-                                key: Key('map-preview-cell-$index'),
-                                decoration: BoxDecoration(
-                                  color: TableroPage.colorEn(
-                                    index ~/ 7,
-                                    index % 7,
-                                    mapa: mapa!,
-                                  ),
-                                  border: Border.all(
-                                    color: Colors.black12,
-                                    width: 0.3,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          )
+                        ? VistaPreviaMapa(mapa: mapa!)
                         : DecoratedBox(
                             decoration: BoxDecoration(
                               color: const Color(0xFFE4E4E0),

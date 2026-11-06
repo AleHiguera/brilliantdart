@@ -120,6 +120,22 @@ class ServicioAuth {
     }
   }
 
+  /// Hace una petición a la API a nombre de la sesión abierta.
+  Future<Map<String, dynamic>> enviarConSesion(
+    String accion,
+    Map<String, String> cuerpo,
+  ) {
+    final actual = sesion;
+    if (actual == null) {
+      throw const ErrorAuth('Tu sesión ya no está activa.', codigo: 401);
+    }
+    return _enviar(
+      accion,
+      cuerpo: cuerpo,
+      cabeceras: {'Authorization': 'Bearer ${actual.token}'},
+    );
+  }
+
   Future<Map<String, dynamic>> _enviar(
     String accion, {
     Map<String, String>? cuerpo,
