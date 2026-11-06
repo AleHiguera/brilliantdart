@@ -61,6 +61,27 @@ class SeleccionMapaPage extends StatelessWidget {
 
   Future<void> _cerrarSesion(BuildContext context, ServicioAuth auth) async {
     final navegador = Navigator.of(context);
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content: Text(
+          '¿Quieres cerrar la sesión de ${auth.sesion?.nombre ?? 'tu cuenta'}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            key: const Key('logout-confirm'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Cerrar sesión'),
+          ),
+        ],
+      ),
+    );
+    if (confirmado != true) return;
     await auth.cerrarSesion();
     navegador.pushAndRemoveUntil(
       MaterialPageRoute<void>(
@@ -87,13 +108,27 @@ class SeleccionMapaPage extends StatelessWidget {
         elevation: 0,
         actions: [
           if (auth != null && sesion != null)
-            IconButton(
+            TextButton.icon(
               key: const Key('logout-button'),
-              tooltip: 'Cerrar sesión (${sesion.nombre})',
+              style: TextButton.styleFrom(foregroundColor: Colors.black),
               icon: const Icon(Icons.logout),
+              label: const Text('Salir'),
               onPressed: () => _cerrarSesion(context, auth),
             ),
         ],
+        bottom: auth != null && sesion != null
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(28),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    'Jugando como ${sesion.nombre} (@${sesion.usuario})',
+                    key: const Key('sesion-actual'),
+                    style: const TextStyle(color: Colors.black54),
+                  ),
+                ),
+              )
+            : null,
       ),
       body: SafeArea(
         child: Center(

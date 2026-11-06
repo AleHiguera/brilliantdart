@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:brilliant_mobile/colores_zonas.dart' as estilo;
+import 'package:brilliant_mobile/registro.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 
 /// Pide usuario y PIN y los comprueba contra el servidor de cuentas antes de
@@ -57,6 +58,17 @@ class _InicioSesionPageState extends State<InicioSesionPage> {
         _pin.clear();
       });
     }
+  }
+
+  void _abrirRegistro() {
+    widget.auth.servidor = _servidor.text.trim();
+    setState(() => _error = null);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            RegistroPage(auth: widget.auth, siguiente: widget.siguiente),
+      ),
+    );
   }
 
   @override
@@ -139,9 +151,7 @@ class _InicioSesionPageState extends State<InicioSesionPage> {
                         labelText: 'PIN (4 números)',
                         border: OutlineInputBorder(),
                       ),
-                      validator: (valor) => (valor ?? '').length != 4
-                          ? 'El PIN tiene exactamente 4 números.'
-                          : null,
+                      validator: validarPin,
                       onFieldSubmitted: (_) => _entrar(),
                     ),
                     ExpansionTile(
@@ -197,6 +207,12 @@ class _InicioSesionPageState extends State<InicioSesionPage> {
                               )
                             : const Text('Entrar'),
                       ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      key: const Key('login-crear-cuenta'),
+                      onPressed: _enviando ? null : _abrirRegistro,
+                      child: const Text('¿No tienes cuenta? Crear cuenta'),
                     ),
                   ],
                 ),

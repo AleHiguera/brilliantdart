@@ -17,6 +17,21 @@ ServicioAuth authFalso({List<String>? peticiones}) {
         return respuesta({'ok': true, 'mensaje': 'Sesión cerrada.'}, 200);
       }
       final datos = peticion.bodyFields;
+      if (peticion.url.path == '/api/registro') {
+        if (datos['usuario'] == 'ana') {
+          return respuesta({
+            'ok': false,
+            'mensaje': 'El usuario "ana" ya está en uso, elige otro.',
+          }, 409);
+        }
+        return respuesta({
+          'ok': true,
+          'mensaje': 'Cuenta creada correctamente.',
+          'usuario': datos['usuario']!,
+          'nombre': datos['nombre']!,
+          'token': 'nuevo',
+        }, 200);
+      }
       if (datos['usuario'] == 'ana' && datos['password'] == '1234') {
         return respuesta({
           'ok': true,
@@ -107,11 +122,109 @@ void main() {
       await entrar(tester, 'ana', '1234');
 
       await tester.tap(find.byKey(const Key('logout-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('logout-confirm')));
       await esperarServidor(tester);
 
       expect(find.text('Inicia sesión'), findsOneWidget);
       expect(peticiones, ['/api/login', '/api/logout']);
       expect(auth.sesion, isNull);
+    });
+
+    testWidgets('Cancelar el cierre de sesión mantiene la sesión', (
+      tester,
+    ) async {
+      final auth = authFalso();
+      await tester.pumpWidget(BrilliantApp(auth: auth));
+      await entrar(tester, 'ana', '1234');
+
+      await tester.tap(find.byKey(const Key('logout-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Elige tu mapa'), findsOneWidget);
+      expect(auth.sesion, isNotNull);
+    });
+  });
+
+  group('Widgets: registro', () {
+    Future<void> abrirRegistro(WidgetTester tester) async {
+      await tester.tap(find.byKey(const Key('login-crear-cuenta')));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> rellenar(
+      WidgetTester tester, {
+      String usuario = 'luis',
+      String nombre = 'Luis Pérez',
+      String correo = 'luis@correo.com',
+      String pin = '4321',
+      String? confirmacion,
+    }) async {
+      await tester.enterText(
+        find.byKey(const Key('registro-usuario')),
+        usuario,
+      );
+      await tester.enterText(find.byKey(const Key('registro-nombre')), nombre);
+      await tester.enterText(find.byKey(const Key('registro-correo')), correo);
+      await tester.enterText(find.byKey(const Key('registro-pin')), pin);
+      await tester.enterText(
+        find.byKey(const Key('registro-confirmacion')),
+        confirmacion ?? pin,
+      );
+      await tester.ensureVisible(find.byKey(const Key('registro-crear')));
+      await tester.tap(find.byKey(const Key('registro-crear')));
+      await esperarServidor(tester);
+    }
+
+    testWidgets('Crear una cuenta entra directo a elegir mapa', (tester) async {
+      final auth = authFalso();
+      await tester.pumpWidget(BrilliantApp(auth: auth));
+      await abrirRegistro(tester);
+
+      await rellenar(tester);
+
+      expect(find.text('Elige tu mapa'), findsOneWidget);
+      expect(find.text('Jugando como Luis Pérez (@luis)'), findsOneWidget);
+      expect(auth.sesion?.token, 'nuevo');
+    });
+
+    testWidgets('Un usuario ocupado muestra el error del servidor', (
+      tester,
+    ) async {
+      await tester.pumpWidget(BrilliantApp(auth: authFalso()));
+      await abrirRegistro(tester);
+
+      await rellenar(tester, usuario: 'ana');
+
+      expect(
+        find.text('El usuario "ana" ya está en uso, elige otro.'),
+        findsOneWidget,
+      );
+      expect(find.text('Elige tu mapa'), findsNothing);
+    });
+
+    testWidgets('Los datos inválidos se avisan sin llamar al servidor', (
+      tester,
+    ) async {
+      final peticiones = <String>[];
+      await tester.pumpWidget(
+        BrilliantApp(auth: authFalso(peticiones: peticiones)),
+      );
+      await abrirRegistro(tester);
+
+      await rellenar(
+        tester,
+        usuario: '1ab',
+        correo: 'sin-arroba',
+        confirmacion: '0000',
+      );
+
+      expect(find.textContaining('Debe empezar por una letra'), findsOneWidget);
+      expect(find.text('El correo electrónico no es válido.'), findsOneWidget);
+      expect(find.text('Los PIN no coinciden.'), findsOneWidget);
+      expect(peticiones, isEmpty);
     });
   });
 }

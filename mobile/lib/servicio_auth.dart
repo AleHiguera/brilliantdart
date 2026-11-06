@@ -55,6 +55,29 @@ class ServicioAuth {
       'login',
       cuerpo: {'usuario': usuario.trim(), 'password': pin},
     );
+    return _abrirSesion(respuesta);
+  }
+
+  /// Crea la cuenta en el servidor y deja la sesión iniciada.
+  Future<Sesion> registrar({
+    required String usuario,
+    required String nombre,
+    required String correo,
+    required String pin,
+  }) async {
+    final respuesta = await _enviar(
+      'registro',
+      cuerpo: {
+        'usuario': usuario.trim(),
+        'nombre': nombre.trim(),
+        'correo': correo.trim(),
+        'password': pin,
+      },
+    );
+    return _abrirSesion(respuesta);
+  }
+
+  Sesion _abrirSesion(Map<String, dynamic> respuesta) {
     return sesion = Sesion(
       usuario: respuesta['usuario'] as String,
       nombre: respuesta['nombre'] as String,
