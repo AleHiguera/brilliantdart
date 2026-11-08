@@ -22,6 +22,7 @@ http.Response sala() => json({
   'capacidad': 2,
   'anfitrion': 'ana',
   'jugadores': ['ana', 'luis'],
+  'comenzada': false,
 }, 200);
 
 http.Response rechazo(int codigo) =>

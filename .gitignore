@@ -2,6 +2,9 @@
 # Created by `dart pub`
 .dart_tool/
 
+# Compilados y cachés que se generan solos
+build/
+
 # Flutter SDK local download used for this workspace
 src/flutter/
 src/flutter_windows_3.47.5-stable/

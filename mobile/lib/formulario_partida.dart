@@ -19,7 +19,9 @@ class BotonEnviarPartida extends StatelessWidget {
 
   final String texto;
   final bool enviando;
-  final VoidCallback onPressed;
+
+  /// Sin acción el botón queda deshabilitado.
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {

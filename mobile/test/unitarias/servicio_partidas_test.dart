@@ -17,6 +17,7 @@ const Map<String, Object> salaJson = {
   'capacidad': 3,
   'anfitrion': 'ana',
   'jugadores': ['ana', 'luis'],
+  'comenzada': false,
 };
 
 http.Response json(Map<String, Object> datos, int codigo) =>
@@ -71,6 +72,35 @@ void main() {
       expect(peticiones.single.bodyFields, {'codigo': 'ABC234'});
     });
 
+    test('Iniciar envía el código y lee la sala ya comenzada', () async {
+      final peticiones = <http.Request>[];
+      final partidas = servicio(
+        peticiones,
+        respuesta: json({...salaJson, 'comenzada': true}, 200),
+      );
+
+      final sala = await partidas.iniciar('ABC234');
+
+      expect(peticiones.single.url.path, '/api/partida/iniciar');
+      expect(peticiones.single.bodyFields, {'codigo': 'ABC234'});
+      expect(sala.comenzada, isTrue);
+      expect(sala.sePuedeIniciar, isFalse);
+    });
+
+    test('Solo se puede iniciar con al menos 2 jugadores', () async {
+      final sola = await servicio(
+        [],
+        respuesta: json({
+          ...salaJson,
+          'jugadores': ['ana'],
+        }, 200),
+      ).consultar('ABC234');
+      final completa = await servicio([]).consultar('ABC234');
+
+      expect(sola.sePuedeIniciar, isFalse);
+      expect(completa.sePuedeIniciar, isTrue);
+    });
+
     test('Consultar y salir usan su propia acción', () async {
       final peticiones = <http.Request>[];
       final partidas = servicio(peticiones);
@@ -111,6 +141,80 @@ void main() {
         throwsA(isA<ErrorAuth>().having((e) => e.codigo, 'codigo', 401)),
       );
       expect(peticiones, isEmpty);
+    });
+
+    test('Un mapa que la app no conoce llega como ErrorAuth', () async {
+      final partidas = servicio(
+        [],
+        respuesta: json({...salaJson, 'mapa': 9}, 200),
+      );
+
+      await expectLater(
+        partidas.unirse('ABC234'),
+        throwsA(
+          isA<ErrorAuth>().having(
+            (e) => e.mensaje,
+            'mensaje',
+            'Esta partida usa un mapa que tu versión de la app no conoce.',
+          ),
+        ),
+      );
+    });
+
+    for (final (campo, valor) in const [
+      ('mapa', '3'),
+      ('capacidad', '4'),
+      ('anfitrion', 7),
+      ('jugadores', [1, 2]),
+      ('comenzada', 'no'),
+    ]) {
+      test('Un $campo con otro tipo es una respuesta inesperada', () async {
+        final partidas = servicio(
+          [],
+          respuesta: json({...salaJson, campo: valor}, 200),
+        );
+
+        await expectLater(
+          partidas.unirse('ABC234'),
+          throwsA(
+            isA<ErrorAuth>().having(
+              (e) => e.mensaje,
+              'mensaje',
+              'Respuesta inesperada del servidor.',
+            ),
+          ),
+        );
+      });
+    }
+
+    test('Una respuesta sin los datos de la sala es inesperada', () async {
+      final partidas = servicio([], respuesta: json({'ok': true}, 200));
+
+      await expectLater(partidas.unirse('ABC234'), throwsA(isA<ErrorAuth>()));
+    });
+
+    group('Código escrito a mano', () {
+      test('Acepta letras y números, sin importar los espacios', () {
+        expect(ServicioPartidas.errorCodigo('ABC234'), isNull);
+        expect(ServicioPartidas.errorCodigo('abc234'), isNull);
+        expect(ServicioPartidas.errorCodigo('  ABC234 '), isNull);
+      });
+
+      test('Rechaza el largo incorrecto', () {
+        const mensaje = 'El código tiene 6 caracteres.';
+
+        expect(ServicioPartidas.errorCodigo(''), mensaje);
+        expect(ServicioPartidas.errorCodigo('ABC23'), mensaje);
+        expect(ServicioPartidas.errorCodigo('ABC2345'), mensaje);
+      });
+
+      test('Rechaza símbolos y espacios internos', () {
+        const mensaje = 'El código solo lleva letras y números.';
+
+        expect(ServicioPartidas.errorCodigo('ABC-23'), mensaje);
+        expect(ServicioPartidas.errorCodigo('AB 234'), mensaje);
+        expect(ServicioPartidas.errorCodigo('ABCÑ23'), mensaje);
+      });
     });
   });
 }

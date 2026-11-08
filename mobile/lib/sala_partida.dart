@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:brilliantdart/catalogo_mapas.dart';
 import 'package:brilliant_mobile/colores_zonas.dart' as estilo;
 import 'package:brilliant_mobile/formulario_partida.dart';
+import 'package:brilliant_mobile/inicio_partida.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/servicio_partidas.dart';
 import 'package:brilliant_mobile/tarjetas_sala.dart';
@@ -51,6 +52,9 @@ class _SalaPartidaPageState extends State<SalaPartidaPage> {
   /// Por qué ya no se puede seguir en la sala, como que el anfitrión la cerró.
   String? _salaPerdida;
 
+  bool _iniciando = false;
+  String? _errorInicio;
+
   String? get _usuario => widget.partidas.auth.sesion?.usuario;
   bool get _soyAnfitrion => _sala.anfitrion == _usuario;
 
@@ -64,6 +68,21 @@ class _SalaPartidaPageState extends State<SalaPartidaPage> {
   void dispose() {
     _vigilante.detener();
     super.dispose();
+  }
+
+  Future<void> _iniciar() async {
+    setState(() {
+      _iniciando = true;
+      _errorInicio = null;
+    });
+    try {
+      final sala = await widget.partidas.iniciar(_sala.codigo);
+      if (mounted) setState(() => _sala = sala);
+    } on ErrorAuth catch (e) {
+      if (mounted) setState(() => _errorInicio = e.mensaje);
+    } finally {
+      if (mounted) setState(() => _iniciando = false);
+    }
   }
 
   Future<void> _salir() async {
@@ -134,14 +153,25 @@ class _SalaPartidaPageState extends State<SalaPartidaPage> {
                         advertencia: true,
                       ),
                     )
-                  else ...[
+                  // Una vez iniciada ya nadie puede usar el código.
+                  else if (!_sala.comenzada) ...[
                     TarjetaCodigo(codigo: _sala.codigo),
                     const SizedBox(height: 12),
                   ],
                   TarjetaMapa(mapa: mapa),
                   const SizedBox(height: 12),
                   TarjetaJugadores(sala: _sala, usuario: _usuario),
-                  const SizedBox(height: 20),
+                  if (perdida == null) ...[
+                    const SizedBox(height: 20),
+                    PanelInicioPartida(
+                      sala: _sala,
+                      soyAnfitrion: _soyAnfitrion,
+                      iniciando: _iniciando,
+                      error: _errorInicio,
+                      onIniciar: _iniciar,
+                    ),
+                  ],
+                  const SizedBox(height: 12),
                   OutlinedButton(
                     key: const Key('sala-salir'),
                     onPressed: _salir,

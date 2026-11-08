@@ -16,17 +16,21 @@ class ServidorFalso {
   List<String> jugadores = ['ana'];
   String anfitrion = 'ana';
   int capacidad = 4;
+  Object mapa = 3;
+  bool comenzada = false;
   String? rechazoSala;
+  String? rechazoInicio;
   int codigoEstado = 200;
 
   Map<String, Object> get _sala => {
     'ok': true,
     'mensaje': 'Sala.',
     'codigo': 'ABC234',
-    'mapa': 3,
+    'mapa': mapa,
     'capacidad': capacidad,
     'anfitrion': anfitrion,
     'jugadores': jugadores,
+    'comenzada': comenzada,
   };
 
   Iterable<http.Request> de(String accion) =>
@@ -50,6 +54,13 @@ class ServidorFalso {
           return _json({'ok': true, 'mensaje': 'Listo.'}, 200);
         case '/api/partida/estado' when codigoEstado != 200:
           return _json({'ok': false, 'mensaje': 'Fallo.'}, codigoEstado);
+        case '/api/partida/iniciar':
+          final rechazo = rechazoInicio;
+          if (rechazo != null) {
+            return _json({'ok': false, 'mensaje': rechazo}, 409);
+          }
+          comenzada = true;
+          return _json(_sala, 200);
       }
       final rechazo = rechazoSala;
       return rechazo != null
@@ -105,6 +116,19 @@ Future<void> crearSala(WidgetTester tester, ServidorFalso servidor) async {
   await tocar(tester, 'crear-mapa-3');
   await tocar(tester, 'crear-jugadores-4');
   await tester.tap(find.byKey(const Key('crear-enviar')));
+  await esperarServidor(tester);
+}
+
+/// Llega a la pantalla de unirse y envía el código, como lo haría el jugador.
+Future<void> unirseCon(
+  WidgetTester tester,
+  ServidorFalso servidor,
+  String codigo,
+) async {
+  await entrar(tester, servidor, 'luis');
+  await tocar(tester, 'multijugador-unirse');
+  await tester.enterText(find.byKey(const Key('unirse-codigo')), codigo);
+  await tester.tap(find.byKey(const Key('unirse-enviar')));
   await esperarServidor(tester);
 }
 
@@ -204,20 +228,173 @@ void main() {
       expect(servidor.de('unirse'), isEmpty);
     });
 
-    testWidgets('Una partida llena muestra el error del servidor', (
+    testWidgets('Un código con símbolos no llega al servidor', (tester) async {
+      final servidor = ServidorFalso();
+
+      await unirseCon(tester, servidor, 'ABC-23');
+
+      expect(
+        find.text('El código solo lleva letras y números.'),
+        findsOneWidget,
+      );
+      expect(servidor.de('unirse'), isEmpty);
+    });
+
+    // Los mismos mensajes con los que rechaza el servidor RegistroClientes.
+    for (final rechazo in const [
+      'No existe ninguna partida con ese código.',
+      'La partida ya comenzó.',
+      'La partida ya está llena.',
+    ]) {
+      testWidgets('El rechazo "$rechazo" se muestra y no deja entrar', (
+        tester,
+      ) async {
+        await unirseCon(
+          tester,
+          ServidorFalso()..rechazoSala = rechazo,
+          'ABC234',
+        );
+
+        expect(find.text(rechazo), findsOneWidget);
+        expect(find.byType(SalaPartidaPage), findsNothing);
+      });
+    }
+
+    testWidgets('Tras un rechazo se puede intentar con otro código', (
       tester,
     ) async {
       final servidor = ServidorFalso()
-        ..rechazoSala = 'La partida ya está llena.';
+        ..jugadores = ['ana', 'luis']
+        ..rechazoSala = 'No existe ninguna partida con ese código.';
+      await unirseCon(tester, servidor, 'ZZZ999');
+
+      servidor.rechazoSala = null;
+      await tester.enterText(find.byKey(const Key('unirse-codigo')), 'ABC234');
+      await tester.tap(find.byKey(const Key('unirse-enviar')));
+      await esperarServidor(tester);
+
+      expect(find.byType(SalaPartidaPage), findsOneWidget);
+      expect(servidor.de('unirse'), hasLength(2));
+    });
+
+    testWidgets('El anfitrión a solas no puede iniciar la partida', (
+      tester,
+    ) async {
+      final servidor = ServidorFalso();
+      await crearSala(tester, servidor);
+      await tester.ensureVisible(find.byKey(const Key('sala-iniciar')));
+
+      final boton = tester.widget<FilledButton>(
+        find.descendant(
+          of: find.byKey(const Key('sala-iniciar')),
+          matching: find.byType(FilledButton),
+        ),
+      );
+      expect(boton.onPressed, isNull);
+      expect(find.byKey(const Key('sala-falta-jugador')), findsOneWidget);
+    });
+
+    testWidgets('El anfitrión inicia la partida y el código desaparece', (
+      tester,
+    ) async {
+      final servidor = ServidorFalso();
+      await crearSala(tester, servidor);
+      servidor.jugadores = ['ana', 'luis'];
+      await siguienteConsulta(tester);
+
+      await tocar(tester, 'sala-iniciar');
+      await esperarServidor(tester);
+
+      expect(servidor.de('iniciar').single.bodyFields, {'codigo': 'ABC234'});
+      expect(find.byKey(const Key('sala-comenzada')), findsOneWidget);
+      expect(find.byKey(const Key('sala-iniciar')), findsNothing);
+      expect(find.text('ABC234'), findsNothing);
+    });
+
+    testWidgets('Si el servidor no deja iniciar se muestra el motivo', (
+      tester,
+    ) async {
+      final servidor = ServidorFalso()
+        ..jugadores = ['ana', 'luis']
+        ..rechazoInicio = 'Se necesitan al menos 2 jugadores para empezar.';
+      await crearSala(tester, servidor);
+
+      await tocar(tester, 'sala-iniciar');
+      await esperarServidor(tester);
+
+      expect(
+        find.text('Se necesitan al menos 2 jugadores para empezar.'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('sala-comenzada')), findsNothing);
+      expect(find.byKey(const Key('sala-iniciar')), findsOneWidget);
+    });
+
+    testWidgets('El invitado espera y luego ve que la partida comenzó', (
+      tester,
+    ) async {
+      final servidor = ServidorFalso()..jugadores = ['ana', 'luis'];
+      await unirseCon(tester, servidor, 'ABC234');
+
+      expect(find.byKey(const Key('sala-esperando')), findsOneWidget);
+      expect(find.byKey(const Key('sala-iniciar')), findsNothing);
+
+      servidor.comenzada = true;
+      await siguienteConsulta(tester);
+
+      expect(find.byKey(const Key('sala-comenzada')), findsOneWidget);
+      expect(find.byKey(const Key('sala-esperando')), findsNothing);
+    });
+
+    testWidgets('Tocar dos veces Unirse envía una sola petición', (
+      tester,
+    ) async {
+      final servidor = ServidorFalso()..jugadores = ['ana', 'luis'];
       await entrar(tester, servidor, 'luis');
       await tocar(tester, 'multijugador-unirse');
 
       await tester.enterText(find.byKey(const Key('unirse-codigo')), 'ABC234');
       await tester.tap(find.byKey(const Key('unirse-enviar')));
+      await tester.tap(find.byKey(const Key('unirse-enviar')));
       await esperarServidor(tester);
 
-      expect(find.text('La partida ya está llena.'), findsOneWidget);
+      expect(servidor.de('unirse'), hasLength(1));
+    });
+
+    testWidgets('El invitado también ve llegar a los demás', (tester) async {
+      final servidor = ServidorFalso()..jugadores = ['ana', 'luis'];
+      await unirseCon(tester, servidor, 'ABC234');
+
+      servidor.jugadores = ['ana', 'luis', 'eva'];
+      await siguienteConsulta(tester);
+
+      expect(find.text('@eva'), findsOneWidget);
+      expect(find.text('3 de 4 espacios ocupados'), findsOneWidget);
+    });
+
+    testWidgets('Una sala con un mapa desconocido avisa y no rompe la app', (
+      tester,
+    ) async {
+      await unirseCon(tester, ServidorFalso()..mapa = 9, 'ABC234');
+
+      expect(tester.takeException(), isNull);
+      expect(
+        find.text(
+          'Esta partida usa un mapa que tu versión de la app no conoce.',
+        ),
+        findsOneWidget,
+      );
       expect(find.byType(SalaPartidaPage), findsNothing);
+    });
+
+    testWidgets('Una respuesta mal formada avisa y deja reintentar', (
+      tester,
+    ) async {
+      await unirseCon(tester, ServidorFalso()..mapa = '3', 'ABC234');
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Respuesta inesperada del servidor.'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
     testWidgets('El anfitrión confirma antes de cerrar la sala', (
@@ -226,6 +403,7 @@ void main() {
       final servidor = ServidorFalso();
       await crearSala(tester, servidor);
 
+      await bajarHasta(tester, 'sala-salir');
       await tocar(tester, 'sala-salir');
       expect(servidor.de('salir'), isEmpty);
 

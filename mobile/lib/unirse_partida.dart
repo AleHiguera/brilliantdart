@@ -75,11 +75,7 @@ class _UnirsePartidaPageState extends State<UnirsePartidaPage> {
                       border: OutlineInputBorder(),
                     ),
                     validator: (valor) =>
-                        (valor ?? '').trim().length ==
-                            ServicioPartidas.largoCodigo
-                        ? null
-                        : 'El código tiene '
-                              '${ServicioPartidas.largoCodigo} caracteres.',
+                        ServicioPartidas.errorCodigo(valor ?? ''),
                     onFieldSubmitted: (_) => _unirse(),
                   ),
                   if (_error != null) ErrorPartida(_error!),
