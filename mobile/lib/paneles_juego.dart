@@ -12,11 +12,17 @@ class PanelPreparacion extends StatelessWidget {
     required this.valoresColocados,
     required this.puedeIniciar,
     required this.onComenzar,
+    this.textoBoton = 'Comenzar',
+    this.textoListo = '¡Listo! Ya puedes comenzar la partida.',
   });
 
   final Set<int> valoresColocados;
   final bool puedeIniciar;
-  final VoidCallback onComenzar;
+
+  /// Null mientras el botón no se pueda usar, aunque el tablero esté completo.
+  final VoidCallback? onComenzar;
+  final String textoBoton;
+  final String textoListo;
 
   @override
   Widget build(BuildContext context) {
@@ -52,8 +58,8 @@ class PanelPreparacion extends StatelessWidget {
                       duration: const Duration(milliseconds: 250),
                       child: Text(
                         puedeIniciar
-                            ? '¡Listo! Ya puedes comenzar la partida.'
-                            : 'Toca las celdas con + y usa cada número una vez.',
+                            ? textoListo
+                            :'Toca las celdas con + y usa cada número una vez.',
                         key: ValueKey(puedeIniciar),
                         style: TextStyle(
                           fontSize: 12,
@@ -88,12 +94,12 @@ class PanelPreparacion extends StatelessWidget {
             child: ElevatedButton(
               style: estiloBotonElevadoPrincipal(),
               onPressed: puedeIniciar ? onComenzar : null,
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.play_arrow_rounded, size: 20),
-                  SizedBox(width: 6),
-                  Text('Comenzar'),
+                  const Icon(Icons.play_arrow_rounded, size: 20),
+                  const SizedBox(width: 6),
+                  Text(textoBoton),
                 ],
               ),
             ),

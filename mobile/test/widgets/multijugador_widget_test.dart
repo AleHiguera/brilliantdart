@@ -19,6 +19,8 @@ class ServidorFalso {
   Object mapa = 3;
   List<String> listos = [];
   bool comenzada = false;
+  List<String> finalizados = [];
+  bool configurada = false;
   String? rechazoSala;
   String? rechazoListo;
   int codigoEstado = 200;
@@ -36,6 +38,9 @@ class ServidorFalso {
     'jugadores': jugadores,
     'listos': listos,
     'comenzada': comenzada,
+    'finalizados': finalizados,
+    'configurada': configurada,
+    'miTablero': <int>[],
   };
 
   /// Igual que el servidor real: empieza sola cuando todos (al menos 2) confirmaron.
@@ -410,11 +415,18 @@ void main() {
         3,
       );
 
-      // Ya en el tablero la sala deja de consultarse.
-      final consultasAlEntrar = servidor.de('estado').length;
-      await tester.pump(VigilanteSala.intervalo * 3);
-      expect(consultasAlEntrar, consultasAntes + 1);
-      expect(servidor.de('estado'), hasLength(consultasAlEntrar));
+      // Mientras se colocan los números la partida se sigue consultando...
+      await siguienteConsulta(tester);
+      expect(servidor.de('estado').length, consultasAntes + 2);
+
+      // ...y deja de hacerse cuando todos terminaron su tablero.
+      servidor
+        ..finalizados = ['ana', 'luis']
+        ..configurada = true;
+      await siguienteConsulta(tester);
+      final consultasAlTerminar = servidor.de('estado').length;
+      await siguienteConsulta(tester);
+      expect(servidor.de('estado'), hasLength(consultasAlTerminar));
     });
 
     testWidgets(

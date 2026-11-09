@@ -19,6 +19,9 @@ const Map<String, Object> salaJson = {
   'jugadores': ['ana', 'luis'],
   'listos': ['luis'],
   'comenzada': false,
+  'finalizados': ['luis'],
+  'configurada': false,
+  'miTablero': [3, 1, 2, 6, 5, 4],
 };
 
 http.Response json(Map<String, Object> datos, int codigo) =>
@@ -54,6 +57,22 @@ void main() {
       expect(sala.jugadores, ['ana', 'luis']);
       expect(sala.listos, ['luis']);
       expect(sala.comenzada, isFalse);
+      expect(sala.finalizados, ['luis']);
+      expect(sala.configurada, isFalse);
+      expect(sala.miTablero, [3, 1, 2, 6, 5, 4]);
+    });
+
+    test('Finalizar envía solo el código y los números, en su orden', () async {
+      final peticiones = <http.Request>[];
+
+      await servicio(peticiones).finalizarTablero('ABC234', [3, 1, 2, 6, 5, 4]);
+
+      expect(peticiones.single.url.path, '/api/partida/finalizar');
+      expect(peticiones.single.bodyFields, {
+        'codigo': 'ABC234',
+        'numeros': '3,1,2,6,5,4',
+      });
+      expect(peticiones.single.headers['Authorization'], 'Bearer abc');
     });
 
     test('Crear envía mapa, jugadores y el token de la sesión', () async {
@@ -176,6 +195,12 @@ void main() {
       ('comenzada', 'no'),
       ('listos', 'luis'),
       ('listos', [3]),
+      ('finalizados', 'luis'),
+      ('finalizados', [3]),
+      ('configurada', 'no'),
+      ('miTablero', '123456'),
+      ('miTablero', [1, 2, 3]),
+      ('miTablero', ['1', '2', '3', '4', '5', '6']),
     ]) {
       test('Un $campo con otro tipo es una respuesta inesperada', () async {
         final partidas = servicio(

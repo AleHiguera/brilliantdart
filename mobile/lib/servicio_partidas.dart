@@ -54,6 +54,18 @@ class ServicioPartidas {
         ),
       );
 
+  /// Envía los números iniciales del propio tablero, en el orden de las celdas
+  /// iniciales del mapa. El servidor sabe de quién es por la sesión.
+  Future<SalaPartida> finalizarTablero(
+    String codigo,
+    List<int> numeros,
+  ) async => SalaPartida.desdeJson(
+    await auth.enviarConSesion('partida/finalizar', {
+      'codigo': codigo,
+      'numeros': numeros.join(','),
+    }),
+  );
+
   Future<void> salir(String codigo) async {
     await auth.enviarConSesion('partida/salir', {'codigo': codigo});
   }

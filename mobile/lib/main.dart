@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:brilliantdart/bloc_valores_iniciales.dart';
 import 'package:brilliantdart/dados.dart';
@@ -14,7 +15,9 @@ import 'package:brilliant_mobile/historial_dados_view.dart';
 import 'package:brilliant_mobile/inicio_sesion.dart';
 import 'package:brilliant_mobile/latido_sesion.dart';
 import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
+import 'package:brilliant_mobile/panel_tablero_compartido.dart';
 import 'package:brilliant_mobile/paneles_juego.dart';
+import 'package:brilliant_mobile/preparacion_multijugador.dart';
 import 'package:brilliant_mobile/seccion_multijugador.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/sonidos.dart';
@@ -490,10 +493,15 @@ class TableroPage extends StatefulWidget {
     this.sonidoVictoria,
     this.sonidoDados,
     this.mapa = mapaUno,
+    this.preparacion,
   });
 
   /// El mapa que se juega; el Mapa 1 si no se indica otro.
   final Mapa mapa;
+
+  /// Solo en multijugador: los dados esperan a que todos terminen su tablero.
+  /// La pantalla se queda con él y lo libera al cerrarse.
+  final PreparacionMultijugador? preparacion;
   final Dados? dados;
   final Tablero? tablero;
   final Sonido? sonidoVictoria;
@@ -529,6 +537,61 @@ class _TableroPageState extends State<TableroPage> {
 
   bool get _partidaFinalizada => _bloc.jugando && _tablero.estaLleno;
 
+  bool get _puedeEditarIniciales =>
+      !_bloc.jugando && (widget.preparacion?.puedeEditar ?? true);
+
+  @override
+  void initState() {
+    super.initState();
+    final preparacion = widget.preparacion;
+    if (preparacion != null) {
+      _sincronizarConPreparacion();
+      preparacion
+        ..addListener(_alCambiarPreparacion)
+        ..iniciar();
+    }
+  }
+
+  void _alCambiarPreparacion() {
+    if (mounted) setState(_sincronizarConPreparacion);
+  }
+
+  /// El servidor manda sobre lo ya finalizado: así quien vuelve recupera sus
+  /// números. Cuando todos terminaron, se pasa a lanzar los dados.
+  void _sincronizarConPreparacion() {
+    final preparacion = widget.preparacion!;
+    if (_bloc.jugando) return;
+    final guardados = preparacion.sala.miTablero;
+    if (guardados.isNotEmpty &&
+        !listEquals(guardados, _bloc.obtenerValoresIniciales())) {
+      for (final (fila, columna) in widget.mapa.celdasIniciales) {
+        _bloc.colocarValorInicial(fila, columna, null);
+      }
+      for (var i = 0; i < guardados.length; i++) {
+        final (fila, columna) = widget.mapa.celdasIniciales[i];
+        _bloc.colocarValorInicial(fila, columna, guardados[i]);
+      }
+    }
+    if (preparacion.todosTerminaron && _bloc.puedeIniciar) {
+      _bloc.iniciarPartida();
+    }
+  }
+
+  /// Dejar la partida a medias frenaría a los demás, así que se avisa al salir.
+  Future<void> _salirDePreparacion() async {
+    final preparacion = widget.preparacion!;
+    final navegador = Navigator.of(context);
+    if (preparacion.perdida == null) {
+      final confirmado = await confirmarSalidaDePartida(
+        context,
+        anfitrion: preparacion.soyAnfitrion,
+      );
+      if (!confirmado) return;
+      await preparacion.salir();
+    }
+    navegador.pop();
+  }
+
   List<MovimientoAncla> get _movimientosDisponibles {
     final opcion = _opcionAnclaSeleccionada;
     if (opcion == null || !_validadorAnclas.puedeSerAncla(opcion.ancla)) {
@@ -560,13 +623,23 @@ class _TableroPageState extends State<TableroPage> {
     }
 
     if (!_bloc.jugando) {
+      final preparacion = widget.preparacion;
       return KeyedSubtree(
         key: const ValueKey('fase-preparacion'),
-        child: PanelPreparacion(
-          valoresColocados: _valoresIniciales,
-          puedeIniciar: _bloc.puedeIniciar,
-          onComenzar: _comenzarPartida,
-        ),
+        child: preparacion == null
+            ? PanelPreparacion(
+                valoresColocados: _valoresIniciales,
+                puedeIniciar: _bloc.puedeIniciar,
+                onComenzar: _comenzarPartida,
+              )
+            : PanelTableroCompartido(
+                preparacion: preparacion,
+                valoresColocados: _valoresIniciales,
+                tableroCompleto: _bloc.puedeIniciar,
+                onFinalizar: () =>
+                    preparacion.finalizar(_bloc.obtenerValoresIniciales()),
+                onVolver: _salirDePreparacion,
+              ),
       );
     }
 
@@ -636,7 +709,7 @@ class _TableroPageState extends State<TableroPage> {
       ),
     );
 
-    if (valor != null && mounted) {
+    if (valor != null && mounted && _puedeEditarIniciales) {
       setState(() {
         _bloc.colocarValorInicial(fila, columna, valor == 0 ? null : valor);
       });
@@ -744,6 +817,9 @@ class _TableroPageState extends State<TableroPage> {
 
   @override
   void dispose() {
+    widget.preparacion
+      ?..removeListener(_alCambiarPreparacion)
+      ..dispose();
     _sonidoVictoria.dispose();
     _sonidoDados.dispose();
     super.dispose();
@@ -799,7 +875,7 @@ class _TableroPageState extends State<TableroPage> {
                       : esDestinoPosible
                       ? Key('candidate-cell-$fila-$columna')
                       : Key('board-cell-$fila-$columna'),
-                  onTap: !_bloc.jugando && esInicial
+                  onTap: _puedeEditarIniciales && esInicial
                       ? () => _mostrarSelector(fila, columna)
                       : _bloc.jugando && esDestinoPosible
                       ? () => _seleccionarDestino(movimientoDestino!)
@@ -877,7 +953,7 @@ class _TableroPageState extends State<TableroPage> {
   Widget build(BuildContext context) {
     final movimientosDisponibles = _movimientosDisponibles;
     final mostrarHistorialLateral = MediaQuery.sizeOf(context).width >= 700;
-    return Scaffold(
+    final pantalla = Scaffold(
       appBar: AppBar(
         title: const Text('Tablero'),
         centerTitle: true,
@@ -971,6 +1047,15 @@ class _TableroPageState extends State<TableroPage> {
           },
         ),
       ),
+    );
+
+    if (widget.preparacion == null) return pantalla;
+    return PopScope(
+      canPop: _bloc.jugando,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _salirDePreparacion();
+      },
+      child: pantalla,
     );
   }
 }
