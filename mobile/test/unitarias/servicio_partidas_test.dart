@@ -22,6 +22,9 @@ const Map<String, Object> salaJson = {
   'finalizados': ['luis'],
   'configurada': false,
   'miTablero': [3, 1, 2, 6, 5, 4],
+  'ronda': 2,
+  'dados': [5, 2],
+  'jugaron': ['luis'],
 };
 
 http.Response json(Map<String, Object> datos, int codigo) =>
@@ -60,6 +63,32 @@ void main() {
       expect(sala.finalizados, ['luis']);
       expect(sala.configurada, isFalse);
       expect(sala.miTablero, [3, 1, 2, 6, 5, 4]);
+      expect(sala.ronda, 2);
+      expect(sala.dados, [5, 2]);
+      expect(sala.jugaron, ['luis']);
+    });
+
+    test('Terminar el turno dice qué ronda se jugó', () async {
+      final peticiones = <http.Request>[];
+
+      await servicio(peticiones).terminarTurno('ABC234', 2, tableroLleno: true);
+
+      expect(peticiones.single.url.path, '/api/partida/turno');
+      expect(peticiones.single.bodyFields, {
+        'codigo': 'ABC234',
+        'ronda': '2',
+        'lleno': 'true',
+      });
+    });
+
+    test('Sin lanzar aún la sala llega sin dados', () async {
+      final sala = await servicio(
+        [],
+        respuesta: json({...salaJson, 'ronda': 0, 'dados': <int>[]}, 200),
+      ).consultar('ABC234');
+
+      expect(sala.ronda, 0);
+      expect(sala.dados, isEmpty);
     });
 
     test('Finalizar envía solo el código y los números, en su orden', () async {
@@ -201,6 +230,17 @@ void main() {
       ('miTablero', '123456'),
       ('miTablero', [1, 2, 3]),
       ('miTablero', ['1', '2', '3', '4', '5', '6']),
+      ('ronda', '2'),
+      ('ronda', 0),
+      ('ronda', -1),
+      ('dados', '52'),
+      ('dados', [5]),
+      ('dados', [5, 2, 1]),
+      ('dados', [0, 2]),
+      ('dados', [5, 7]),
+      ('dados', ['5', '2']),
+      ('jugaron', 'luis'),
+      ('jugaron', [1]),
     ]) {
       test('Un $campo con otro tipo es una respuesta inesperada', () async {
         final partidas = servicio(

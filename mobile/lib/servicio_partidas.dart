@@ -66,6 +66,20 @@ class ServicioPartidas {
     }),
   );
 
+  /// Avisa que el jugador ya movió o pasó en [ronda]; con [tableroLleno] ya no
+  /// jugará más. Si era el último, la sala llega con la ronda siguiente.
+  Future<SalaPartida> terminarTurno(
+    String codigo,
+    int ronda, {
+    required bool tableroLleno,
+  }) async => SalaPartida.desdeJson(
+    await auth.enviarConSesion('partida/turno', {
+      'codigo': codigo,
+      'ronda': '$ronda',
+      'lleno': '$tableroLleno',
+    }),
+  );
+
   Future<void> salir(String codigo) async {
     await auth.enviarConSesion('partida/salir', {'codigo': codigo});
   }

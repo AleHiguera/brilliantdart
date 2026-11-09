@@ -8,6 +8,7 @@ SalaPartida sala(
   List<String> jugadores,
   List<String> listos, {
   List<String> finalizados = const [],
+  List<String> jugaron = const [],
 }) => SalaPartida(
   codigo: 'ABC234',
   mapa: 1,
@@ -19,6 +20,9 @@ SalaPartida sala(
   finalizados: finalizados,
   configurada: false,
   miTablero: const [],
+  ronda: 0,
+  dados: const [],
+  jugaron: jugaron,
 );
 
 void main() {
@@ -40,6 +44,14 @@ void main() {
     test('A solas faltan jugadores aunque esté listo', () {
       expect(sala(['ana'], ['ana']).faltanJugadores, isTrue);
       expect(sala(['ana', 'luis'], []).faltanJugadores, isFalse);
+    });
+
+    test('Sabe quién ya jugó la ronda y quién falta', () {
+      final enRonda = sala(['ana', 'luis', 'eva'], [], jugaron: ['luis']);
+
+      expect(enRonda.haJugado('luis'), isTrue);
+      expect(enRonda.haJugado('ana'), isFalse);
+      expect(enRonda.rondaPendientes, ['ana', 'eva']);
     });
 
     test('Sabe quién terminó su tablero y quién sigue colocando', () {

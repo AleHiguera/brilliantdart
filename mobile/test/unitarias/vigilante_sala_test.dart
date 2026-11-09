@@ -27,6 +27,9 @@ http.Response sala() => json({
   'finalizados': <String>[],
   'configurada': false,
   'miTablero': <int>[],
+  'ronda': 0,
+  'dados': <int>[],
+  'jugaron': <String>[],
 }, 200);
 
 http.Response rechazo(int codigo) =>

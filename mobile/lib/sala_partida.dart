@@ -4,7 +4,7 @@ import 'package:brilliant_mobile/colores_zonas.dart' as estilo;
 import 'package:brilliant_mobile/formulario_partida.dart';
 import 'package:brilliant_mobile/main.dart';
 import 'package:brilliant_mobile/panel_listo.dart';
-import 'package:brilliant_mobile/preparacion_multijugador.dart';
+import 'package:brilliant_mobile/partida_compartida.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/servicio_partidas.dart';
 import 'package:brilliant_mobile/tarjetas_sala.dart';
@@ -94,10 +94,7 @@ class _SalaPartidaPageState extends State<SalaPartidaPage> {
       MaterialPageRoute<void>(
         builder: (_) => TableroPage(
           mapa: mapaNumero(_sala.mapa),
-          preparacion: PreparacionMultijugador(
-            partidas: widget.partidas,
-            sala: _sala,
-          ),
+          compartida: PartidaCompartida(partidas: widget.partidas, sala: _sala),
         ),
       ),
     );

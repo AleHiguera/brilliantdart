@@ -41,6 +41,9 @@ class ServidorFalso {
     'finalizados': finalizados,
     'configurada': configurada,
     'miTablero': <int>[],
+    'ronda': 0,
+    'dados': <int>[],
+    'jugaron': <String>[],
   };
 
   /// Igual que el servidor real: empieza sola cuando todos (al menos 2) confirmaron.
@@ -415,18 +418,9 @@ void main() {
         3,
       );
 
-      // Mientras se colocan los números la partida se sigue consultando...
+      // En el tablero la partida se sigue consultando: de ahí llegan los dados.
       await siguienteConsulta(tester);
       expect(servidor.de('estado').length, consultasAntes + 2);
-
-      // ...y deja de hacerse cuando todos terminaron su tablero.
-      servidor
-        ..finalizados = ['ana', 'luis']
-        ..configurada = true;
-      await siguienteConsulta(tester);
-      final consultasAlTerminar = servidor.de('estado').length;
-      await siguienteConsulta(tester);
-      expect(servidor.de('estado'), hasLength(consultasAlTerminar));
     });
 
     testWidgets(

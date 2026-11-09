@@ -19,6 +19,7 @@ class PanelLanzamientoDados extends StatefulWidget {
     required this.onHistorialActualizado,
     required this.partidaFinalizada,
     this.sonidoDados,
+    this.lanzamientoAutomatico = false,
   });
 
   final ValidadorAnclas validadorAnclas;
@@ -28,6 +29,10 @@ class PanelLanzamientoDados extends StatefulWidget {
   final Dados dados;
   final bool partidaFinalizada;
   final Sonido? sonidoDados;
+
+  /// Los dados se lanzan solos al aparecer el panel y no hay botón: el jugador
+  /// no decide cuándo, porque el resultado ya lo lanzó el servidor.
+  final bool lanzamientoAutomatico;
 
   @override
   State<PanelLanzamientoDados> createState() => _PanelLanzamientoDadosState();
@@ -55,6 +60,11 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
       vsync: this,
       duration: const Duration(milliseconds: 360),
     );
+    if (widget.lanzamientoAutomatico) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _lanzarDados();
+      });
+    }
   }
 
   @override
@@ -88,6 +98,7 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
 
     await Future<void>.delayed(const Duration(milliseconds: 1200));
     _temporizador?.cancel();
+    if (!mounted) return;
     final (resultadoDado1, resultadoDado2) = widget.dados.lanzar();
     widget.onHistorialActualizado();
     final opcionesAncla = widget.validadorAnclas.obtenerOpciones(
@@ -101,7 +112,6 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
     _animacion.stop();
     _animacion.value = 0;
 
-    if (!mounted) return;
     setState(() {
       _resultadoDado1 = resultadoDado1;
       _resultadoDado2 = resultadoDado2;
@@ -167,17 +177,19 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
             ),
           ],
         ),
-        const SizedBox(height: 10),
-        FilledButton.icon(
-          key: const Key('roll-dice-button'),
-          style: estiloBotonPrincipal(),
-          onPressed: puedeLanzar ? _lanzarDados : null,
-          icon: RotationTransition(
-            turns: _animacion,
-            child: const Icon(Icons.casino_outlined),
+        if (!widget.lanzamientoAutomatico) ...[
+          const SizedBox(height: 10),
+          FilledButton.icon(
+            key: const Key('roll-dice-button'),
+            style: estiloBotonPrincipal(),
+            onPressed: puedeLanzar ? _lanzarDados : null,
+            icon: RotationTransition(
+              turns: _animacion,
+              child: const Icon(Icons.casino_outlined),
+            ),
+            label: Text(_estaLanzando ? 'Lanzando dados...' : 'Lanzar dados'),
           ),
-          label: Text(_estaLanzando ? 'Lanzando dados...' : 'Lanzar dados'),
-        ),
+        ],
         if (_noHayMovimientos && _esperandoDecision) ...[
           const SizedBox(height: 10),
           AsegurarVisible(

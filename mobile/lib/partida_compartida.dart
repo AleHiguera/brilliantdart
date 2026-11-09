@@ -3,11 +3,11 @@ import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/servicio_partidas.dart';
 import 'package:brilliant_mobile/vigilante_sala.dart';
 
-/// Lleva la fase en que cada jugador coloca sus números iniciales: envía el
-/// tablero propio y avisa cuando ya terminaron todos. No sabe nada de pantallas
-/// ni de las reglas del tablero.
-class PreparacionMultijugador extends ChangeNotifier {
-  PreparacionMultijugador({required this.partidas, required SalaPartida sala})
+/// Lo que un jugador comparte con la partida una vez que comenzó: envía su
+/// tablero, sigue las rondas de dados que lanza el servidor y avisa cuando
+/// terminó su turno. No sabe nada de pantallas ni de las reglas del tablero.
+class PartidaCompartida extends ChangeNotifier {
+  PartidaCompartida({required this.partidas, required SalaPartida sala})
     : _sala = sala {
     _vigilante = VigilanteSala(
       partidas: partidas,
@@ -29,6 +29,11 @@ class PreparacionMultijugador extends ChangeNotifier {
   bool _enviando = false;
   bool _cerrada = false;
 
+  /// Última ronda que este jugador ya jugó aquí, aunque el servidor no lo sepa.
+  int _rondaJugada = 0;
+  bool _tableroLleno = false;
+  bool _avisandoTurno = false;
+
   SalaPartida get sala => _sala;
 
   /// Por qué ya no se puede seguir, como que el anfitrión cerró la partida.
@@ -48,9 +53,44 @@ class PreparacionMultijugador extends ChangeNotifier {
   /// Mientras se envía o después de finalizar, el tablero ya no cambia.
   bool get puedeEditar => !_enviando && !yaFinalice && _perdida == null;
 
-  /// Sigue la sala hasta que terminen todos.
-  void iniciar() {
-    if (!todosTerminaron) _vigilante.iniciar();
+  /// Hay un resultado que este jugador todavía no ha usado.
+  bool get puedoJugarRonda =>
+      _sala.ronda > 0 &&
+      _sala.ronda != _rondaJugada &&
+      !_sala.haJugado(usuario);
+
+  /// El resultado de la ronda en juego, el mismo para toda la partida.
+  (int, int) get resultado => (_sala.dados[0], _sala.dados[1]);
+
+  /// Sigue la partida mientras el jugador esté en esta pantalla. También es la
+  /// señal de que sigue ahí: sin ella el servidor lo sacaría de la partida.
+  void iniciar() => _vigilante.iniciar();
+
+  /// El jugador ya movió o pasó. Si el aviso no llega se repite en la siguiente
+  /// consulta: perderlo dejaría a todos esperando la próxima ronda.
+  void terminarTurno({required bool tableroLleno}) {
+    _rondaJugada = _sala.ronda;
+    _tableroLleno = tableroLleno;
+    _avisar();
+    _avisarTurno();
+  }
+
+  Future<void> _avisarTurno() async {
+    if (_avisandoTurno) return;
+    _avisandoTurno = true;
+    try {
+      final sala = await partidas.terminarTurno(
+        _sala.codigo,
+        _rondaJugada,
+        tableroLleno: _tableroLleno,
+      );
+      _avisandoTurno = false;
+      _actualizar(sala);
+    } on ErrorAuth {
+      // Se reintenta con la siguiente consulta; si la sala ya no existe, esa
+      // misma consulta lo dirá.
+      _avisandoTurno = false;
+    }
   }
 
   Future<void> finalizar(List<int> numeros) async {
@@ -80,9 +120,16 @@ class PreparacionMultijugador extends ChangeNotifier {
   }
 
   void _actualizar(SalaPartida sala) {
+    // Una consulta que salió antes de avanzar puede llegar después: las rondas
+    // nunca retroceden.
+    if (_cerrada || sala.ronda < _sala.ronda) return;
     _sala = sala;
-    if (sala.configurada) _vigilante.detener();
     _avisar();
+    if (_rondaJugada == sala.ronda &&
+        _rondaJugada > 0 &&
+        !sala.haJugado(usuario)) {
+      _avisarTurno();
+    }
   }
 
   void _avisar() {

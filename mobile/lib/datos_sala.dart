@@ -15,6 +15,9 @@ class SalaPartida {
     required this.finalizados,
     required this.configurada,
     required this.miTablero,
+    required this.ronda,
+    required this.dados,
+    required this.jugaron,
   });
 
   /// Lee la sala del servidor. Lo que no se pueda mostrar llega como [ErrorAuth],
@@ -32,11 +35,16 @@ class SalaPartida {
           'finalizados': final List<dynamic> finalizados,
           'configurada': final bool configurada,
           'miTablero': final List<dynamic> miTablero,
+          'ronda': final int ronda,
+          'dados': final List<dynamic> dados,
+          'jugaron': final List<dynamic> jugaron,
         }
         when _sonTextos(jugadores) &&
             _sonTextos(listos) &&
             _sonTextos(finalizados) &&
-            _esTableroValido(miTablero)) {
+            _esTableroValido(miTablero) &&
+            _sonTextos(jugaron) &&
+            _sonDadosDeRonda(ronda, dados)) {
       if (!mapasDisponibles.any((conocido) => conocido.numero == mapa)) {
         throw const ErrorAuth(
           'Esta partida usa un mapa que tu versión de la app no conoce.',
@@ -53,6 +61,9 @@ class SalaPartida {
         finalizados: finalizados.cast<String>(),
         configurada: configurada,
         miTablero: miTablero.cast<int>(),
+        ronda: ronda,
+        dados: dados.cast<int>(),
+        jugaron: jugaron.cast<String>(),
       );
     }
     throw const ErrorAuth('Respuesta inesperada del servidor.');
@@ -65,6 +76,13 @@ class SalaPartida {
   static bool _esTableroValido(List<dynamic> lista) =>
       (lista.isEmpty || lista.length == 6) &&
       lista.every((elemento) => elemento is int);
+
+  /// Sin lanzar aún no hay dados; desde la ronda 1 son siempre dos caras.
+  static bool _sonDadosDeRonda(int ronda, List<dynamic> dados) => ronda == 0
+      ? dados.isEmpty
+      : ronda > 0 &&
+            dados.length == 2 &&
+            dados.every((dado) => dado is int && dado >= 1 && dado <= 6);
 
   final String codigo;
 
@@ -94,9 +112,24 @@ class SalaPartida {
   /// iniciales del mapa. Vacío si aún no finaliza; los ajenos no llegan.
   final List<int> miTablero;
 
+  /// Número de la ronda en juego; 0 hasta que el servidor lanza por primera vez.
+  final int ronda;
+
+  /// El único resultado de esta ronda, igual para todos. Vacío en la ronda 0.
+  final List<int> dados;
+
+  /// Quiénes ya no deben nada en esta ronda.
+  final List<String> jugaron;
+
   bool estaListo(String? usuario) => listos.contains(usuario);
 
   bool haFinalizado(String? usuario) => finalizados.contains(usuario);
+
+  bool haJugado(String? usuario) => jugaron.contains(usuario);
+
+  /// Quiénes faltan por jugar esta ronda, en orden de llegada.
+  List<String> get rondaPendientes =>
+      jugadores.where((jugador) => !jugaron.contains(jugador)).toList();
 
   /// Quiénes siguen colocando sus números, en orden de llegada.
   List<String> get tablerosPendientes =>

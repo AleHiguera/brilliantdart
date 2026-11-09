@@ -11,13 +11,14 @@ import 'package:brilliantdart/tablero.dart';
 import 'package:brilliantdart/tipoo.dart';
 import 'package:brilliantdart/validador_anclas.dart';
 import 'package:brilliant_mobile/colores_zonas.dart' as estilo;
+import 'package:brilliant_mobile/dados_compartidos.dart';
 import 'package:brilliant_mobile/historial_dados_view.dart';
 import 'package:brilliant_mobile/inicio_sesion.dart';
 import 'package:brilliant_mobile/latido_sesion.dart';
 import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
 import 'package:brilliant_mobile/panel_tablero_compartido.dart';
 import 'package:brilliant_mobile/paneles_juego.dart';
-import 'package:brilliant_mobile/preparacion_multijugador.dart';
+import 'package:brilliant_mobile/partida_compartida.dart';
 import 'package:brilliant_mobile/seccion_multijugador.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/sonidos.dart';
@@ -493,15 +494,16 @@ class TableroPage extends StatefulWidget {
     this.sonidoVictoria,
     this.sonidoDados,
     this.mapa = mapaUno,
-    this.preparacion,
+    this.compartida,
   });
 
   /// El mapa que se juega; el Mapa 1 si no se indica otro.
   final Mapa mapa;
 
-  /// Solo en multijugador: los dados esperan a que todos terminen su tablero.
-  /// La pantalla se queda con él y lo libera al cerrarse.
-  final PreparacionMultijugador? preparacion;
+  /// Solo en multijugador: los dados los lanza el servidor para toda la partida
+  /// y empiezan cuando todos terminan su tablero. La pantalla se queda con él y
+  /// lo libera al cerrarse.
+  final PartidaCompartida? compartida;
   final Dados? dados;
   final Tablero? tablero;
   final Sonido? sonidoVictoria;
@@ -519,7 +521,12 @@ class TableroPage extends StatefulWidget {
 }
 
 class _TableroPageState extends State<TableroPage> {
-  late final Dados _dados = widget.dados ?? Dados();
+  late final Dados _dados =
+      widget.dados ??
+      switch (widget.compartida) {
+        final compartida? => DadosCompartidos(() => compartida.resultado),
+        null => Dados(),
+      };
   late final Tablero _tablero = widget.tablero ?? widget.mapa.crearTablero();
   late final Sonido _sonidoVictoria =
       widget.sonidoVictoria ?? SonidoAsset(Sonido.victoria);
@@ -538,30 +545,34 @@ class _TableroPageState extends State<TableroPage> {
   bool get _partidaFinalizada => _bloc.jugando && _tablero.estaLleno;
 
   bool get _puedeEditarIniciales =>
-      !_bloc.jugando && (widget.preparacion?.puedeEditar ?? true);
+      !_bloc.jugando && (widget.compartida?.puedeEditar ?? true);
 
   @override
   void initState() {
     super.initState();
-    final preparacion = widget.preparacion;
-    if (preparacion != null) {
-      _sincronizarConPreparacion();
-      preparacion
-        ..addListener(_alCambiarPreparacion)
+    final compartida = widget.compartida;
+    if (compartida != null) {
+      _sincronizarConCompartida();
+      compartida
+        ..addListener(_alCambiarCompartida)
         ..iniciar();
     }
   }
 
-  void _alCambiarPreparacion() {
-    if (mounted) setState(_sincronizarConPreparacion);
+  void _alCambiarCompartida() {
+    if (mounted) setState(_sincronizarConCompartida);
   }
 
   /// El servidor manda sobre lo ya finalizado: así quien vuelve recupera sus
   /// números. Cuando todos terminaron, se pasa a lanzar los dados.
-  void _sincronizarConPreparacion() {
-    final preparacion = widget.preparacion!;
+  void _sincronizarConCompartida() {
+    final compartida = widget.compartida!;
+    if (compartida.perdida != null) {
+      _opcionAnclaSeleccionada = null;
+      _movimientoSeleccionado = null;
+    }
     if (_bloc.jugando) return;
-    final guardados = preparacion.sala.miTablero;
+    final guardados = compartida.sala.miTablero;
     if (guardados.isNotEmpty &&
         !listEquals(guardados, _bloc.obtenerValoresIniciales())) {
       for (final (fila, columna) in widget.mapa.celdasIniciales) {
@@ -572,22 +583,22 @@ class _TableroPageState extends State<TableroPage> {
         _bloc.colocarValorInicial(fila, columna, guardados[i]);
       }
     }
-    if (preparacion.todosTerminaron && _bloc.puedeIniciar) {
+    if (compartida.todosTerminaron && _bloc.puedeIniciar) {
       _bloc.iniciarPartida();
     }
   }
 
-  /// Dejar la partida a medias frenaría a los demás, así que se avisa al salir.
-  Future<void> _salirDePreparacion() async {
-    final preparacion = widget.preparacion!;
+  /// Irse sin avisar dejaría a los demás esperando, así que se avisa al salir.
+  Future<void> _salirDePartida() async {
+    final compartida = widget.compartida!;
     final navegador = Navigator.of(context);
-    if (preparacion.perdida == null) {
+    if (compartida.perdida == null) {
       final confirmado = await confirmarSalidaDePartida(
         context,
-        anfitrion: preparacion.soyAnfitrion,
+        anfitrion: compartida.soyAnfitrion,
       );
       if (!confirmado) return;
-      await preparacion.salir();
+      await compartida.salir();
     }
     navegador.pop();
   }
@@ -622,24 +633,39 @@ class _TableroPageState extends State<TableroPage> {
       );
     }
 
+    final compartida = widget.compartida;
+    final perdida = compartida?.perdida;
+    if (_bloc.jugando && perdida != null) {
+      return KeyedSubtree(
+        key: const ValueKey('fase-perdida'),
+        child: AvisoPartidaPerdida(motivo: perdida, onVolver: _salirDePartida),
+      );
+    }
+
     if (!_bloc.jugando) {
-      final preparacion = widget.preparacion;
       return KeyedSubtree(
         key: const ValueKey('fase-preparacion'),
-        child: preparacion == null
+        child: compartida == null
             ? PanelPreparacion(
                 valoresColocados: _valoresIniciales,
                 puedeIniciar: _bloc.puedeIniciar,
                 onComenzar: _comenzarPartida,
               )
             : PanelTableroCompartido(
-                preparacion: preparacion,
+                compartida: compartida,
                 valoresColocados: _valoresIniciales,
                 tableroCompleto: _bloc.puedeIniciar,
                 onFinalizar: () =>
-                    preparacion.finalizar(_bloc.obtenerValoresIniciales()),
-                onVolver: _salirDePreparacion,
+                    compartida.finalizar(_bloc.obtenerValoresIniciales()),
+                onVolver: _salirDePartida,
               ),
+      );
+    }
+
+    if (compartida != null && !compartida.puedoJugarRonda) {
+      return KeyedSubtree(
+        key: const ValueKey('fase-espera-ronda'),
+        child: PanelEsperaRonda(sala: compartida.sala),
       );
     }
 
@@ -684,6 +710,7 @@ class _TableroPageState extends State<TableroPage> {
               onHistorialActualizado: _actualizarHistorial,
               partidaFinalizada: _partidaFinalizada,
               sonidoDados: _sonidoDados,
+              lanzamientoAutomatico: compartida != null,
             ),
             if (aviso != null)
               Padding(padding: const EdgeInsets.only(top: 8), child: aviso),
@@ -734,6 +761,7 @@ class _TableroPageState extends State<TableroPage> {
       _numeroLanzamientoPendiente = null;
       _rondaDados++;
     });
+    widget.compartida?.terminarTurno(tableroLleno: false);
   }
 
   void _actualizarHistorial() {
@@ -779,6 +807,7 @@ class _TableroPageState extends State<TableroPage> {
       _numeroLanzamientoPendiente = null;
       _rondaDados++;
     });
+    widget.compartida?.terminarTurno(tableroLleno: _tablero.estaLleno);
 
     if (_partidaFinalizada) {
       _sonidoVictoria.reproducir();
@@ -808,7 +837,22 @@ class _TableroPageState extends State<TableroPage> {
     );
   }
 
-  void _jugarNuevaPartida() {
+  Future<void> _jugarNuevaPartida() async {
+    final compartida = widget.compartida;
+    if (compartida != null) {
+      // Se vuelve al menú que ya estaba abierto, con la sesión iniciada.
+      final navegador = Navigator.of(context);
+      if (compartida.perdida == null) {
+        final confirmado = await confirmarSalidaDePartida(
+          context,
+          anfitrion: compartida.soyAnfitrion,
+        );
+        if (!confirmado) return;
+        await compartida.salir();
+      }
+      navegador.popUntil((ruta) => ruta.isFirst);
+      return;
+    }
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute<void>(builder: (_) => const SeleccionMapaPage()),
       (_) => false,
@@ -817,8 +861,8 @@ class _TableroPageState extends State<TableroPage> {
 
   @override
   void dispose() {
-    widget.preparacion
-      ?..removeListener(_alCambiarPreparacion)
+    widget.compartida
+      ?..removeListener(_alCambiarCompartida)
       ..dispose();
     _sonidoVictoria.dispose();
     _sonidoDados.dispose();
@@ -1049,11 +1093,11 @@ class _TableroPageState extends State<TableroPage> {
       ),
     );
 
-    if (widget.preparacion == null) return pantalla;
+    if (widget.compartida == null) return pantalla;
     return PopScope(
-      canPop: _bloc.jugando,
+      canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _salirDePreparacion();
+        if (!didPop) _salirDePartida();
       },
       child: pantalla,
     );

@@ -1,13 +1,14 @@
 import 'dart:convert';
 
 import 'package:brilliant_mobile/main.dart';
-import 'package:brilliant_mobile/preparacion_multijugador.dart';
+import 'package:brilliant_mobile/partida_compartida.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/servicio_partidas.dart';
 import 'package:brilliant_mobile/vigilante_sala.dart';
 import 'package:brilliantdart/mapa.dart';
 import 'package:brilliantdart/mapa_cuatro.dart';
 import 'package:brilliantdart/mapa_uno.dart';
+import 'package:brilliantdart/tablero.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -25,6 +26,25 @@ class ServidorFalso {
   String anfitrion = 'ana';
   String? rechazoFinalizar;
   String? rechazoEstado;
+  int ronda = 0;
+  List<int> dadosRonda = [];
+  List<String> jugaron = [];
+  bool fallaTurno = false;
+
+  /// Lo que el servidor sacará en cada lanzamiento.
+  List<List<int>> proximosDados = [
+    [2, 6],
+    [3, 4],
+    [1, 5],
+  ];
+
+  /// El servidor lanza: una sola vez por ronda, para toda la partida.
+  void lanzar() {
+    configurada = true;
+    dadosRonda = proximosDados[ronda];
+    ronda++;
+    jugaron = [];
+  }
 
   Map<String, Object> get sala => {
     'ok': true,
@@ -39,6 +59,9 @@ class ServidorFalso {
     'finalizados': finalizados,
     'configurada': configurada,
     'miTablero': miTablero,
+    'ronda': ronda,
+    'dados': dadosRonda,
+    'jugaron': jugaron,
   };
 
   Iterable<http.Request> de(String accion) =>
@@ -55,7 +78,14 @@ class ServidorFalso {
           .toList();
       finalizados = [...finalizados, 'ana'];
     }
-    configurada = jugadores.every(finalizados.contains);
+    if (jugadores.every(finalizados.contains)) lanzar();
+    return _json(sala, 200);
+  }
+
+  http.Response _terminarTurno() {
+    if (fallaTurno) return _json({'ok': false, 'mensaje': 'Fallo.'}, 500);
+    jugaron = [...jugaron, 'ana'];
+    if (jugadores.every(jugaron.contains)) lanzar();
     return _json(sala, 200);
   }
 
@@ -64,6 +94,8 @@ class ServidorFalso {
     switch (peticion.url.path) {
       case '/api/partida/finalizar':
         return _finalizar(peticion);
+      case '/api/partida/turno':
+        return _terminarTurno();
       case '/api/partida/salir':
         return _json({'ok': true, 'mensaje': 'Saliste.'}, 200);
     }
@@ -73,12 +105,12 @@ class ServidorFalso {
         : _json(sala, 200);
   }
 
-  PreparacionMultijugador preparacion() {
+  PartidaCompartida compartida() {
     final auth = ServicioAuth(
       servidor: 'https://servidor:8443',
       cliente: MockClient((peticion) async => _responder(peticion)),
     )..sesion = const Sesion(usuario: 'ana', nombre: 'Ana', token: 'abc');
-    return PreparacionMultijugador(
+    return PartidaCompartida(
       partidas: ServicioPartidas(auth),
       sala: SalaPartida.desdeJson(sala),
     );
@@ -88,8 +120,13 @@ class ServidorFalso {
 http.Response _json(Map<String, Object> datos, int codigo) =>
     http.Response.bytes(utf8.encode(jsonEncode(datos)), codigo);
 
+/// Deja llegar la respuesta y, si trajo dados, termina su animación: mientras
+/// giran la pantalla nunca se asienta.
 Future<void> esperarServidor(WidgetTester tester) async {
   await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+  await tester.pump();
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 1300));
   await tester.pumpAndSettle();
 }
 
@@ -98,6 +135,8 @@ Future<void> abrirTablero(
   WidgetTester tester,
   ServidorFalso servidor, {
   Mapa mapa = mapaUno,
+  Tablero? tablero,
+  SonidoFalso? sonidoDados,
 }) async {
   await tester.pumpWidget(
     const MaterialApp(home: Scaffold(body: Text('Menú'))),
@@ -106,11 +145,16 @@ Future<void> abrirTablero(
       .state<NavigatorState>(find.byType(Navigator))
       .push(
         MaterialPageRoute<void>(
-          builder: (_) =>
-              TableroPage(mapa: mapa, preparacion: servidor.preparacion()),
+          builder: (_) => TableroPage(
+            mapa: mapa,
+            tablero: tablero,
+            compartida: servidor.compartida(),
+            sonidoDados: sonidoDados ?? SonidoFalso(),
+            sonidoVictoria: SonidoFalso(),
+          ),
         ),
       );
-  await tester.pumpAndSettle();
+  await esperarServidor(tester);
 }
 
 Future<void> colocar(WidgetTester tester, List<int> numeros) async {
@@ -131,16 +175,54 @@ Future<void> tocarFinalizado(WidgetTester tester) async {
 }
 
 Future<void> siguienteConsulta(WidgetTester tester) async {
+  await tester.runAsync(() => Future<void>.delayed(Duration.zero));
   await tester.pump(VigilanteSala.intervalo);
   await esperarServidor(tester);
 }
+
+/// Usa [ancla] y coloca el otro número en la primera celda posible.
+Future<void> mover(WidgetTester tester, int ancla) async {
+  await tester.ensureVisible(find.byKey(Key('anchor-option-$ancla')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(Key('anchor-option-$ancla')));
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find
+        .byWidgetPredicate(
+          (widget) =>
+              widget.key is ValueKey<String> &&
+              (widget.key! as ValueKey<String>).value.startsWith(
+                'candidate-cell-',
+              ),
+        )
+        .first,
+  );
+  await tester.pumpAndSettle();
+  await tester.ensureVisible(find.byKey(const Key('confirm-move-button')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('confirm-move-button')));
+  await esperarServidor(tester);
+}
+
+Future<void> pasar(WidgetTester tester) async {
+  await tester.ensureVisible(find.byKey(const Key('pass-turn-button')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('pass-turn-button')));
+  await esperarServidor(tester);
+}
+
+/// Partida con ambos tableros listos y ya lanzada la primera ronda.
+ServidorFalso enRonda() => ServidorFalso()
+  ..finalizados = ['ana', 'luis']
+  ..miTablero = orden
+  ..lanzar();
 
 Future<void> volverAtras(WidgetTester tester) async {
   await tester.state<NavigatorState>(find.byType(Navigator)).maybePop();
   await tester.pumpAndSettle();
 }
 
-Finder dados() => find.byKey(const Key('roll-dice-button'));
+Finder dados() => find.byKey(const Key('turn-panel'));
 
 const List<int> orden = [1, 2, 3, 4, 5, 6];
 
@@ -266,7 +348,7 @@ void main() {
 
       servidor
         ..finalizados = ['ana', 'luis']
-        ..configurada = true;
+        ..lanzar();
       await siguienteConsulta(tester);
 
       expect(dados(), findsOneWidget);
@@ -296,7 +378,7 @@ void main() {
 
       servidor
         ..jugadores = ['ana']
-        ..configurada = true;
+        ..lanzar();
       await siguienteConsulta(tester);
 
       expect(dados(), findsOneWidget);
@@ -341,12 +423,7 @@ void main() {
     testWidgets('Quien vuelve con todos listos sigue con sus dados', (
       tester,
     ) async {
-      final servidor = ServidorFalso()
-        ..finalizados = ['ana', 'luis']
-        ..miTablero = orden
-        ..configurada = true;
-
-      await abrirTablero(tester, servidor);
+      await abrirTablero(tester, enRonda());
 
       expect(dados(), findsOneWidget);
     });
@@ -403,6 +480,210 @@ void main() {
 
       expect(servidor.de('salir'), hasLength(1));
       expect(find.text('Menú'), findsOneWidget);
+    });
+
+    testWidgets('El sistema lanza los dados del servidor, sin botón', (
+      tester,
+    ) async {
+      final sonido = SonidoFalso();
+      await abrirTablero(tester, enRonda(), sonidoDados: sonido);
+
+      expect(find.byKey(const Key('roll-dice-button')), findsNothing);
+      expect(find.text('Dado 1: 2'), findsOneWidget);
+      expect(find.text('Dado 2: 6'), findsOneWidget);
+      expect(sonido.reproducciones, 1);
+    });
+
+    testWidgets('Los dados quedan en el historial del jugador', (tester) async {
+      await abrirTablero(tester, enRonda());
+
+      comprobarFilaHistorial(tester, 1, (2, 6));
+    });
+
+    testWidgets('Una consulta no vuelve a lanzar los dados', (tester) async {
+      final sonido = SonidoFalso();
+      await abrirTablero(tester, enRonda(), sonidoDados: sonido);
+
+      await siguienteConsulta(tester);
+      await siguienteConsulta(tester);
+
+      expect(sonido.reproducciones, 1);
+      expect(find.text('Dado 1: 2'), findsOneWidget);
+    });
+
+    testWidgets('Se juega con el resultado compartido y se avisa la ronda', (
+      tester,
+    ) async {
+      final servidor = enRonda();
+      await abrirTablero(tester, servidor);
+      expect(find.byKey(const Key('anchor-option-2')), findsOneWidget);
+      expect(find.byKey(const Key('anchor-option-6')), findsOneWidget);
+
+      await mover(tester, 2);
+
+      expect(servidor.de('turno').single.bodyFields, {
+        'codigo': 'ABC234',
+        'ronda': '1',
+        'lleno': 'false',
+      });
+    });
+
+    testWidgets('Tras mover espera a los demás, sin más dados', (tester) async {
+      await abrirTablero(tester, enRonda());
+
+      await mover(tester, 2);
+
+      expect(dados(), findsNothing);
+      expect(find.text('Dados de la ronda 1: 2 y 6'), findsOneWidget);
+      expect(find.text('Falta por jugar: @luis'), findsOneWidget);
+    });
+
+    testWidgets('Pasar el turno también termina la ronda del jugador', (
+      tester,
+    ) async {
+      final servidor = enRonda();
+      await abrirTablero(tester, servidor);
+
+      await pasar(tester);
+
+      expect(servidor.de('turno'), hasLength(1));
+      expect(find.byKey(const Key('ronda-esperando')), findsOneWidget);
+    });
+
+    testWidgets('La siguiente ronda llega cuando juegan los demás', (
+      tester,
+    ) async {
+      final servidor = enRonda();
+      await abrirTablero(tester, servidor);
+      await mover(tester, 2);
+
+      servidor.lanzar();
+      await siguienteConsulta(tester);
+
+      expect(find.text('Dado 1: 3'), findsOneWidget);
+      expect(find.text('Dado 2: 4'), findsOneWidget);
+      expect(find.byKey(const Key('ronda-esperando')), findsNothing);
+      comprobarFilaHistorial(tester, 2, (3, 4));
+    });
+
+    testWidgets('Quien juega al último recibe de inmediato la siguiente', (
+      tester,
+    ) async {
+      final servidor = enRonda()..jugaron = ['luis'];
+      await abrirTablero(tester, servidor);
+
+      await mover(tester, 2);
+
+      expect(find.text('Dado 1: 3'), findsOneWidget);
+      expect(find.byKey(const Key('ronda-esperando')), findsNothing);
+    });
+
+    testWidgets('Si el aviso de la ronda falla se repite solo', (tester) async {
+      final servidor = enRonda()..fallaTurno = true;
+      await abrirTablero(tester, servidor);
+
+      await mover(tester, 2);
+      expect(find.byKey(const Key('ronda-esperando')), findsOneWidget);
+
+      servidor.fallaTurno = false;
+      await siguienteConsulta(tester);
+
+      expect(servidor.de('turno').length, greaterThan(1));
+      expect(servidor.jugaron, ['ana']);
+
+      // Una vez recibido ya no se vuelve a avisar.
+      final avisos = servidor.de('turno').length;
+      await siguienteConsulta(tester);
+      expect(servidor.de('turno'), hasLength(avisos));
+    });
+
+    testWidgets('Una respuesta atrasada no regresa a la ronda anterior', (
+      tester,
+    ) async {
+      final servidor = enRonda();
+      await abrirTablero(tester, servidor);
+      await mover(tester, 2);
+      servidor.lanzar();
+      await siguienteConsulta(tester);
+
+      servidor
+        ..ronda = 1
+        ..dadosRonda = [2, 6];
+      await siguienteConsulta(tester);
+
+      expect(find.text('Dado 1: 3'), findsOneWidget);
+    });
+
+    testWidgets('Si la partida se cierra durante la ronda lo avisa', (
+      tester,
+    ) async {
+      final servidor = enRonda();
+      await abrirTablero(tester, servidor);
+
+      servidor.rechazoEstado = 'Esta partida ya no está disponible.';
+      await siguienteConsulta(tester);
+
+      expect(find.text('Esta partida ya no está disponible.'), findsOneWidget);
+      expect(dados(), findsNothing);
+
+      await tester.ensureVisible(find.byKey(const Key('tablero-volver')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('tablero-volver')));
+      await tester.pumpAndSettle();
+      expect(find.text('Menú'), findsOneWidget);
+    });
+
+    testWidgets('Salir durante la ronda pide confirmar y avisa al servidor', (
+      tester,
+    ) async {
+      final servidor = enRonda();
+      await abrirTablero(tester, servidor);
+
+      await volverAtras(tester);
+      expect(find.byKey(const Key('tablero-salir-confirmar')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('tablero-salir-confirmar')));
+      await esperarServidor(tester);
+
+      expect(servidor.de('salir'), hasLength(1));
+      expect(find.text('Menú'), findsOneWidget);
+    });
+
+    group('Al llenar el tablero', () {
+      Future<ServidorFalso> llenar(WidgetTester tester) async {
+        final servidor = enRonda()
+          ..proximosDados = [
+            [1, 3],
+          ];
+        servidor
+          ..ronda = 0
+          ..lanzar();
+        await abrirTablero(tester, servidor, tablero: tableroCasiLleno());
+        await mover(tester, 1);
+        return servidor;
+      }
+
+      testWidgets('Avisa que ya no jugará más y termina', (tester) async {
+        final servidor = await llenar(tester);
+
+        expect(servidor.de('turno').single.bodyFields['lleno'], 'true');
+        expect(find.byKey(const Key('game-over-dialog')), findsOneWidget);
+        expect(find.byKey(const Key('ronda-esperando')), findsNothing);
+      });
+
+      testWidgets('Jugar otra pide confirmar, avisa y vuelve al menú', (
+        tester,
+      ) async {
+        final servidor = await llenar(tester);
+
+        await tester.tap(find.byKey(const Key('new-game-dialog-button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('tablero-salir-confirmar')));
+        await esperarServidor(tester);
+
+        expect(servidor.de('salir'), hasLength(1));
+        expect(find.text('Menú'), findsOneWidget);
+        expect(find.byType(TableroPage), findsNothing);
+      });
     });
 
     testWidgets('Sin multijugador sigue siendo Comenzar', (tester) async {

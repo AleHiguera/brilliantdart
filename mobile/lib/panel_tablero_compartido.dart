@@ -2,21 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:brilliant_mobile/colores_zonas.dart';
 import 'package:brilliant_mobile/formulario_partida.dart';
 import 'package:brilliant_mobile/paneles_juego.dart';
-import 'package:brilliant_mobile/preparacion_multijugador.dart';
+import 'package:brilliant_mobile/partida_compartida.dart';
+import 'package:brilliant_mobile/servicio_partidas.dart';
 
 /// Parte inferior del tablero mientras cada jugador coloca sus números:
 /// el botón «Finalizado», la espera de los demás o el aviso de partida perdida.
 class PanelTableroCompartido extends StatelessWidget {
   const PanelTableroCompartido({
     super.key,
-    required this.preparacion,
+    required this.compartida,
     required this.valoresColocados,
     required this.tableroCompleto,
     required this.onFinalizar,
     required this.onVolver,
   });
 
-  final PreparacionMultijugador preparacion;
+  final PartidaCompartida compartida;
   final Set<int> valoresColocados;
   final bool tableroCompleto;
   final VoidCallback onFinalizar;
@@ -24,33 +25,16 @@ class PanelTableroCompartido extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final perdida = preparacion.perdida;
+    final perdida = compartida.perdida;
     if (perdida != null) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AvisoJuego(
-            key: const Key('tablero-perdido'),
-            icono: Icons.do_not_disturb_alt,
-            texto: perdida,
-            advertencia: true,
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton(
-            key: const Key('tablero-volver'),
-            onPressed: onVolver,
-            child: const Text('Volver al menú'),
-          ),
-        ],
-      );
+      return AvisoPartidaPerdida(motivo: perdida, onVolver: onVolver);
     }
 
-    if (preparacion.yaFinalice) {
-      return _EsperaDeTableros(pendientes: preparacion.sala.tablerosPendientes);
+    if (compartida.yaFinalice) {
+      return _EsperaDeTableros(pendientes: compartida.sala.tablerosPendientes);
     }
 
-    final error = preparacion.error;
+    final error = compartida.error;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -60,10 +44,90 @@ class PanelTableroCompartido extends StatelessWidget {
           puedeIniciar: tableroCompleto,
           textoBoton: 'Finalizado',
           textoListo: '¡Listo! Pulsa Finalizado para confirmar tu tablero.',
-          onComenzar: preparacion.enviando ? null : onFinalizar,
+          onComenzar: compartida.enviando ? null : onFinalizar,
         ),
         if (error != null) ErrorPartida(error),
       ],
+    );
+  }
+}
+
+/// La partida ya no existe: solo queda volver al menú.
+class AvisoPartidaPerdida extends StatelessWidget {
+  const AvisoPartidaPerdida({
+    super.key,
+    required this.motivo,
+    required this.onVolver,
+  });
+
+  final String motivo;
+  final VoidCallback onVolver;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AvisoJuego(
+          key: const Key('tablero-perdido'),
+          icono: Icons.do_not_disturb_alt,
+          texto: motivo,
+          advertencia: true,
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton(
+          key: const Key('tablero-volver'),
+          onPressed: onVolver,
+          child: const Text('Volver al menú'),
+        ),
+      ],
+    );
+  }
+}
+
+/// El jugador ya usó los dados de esta ronda; los siguientes llegan cuando
+/// todos hayan jugado.
+class PanelEsperaRonda extends StatelessWidget {
+  const PanelEsperaRonda({super.key, required this.sala});
+
+  final SalaPartida sala;
+
+  @override
+  Widget build(BuildContext context) {
+    final pendientes = sala.rondaPendientes;
+
+    return Container(
+      key: const Key('ronda-esperando'),
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: decoracionTarjeta(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Turno terminado',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Dados de la ronda ${sala.ronda}: '
+            '${sala.dados.join(' y ')}',
+            key: const Key('ronda-dados'),
+            style: const TextStyle(fontSize: 12, color: Colors.black54),
+          ),
+          if (pendientes.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Falta por jugar: '
+              '${pendientes.map((jugador) => '@$jugador').join(', ')}',
+              key: const Key('ronda-pendientes'),
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

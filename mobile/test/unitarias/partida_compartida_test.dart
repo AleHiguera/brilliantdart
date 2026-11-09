@@ -1,10 +1,11 @@
-// Prueba unitaria (no de widgets): revisa cómo avanza la fase en que cada
-// jugador coloca sus números, sin dibujar el tablero.
+// Prueba unitaria (no de widgets): revisa cómo avanza una partida compartida
+// (los tableros y las rondas de dados), sin dibujar el tablero.
 
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:brilliant_mobile/preparacion_multijugador.dart';
+import 'package:brilliant_mobile/dados_compartidos.dart';
+import 'package:brilliant_mobile/partida_compartida.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/servicio_partidas.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +18,9 @@ SalaPartida sala({
   List<String> finalizados = const [],
   bool configurada = false,
   List<int> miTablero = const [],
+  int ronda = 0,
+  List<int> dados = const [],
+  List<String> jugaron = const [],
 }) => SalaPartida(
   codigo: 'ABC234',
   mapa: 1,
@@ -28,6 +32,9 @@ SalaPartida sala({
   finalizados: finalizados,
   configurada: configurada,
   miTablero: miTablero,
+  ronda: ronda,
+  dados: dados,
+  jugaron: jugaron,
 );
 
 http.Response json(Map<String, Object> datos, int codigo) =>
@@ -36,6 +43,9 @@ http.Response json(Map<String, Object> datos, int codigo) =>
 http.Response respuesta({
   List<String> finalizados = const ['ana'],
   bool configurada = false,
+  int ronda = 0,
+  List<int> dados = const [],
+  List<String> jugaron = const [],
 }) => json({
   'ok': true,
   'mensaje': 'Sala.',
@@ -49,9 +59,12 @@ http.Response respuesta({
   'finalizados': finalizados,
   'configurada': configurada,
   'miTablero': numeros,
+  'ronda': ronda,
+  'dados': dados,
+  'jugaron': jugaron,
 }, 200);
 
-PreparacionMultijugador preparacion(
+PartidaCompartida compartida(
   Future<http.Response> Function(http.Request) responder, {
   SalaPartida? inicial,
 }) {
@@ -59,16 +72,105 @@ PreparacionMultijugador preparacion(
     servidor: 'https://servidor:8443',
     cliente: MockClient(responder),
   )..sesion = const Sesion(usuario: 'ana', nombre: 'Ana', token: 'abc');
-  return PreparacionMultijugador(
+  return PartidaCompartida(
     partidas: ServicioPartidas(auth),
     sala: inicial ?? sala(),
   );
 }
 
 void main() {
+  group('Unitarias: rondas de dados compartidos', () {
+    SalaPartida enRonda({List<String> jugaron = const []}) => sala(
+      finalizados: ['ana', 'luis'],
+      configurada: true,
+      miTablero: numeros,
+      ronda: 1,
+      dados: [5, 2],
+      jugaron: jugaron,
+    );
+
+    test('Sin lanzar aún no hay nada que jugar', () {
+      final fase = compartida((_) async => respuesta());
+
+      expect(fase.puedoJugarRonda, isFalse);
+    });
+
+    test('El resultado es el que lanzó el servidor', () {
+      final fase = compartida((_) async => respuesta(), inicial: enRonda());
+
+      expect(fase.puedoJugarRonda, isTrue);
+      expect(fase.resultado, (5, 2));
+    });
+
+    test('Los dados compartidos muestran ese resultado y lo registran', () {
+      final dados = DadosCompartidos(() => (5, 2));
+
+      expect(dados.lanzar(), (5, 2));
+      expect(dados.dado1.valor, 5);
+      expect(dados.dado2.valor, 2);
+      expect(dados.lanzar(), (5, 2));
+      expect(dados.historial.lanzamientos, hasLength(2));
+    });
+
+    test('Quien ya jugó según el servidor no vuelve a jugar', () {
+      final fase = compartida(
+        (_) async => respuesta(),
+        inicial: enRonda(jugaron: ['ana']),
+      );
+
+      expect(fase.puedoJugarRonda, isFalse);
+    });
+
+    test(
+      'Terminar el turno cierra la ronda sin esperar la respuesta',
+      () async {
+        final pendiente = Completer<http.Response>();
+        final fase = compartida((_) => pendiente.future, inicial: enRonda());
+
+        fase.terminarTurno(tableroLleno: false);
+        expect(fase.puedoJugarRonda, isFalse);
+
+        pendiente.complete(
+          respuesta(ronda: 1, dados: [5, 2], jugaron: ['ana']),
+        );
+        await pumpEventQueue();
+        expect(fase.sala.jugaron, ['ana']);
+      },
+    );
+
+    test(
+      'Si el último era este jugador ya se puede jugar la siguiente',
+      () async {
+        final fase = compartida(
+          (_) async => respuesta(ronda: 2, dados: [3, 4]),
+          inicial: enRonda(jugaron: ['luis']),
+        );
+
+        fase.terminarTurno(tableroLleno: false);
+        await pumpEventQueue();
+
+        expect(fase.puedoJugarRonda, isTrue);
+        expect(fase.resultado, (3, 4));
+      },
+    );
+
+    test('Un aviso fallido no rompe nada', () async {
+      final fase = compartida(
+        (_) async => throw http.ClientException('Caído'),
+        inicial: enRonda(),
+      );
+
+      fase.terminarTurno(tableroLleno: true);
+      await pumpEventQueue();
+
+      expect(fase.puedoJugarRonda, isFalse);
+      expect(fase.perdida, isNull);
+    });
+  });
+
   group('Unitarias: preparación multijugador', () {
     test('Al principio se puede editar y nadie terminó', () {
-      final fase = preparacion((_) async => respuesta());
+      final fase = compartida((_) async => respuesta());
 
       expect(fase.puedeEditar, isTrue);
       expect(fase.yaFinalice, isFalse);
@@ -76,7 +178,7 @@ void main() {
     });
 
     test('Finalizar bloquea el tablero aunque falten otros', () async {
-      final fase = preparacion((_) async => respuesta());
+      final fase = compartida((_) async => respuesta());
 
       await fase.finalizar(numeros);
 
@@ -89,7 +191,7 @@ void main() {
     test('Mientras se envía no se edita ni se envía otra vez', () async {
       final pendiente = Completer<http.Response>();
       var envios = 0;
-      final fase = preparacion((_) {
+      final fase = compartida((_) {
         envios++;
         return pendiente.future;
       });
@@ -105,7 +207,7 @@ void main() {
 
     test('Un tablero ya finalizado no se vuelve a enviar', () async {
       var envios = 0;
-      final fase = preparacion((_) async {
+      final fase = compartida((_) async {
         envios++;
         return respuesta();
       }, inicial: sala(finalizados: ['ana'], miTablero: numeros));
@@ -116,7 +218,7 @@ void main() {
     });
 
     test('Si el envío falla se puede corregir y reintentar', () async {
-      final fase = preparacion(
+      final fase = compartida(
         (_) async => json({'ok': false, 'mensaje': 'Sin suerte.'}, 409),
       );
 
@@ -128,7 +230,7 @@ void main() {
     });
 
     test('Avisa cuando el último termina', () async {
-      final fase = preparacion(
+      final fase = compartida(
         (_) async => respuesta(finalizados: ['ana', 'luis'], configurada: true),
       );
       var avisos = 0;
@@ -142,7 +244,7 @@ void main() {
 
     test('Salir avisa al servidor aunque falle la conexión', () async {
       final rutas = <String>[];
-      final fase = preparacion((peticion) async {
+      final fase = compartida((peticion) async {
         rutas.add(peticion.url.path);
         throw http.ClientException('Caído');
       });
@@ -154,7 +256,7 @@ void main() {
 
     test('Una respuesta tardía no avisa si ya se cerró', () async {
       final pendiente = Completer<http.Response>();
-      final fase = preparacion((_) => pendiente.future);
+      final fase = compartida((_) => pendiente.future);
       var avisos = 0;
 
       final envio = fase.finalizar(numeros);
