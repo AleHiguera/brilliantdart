@@ -32,6 +32,7 @@ class PartidaCompartida extends ChangeNotifier {
   /// Última ronda que este jugador ya jugó aquí, aunque el servidor no lo sepa.
   int _rondaJugada = 0;
   bool _tableroLleno = false;
+  int? _zonaCompletada;
   bool _avisandoTurno = false;
 
   SalaPartida get sala => _sala;
@@ -67,9 +68,10 @@ class PartidaCompartida extends ChangeNotifier {
 
   /// El jugador ya movió o pasó. Si el aviso no llega se repite en la siguiente
   /// consulta: perderlo dejaría a todos esperando la próxima ronda.
-  void terminarTurno({required bool tableroLleno}) {
+  void terminarTurno({required bool tableroLleno, int? zonaCompletada}) {
     _rondaJugada = _sala.ronda;
     _tableroLleno = tableroLleno;
+    _zonaCompletada = zonaCompletada;
     _avisar();
     _avisarTurno();
   }
@@ -82,6 +84,7 @@ class PartidaCompartida extends ChangeNotifier {
         _sala.codigo,
         _rondaJugada,
         tableroLleno: _tableroLleno,
+        zonaCompletada: _zonaCompletada,
       );
       _avisandoTurno = false;
       _actualizar(sala);

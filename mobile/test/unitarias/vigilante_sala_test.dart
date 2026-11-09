@@ -30,6 +30,7 @@ http.Response sala() => json({
   'ronda': 0,
   'dados': <int>[],
   'jugaron': <String>[],
+  'zonas': <String, Object>{},
 }, 200);
 
 http.Response rechazo(int codigo) =>

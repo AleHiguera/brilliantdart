@@ -35,6 +35,16 @@ class Tablero {
 
   bool get estaLleno => celdas.every((celda) => celda.valor != null);
 
+  /// El número de la zona de esa celda (desde 0) si ya está completa.
+  int? zonaCompletadaEn(int fila, int columna) {
+    for (final region in _regiones) {
+      if (region.completado && region.contieneCoordenada(fila, columna)) {
+        return region.id;
+      }
+    }
+    return null;
+  }
+
   Set<int> get valoresColocados =>
       celdas.map((celda) => celda.valor).whereType<int>().toSet();
 

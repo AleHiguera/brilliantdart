@@ -25,6 +25,9 @@ const Map<String, Object> salaJson = {
   'ronda': 2,
   'dados': [5, 2],
   'jugaron': ['luis'],
+  'zonas': {
+    '3': {'ana': 1, 'luis': 2},
+  },
 };
 
 http.Response json(Map<String, Object> datos, int codigo) =>
@@ -66,6 +69,9 @@ void main() {
       expect(sala.ronda, 2);
       expect(sala.dados, [5, 2]);
       expect(sala.jugaron, ['luis']);
+      expect(sala.zonas, {
+        3: {'ana': 1, 'luis': 2},
+      });
     });
 
     test('Terminar el turno dice qué ronda se jugó', () async {
@@ -79,6 +85,26 @@ void main() {
         'ronda': '2',
         'lleno': 'true',
       });
+    });
+
+    test('Si completó una zona también se avisa cuál', () async {
+      final peticiones = <http.Request>[];
+
+      await servicio(
+        peticiones,
+      ).terminarTurno('ABC234', 2, tableroLleno: false, zonaCompletada: 7);
+
+      expect(peticiones.single.bodyFields['zona'], '7');
+    });
+
+    test('Si no completó ninguna zona no se envía ese dato', () async {
+      final peticiones = <http.Request>[];
+
+      await servicio(
+        peticiones,
+      ).terminarTurno('ABC234', 2, tableroLleno: false);
+
+      expect(peticiones.single.bodyFields.containsKey('zona'), isFalse);
     });
 
     test('Sin lanzar aún la sala llega sin dados', () async {
@@ -241,6 +267,20 @@ void main() {
       ('dados', ['5', '2']),
       ('jugaron', 'luis'),
       ('jugaron', [1]),
+      ('zonas', 'nada'),
+      (
+        'zonas',
+        {
+          'uno': {'ana': 1},
+        },
+      ),
+      ('zonas', {'3': 'ana'}),
+      (
+        'zonas',
+        {
+          '3': {'ana': 'uno'},
+        },
+      ),
     ]) {
       test('Un $campo con otro tipo es una respuesta inesperada', () async {
         final partidas = servicio(

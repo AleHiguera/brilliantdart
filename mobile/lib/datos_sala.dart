@@ -18,6 +18,7 @@ class SalaPartida {
     required this.ronda,
     required this.dados,
     required this.jugaron,
+    this.zonas = const {},
   });
 
   /// Lee la sala del servidor. Lo que no se pueda mostrar llega como [ErrorAuth],
@@ -38,13 +39,15 @@ class SalaPartida {
           'ronda': final int ronda,
           'dados': final List<dynamic> dados,
           'jugaron': final List<dynamic> jugaron,
+          'zonas': final Map<String, dynamic> zonas,
         }
         when _sonTextos(jugadores) &&
             _sonTextos(listos) &&
             _sonTextos(finalizados) &&
             _esTableroValido(miTablero) &&
             _sonTextos(jugaron) &&
-            _sonDadosDeRonda(ronda, dados)) {
+            _sonDadosDeRonda(ronda, dados) &&
+            _sonZonas(zonas)) {
       if (!mapasDisponibles.any((conocido) => conocido.numero == mapa)) {
         throw const ErrorAuth(
           'Esta partida usa un mapa que tu versión de la app no conoce.',
@@ -64,6 +67,11 @@ class SalaPartida {
         ronda: ronda,
         dados: dados.cast<int>(),
         jugaron: jugaron.cast<String>(),
+        zonas: {
+          for (final MapEntry(key: zona, value: rondas) in zonas.entries)
+            int.parse(zona): (rondas as Map<String, dynamic>)
+                .cast<String, int>(),
+        },
       );
     }
     throw const ErrorAuth('Respuesta inesperada del servidor.');
@@ -76,6 +84,15 @@ class SalaPartida {
   static bool _esTableroValido(List<dynamic> lista) =>
       (lista.isEmpty || lista.length == 6) &&
       lista.every((elemento) => elemento is int);
+
+  static bool _sonZonas(Map<String, dynamic> zonas) => zonas.entries.every(
+    (zona) =>
+        int.tryParse(zona.key) != null &&
+        zona.value is Map<String, dynamic> &&
+        (zona.value as Map<String, dynamic>).values.every(
+          (ronda) => ronda is int,
+        ),
+  );
 
   /// Sin lanzar aún no hay dados; desde la ronda 1 son siempre dos caras.
   static bool _sonDadosDeRonda(int ronda, List<dynamic> dados) => ronda == 0
@@ -120,6 +137,10 @@ class SalaPartida {
 
   /// Quiénes ya no deben nada en esta ronda.
   final List<String> jugaron;
+
+  /// Por número de zona, en qué ronda la completó cada jugador. Incluye a quien
+  /// ya salió de la partida, porque su lugar sigue ocupado.
+  final Map<int, Map<String, int>> zonas;
 
   bool estaListo(String? usuario) => listos.contains(usuario);
 

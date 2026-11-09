@@ -72,11 +72,13 @@ class ServicioPartidas {
     String codigo,
     int ronda, {
     required bool tableroLleno,
+    int? zonaCompletada,
   }) async => SalaPartida.desdeJson(
     await auth.enviarConSesion('partida/turno', {
       'codigo': codigo,
       'ronda': '$ronda',
       'lleno': '$tableroLleno',
+      'zona': ?zonaCompletada?.toString(),
     }),
   );
 

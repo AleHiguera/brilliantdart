@@ -62,6 +62,7 @@ http.Response respuesta({
   'ronda': ronda,
   'dados': dados,
   'jugaron': jugaron,
+  'zonas': <String, Object>{},
 }, 200);
 
 PartidaCompartida compartida(

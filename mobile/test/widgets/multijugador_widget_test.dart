@@ -44,6 +44,7 @@ class ServidorFalso {
     'ronda': 0,
     'dados': <int>[],
     'jugaron': <String>[],
+    'zonas': <String, Object>{},
   };
 
   /// Igual que el servidor real: empieza sola cuando todos (al menos 2) confirmaron.

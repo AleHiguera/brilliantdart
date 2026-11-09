@@ -807,7 +807,13 @@ class _TableroPageState extends State<TableroPage> {
       _numeroLanzamientoPendiente = null;
       _rondaDados++;
     });
-    widget.compartida?.terminarTurno(tableroLleno: _tablero.estaLleno);
+    widget.compartida?.terminarTurno(
+      tableroLleno: _tablero.estaLleno,
+      zonaCompletada: _tablero.zonaCompletadaEn(
+        movimiento.destino.x,
+        movimiento.destino.y,
+      ),
+    );
 
     if (_partidaFinalizada) {
       _sonidoVictoria.reproducir();

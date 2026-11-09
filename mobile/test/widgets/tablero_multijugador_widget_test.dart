@@ -62,6 +62,7 @@ class ServidorFalso {
     'ronda': ronda,
     'dados': dadosRonda,
     'jugaron': jugaron,
+    'zonas': <String, Object>{},
   };
 
   Iterable<http.Request> de(String accion) =>
@@ -719,6 +720,43 @@ void main() {
         expect(find.byKey(const Key('ronda-esperando')), findsNothing);
       });
 
+      testWidgets('Avisa cuál zona completó con ese movimiento', (
+        tester,
+      ) async {
+        final servidor = await llenar(tester);
+        final zona = mapaUno.crearTablero().regiones.firstWhere(
+          (region) => region.contieneCoordenada(3, 6),
+        );
+
+        expect(servidor.de('turno').single.bodyFields['zona'], '${zona.id}');
+      });
+
+      testWidgets('Si el aviso falla, al repetirlo incluye la misma zona', (
+        tester,
+      ) async {
+        final servidor = enRonda()
+          ..proximosDados = [
+            [1, 3],
+          ]
+          ..fallaTurno = true;
+        servidor
+          ..ronda = 0
+          ..lanzar();
+        await abrirTablero(tester, servidor, tablero: tableroCasiLleno());
+        await mover(tester, 1);
+
+        servidor.fallaTurno = false;
+        await siguienteConsulta(tester);
+
+        final avisos = servidor.de('turno').toList();
+        expect(avisos.length, greaterThan(1));
+        expect(
+          avisos.map((aviso) => aviso.bodyFields['zona']).toSet(),
+          hasLength(1),
+        );
+        expect(avisos.first.bodyFields['zona'], isNotNull);
+      });
+
       testWidgets('Jugar otra pide confirmar, avisa y vuelve al menú', (
         tester,
       ) async {
@@ -830,6 +868,32 @@ void main() {
         expect(find.text('Turno completado'), findsOneWidget);
         expect(find.text('Falta por jugar: @luis'), findsOneWidget);
         comprobarFilaHistorial(tester, 1, (2, 6), accion: 'Turno pasado');
+      });
+
+      testWidgets('Saltar no declara ninguna zona', (tester) async {
+        final servidor = enRonda();
+        await abrirTablero(tester, servidor, tablero: tableroCasiLleno());
+
+        await pasar(tester);
+
+        expect(
+          servidor.de('turno').single.bodyFields.containsKey('zona'),
+          isFalse,
+        );
+      });
+
+      testWidgets('Un movimiento que no completa ninguna zona no la declara', (
+        tester,
+      ) async {
+        final servidor = enRonda();
+        await abrirTablero(tester, servidor);
+
+        await mover(tester, 2);
+
+        expect(
+          servidor.de('turno').single.bodyFields.containsKey('zona'),
+          isFalse,
+        );
       });
 
       testWidgets('Saltar con una opción elegida la descarta', (tester) async {
