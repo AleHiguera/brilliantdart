@@ -22,6 +22,7 @@ http.Response sala() => json({
   'capacidad': 2,
   'anfitrion': 'ana',
   'jugadores': ['ana', 'luis'],
+  'listos': <String>[],
   'comenzada': false,
 }, 200);
 

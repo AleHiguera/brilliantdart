@@ -124,6 +124,7 @@ class TarjetaJugadores extends StatelessWidget {
               usuario: jugador,
               esAnfitrion: jugador == sala.anfitrion,
               soyYo: jugador == usuario,
+              listo: sala.estaListo(jugador),
             ),
           for (var i = ocupados; i < sala.capacidad; i++)
             const Padding(
@@ -151,11 +152,13 @@ class _FilaJugador extends StatelessWidget {
     required this.usuario,
     required this.esAnfitrion,
     required this.soyYo,
+    required this.listo,
   });
 
   final String usuario;
   final bool esAnfitrion;
   final bool soyYo;
+  final bool listo;
 
   @override
   Widget build(BuildContext context) {
@@ -163,7 +166,11 @@ class _FilaJugador extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          const Icon(Icons.person, size: 20),
+          Icon(
+            listo ? Icons.check_circle : Icons.person,
+            size: 20,
+            color: listo ? const Color(0xFF1E6B23) : null,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -172,23 +179,60 @@ class _FilaJugador extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
-          if (esAnfitrion)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE2F4E3),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Text(
-                'Anfitrión',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1E6B23),
-                ),
-              ),
+          if (esAnfitrion) ...[
+            const _Etiqueta(
+              texto: 'Anfitrión',
+              fondo: Color(0xFFE3ECFA),
+              color: Color(0xFF1F4E99),
             ),
+            const SizedBox(width: 6),
+          ],
+          listo
+              ? _Etiqueta(
+                  key: Key('estado-$usuario'),
+                  texto: 'Listo',
+                  fondo: const Color(0xFFE2F4E3),
+                  color: const Color(0xFF1E6B23),
+                )
+              : _Etiqueta(
+                  key: Key('estado-$usuario'),
+                  texto: 'Esperando',
+                  fondo: const Color(0xFFEDEDE8),
+                  color: Colors.black54,
+                ),
         ],
+      ),
+    );
+  }
+}
+
+class _Etiqueta extends StatelessWidget {
+  const _Etiqueta({
+    super.key,
+    required this.texto,
+    required this.fondo,
+    required this.color,
+  });
+
+  final String texto;
+  final Color fondo;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: fondo,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        texto,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
       ),
     );
   }

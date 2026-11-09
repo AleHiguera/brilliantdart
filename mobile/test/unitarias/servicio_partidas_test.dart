@@ -17,6 +17,7 @@ const Map<String, Object> salaJson = {
   'capacidad': 3,
   'anfitrion': 'ana',
   'jugadores': ['ana', 'luis'],
+  'listos': ['luis'],
   'comenzada': false,
 };
 
@@ -51,6 +52,8 @@ void main() {
       expect(sala.capacidad, 3);
       expect(sala.anfitrion, 'ana');
       expect(sala.jugadores, ['ana', 'luis']);
+      expect(sala.listos, ['luis']);
+      expect(sala.comenzada, isFalse);
     });
 
     test('Crear envía mapa, jugadores y el token de la sesión', () async {
@@ -72,33 +75,37 @@ void main() {
       expect(peticiones.single.bodyFields, {'codigo': 'ABC234'});
     });
 
-    test('Iniciar envía el código y lee la sala ya comenzada', () async {
+    test('Marcarse listo y desmarcarse usan su propia acción', () async {
       final peticiones = <http.Request>[];
-      final partidas = servicio(
-        peticiones,
-        respuesta: json({...salaJson, 'comenzada': true}, 200),
-      );
+      final partidas = servicio(peticiones);
 
-      final sala = await partidas.iniciar('ABC234');
+      await partidas.marcarListo('ABC234', listo: true);
+      await partidas.marcarListo('ABC234', listo: false);
 
-      expect(peticiones.single.url.path, '/api/partida/iniciar');
-      expect(peticiones.single.bodyFields, {'codigo': 'ABC234'});
-      expect(sala.comenzada, isTrue);
-      expect(sala.sePuedeIniciar, isFalse);
+      expect(peticiones.map((p) => p.url.path), [
+        '/api/partida/listo',
+        '/api/partida/no-listo',
+      ]);
+      expect(peticiones.map((p) => p.bodyFields), [
+        {'codigo': 'ABC234'},
+        {'codigo': 'ABC234'},
+      ]);
     });
 
-    test('Solo se puede iniciar con al menos 2 jugadores', () async {
-      final sola = await servicio(
+    test('El último en confirmar recibe la sala ya comenzada', () async {
+      final partidas = servicio(
         [],
         respuesta: json({
           ...salaJson,
-          'jugadores': ['ana'],
+          'listos': ['ana', 'luis'],
+          'comenzada': true,
         }, 200),
-      ).consultar('ABC234');
-      final completa = await servicio([]).consultar('ABC234');
+      );
 
-      expect(sola.sePuedeIniciar, isFalse);
-      expect(completa.sePuedeIniciar, isTrue);
+      final sala = await partidas.marcarListo('ABC234', listo: true);
+
+      expect(sala.comenzada, isTrue);
+      expect(sala.pendientes, 0);
     });
 
     test('Consultar y salir usan su propia acción', () async {
@@ -167,6 +174,8 @@ void main() {
       ('anfitrion', 7),
       ('jugadores', [1, 2]),
       ('comenzada', 'no'),
+      ('listos', 'luis'),
+      ('listos', [3]),
     ]) {
       test('Un $campo con otro tipo es una respuesta inesperada', () async {
         final partidas = servicio(

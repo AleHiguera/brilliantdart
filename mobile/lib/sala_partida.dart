@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:brilliantdart/catalogo_mapas.dart';
 import 'package:brilliant_mobile/colores_zonas.dart' as estilo;
 import 'package:brilliant_mobile/formulario_partida.dart';
-import 'package:brilliant_mobile/inicio_partida.dart';
+import 'package:brilliant_mobile/main.dart';
+import 'package:brilliant_mobile/panel_listo.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/servicio_partidas.dart';
 import 'package:brilliant_mobile/tarjetas_sala.dart';
 import 'package:brilliant_mobile/vigilante_sala.dart';
 
-/// Sala de espera: muestra el código para compartir y quién va llegando.
+/// Sala de espera: muestra el código para compartir, quién va llegando y quién
+/// ya está listo. Cuando el servidor inicia la partida, pasa al tablero.
 class SalaPartidaPage extends StatefulWidget {
   const SalaPartidaPage({
     super.key,
@@ -41,9 +43,7 @@ class _SalaPartidaPageState extends State<SalaPartidaPage> {
   late final VigilanteSala _vigilante = VigilanteSala(
     partidas: widget.partidas,
     codigo: widget.sala.codigo,
-    alCambiar: (sala) {
-      if (mounted) setState(() => _sala = sala);
-    },
+    alCambiar: _actualizar,
     alTerminar: (mensaje) {
       if (mounted) setState(() => _salaPerdida = mensaje);
     },
@@ -52,8 +52,11 @@ class _SalaPartidaPageState extends State<SalaPartidaPage> {
   /// Por qué ya no se puede seguir en la sala, como que el anfitrión la cerró.
   String? _salaPerdida;
 
-  bool _iniciando = false;
-  String? _errorInicio;
+  bool _enviandoListo = false;
+  String? _errorListo;
+
+  /// Ya se pidió pasar al tablero; evita abrirlo dos veces.
+  bool _enJuego = false;
 
   String? get _usuario => widget.partidas.auth.sesion?.usuario;
   bool get _soyAnfitrion => _sala.anfitrion == _usuario;
@@ -61,7 +64,12 @@ class _SalaPartidaPageState extends State<SalaPartidaPage> {
   @override
   void initState() {
     super.initState();
-    _vigilante.iniciar();
+    if (widget.sala.comenzada) {
+      // Quien vuelve a una partida que ya empezó va directo al tablero.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _irAlJuego());
+    } else {
+      _vigilante.iniciar();
+    }
   }
 
   @override
@@ -70,18 +78,37 @@ class _SalaPartidaPageState extends State<SalaPartidaPage> {
     super.dispose();
   }
 
-  Future<void> _iniciar() async {
+  void _actualizar(SalaPartida sala) {
+    if (!mounted || _enJuego) return;
+    setState(() => _sala = sala);
+    if (sala.comenzada) _irAlJuego();
+  }
+
+  /// Todos pasan al mismo tablero: el del mapa de la sala.
+  void _irAlJuego() {
+    if (!mounted || _enJuego) return;
+    _enJuego = true;
+    _vigilante.detener();
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => TableroPage(mapa: mapaNumero(_sala.mapa)),
+      ),
+    );
+  }
+
+  Future<void> _marcarListo(bool listo) async {
     setState(() {
-      _iniciando = true;
-      _errorInicio = null;
+      _enviandoListo = true;
+      _errorListo = null;
     });
     try {
-      final sala = await widget.partidas.iniciar(_sala.codigo);
-      if (mounted) setState(() => _sala = sala);
+      _actualizar(
+        await widget.partidas.marcarListo(_sala.codigo, listo: listo),
+      );
     } on ErrorAuth catch (e) {
-      if (mounted) setState(() => _errorInicio = e.mensaje);
+      if (mounted) setState(() => _errorListo = e.mensaje);
     } finally {
-      if (mounted) setState(() => _iniciando = false);
+      if (mounted) setState(() => _enviandoListo = false);
     }
   }
 
@@ -153,8 +180,7 @@ class _SalaPartidaPageState extends State<SalaPartidaPage> {
                         advertencia: true,
                       ),
                     )
-                  // Una vez iniciada ya nadie puede usar el código.
-                  else if (!_sala.comenzada) ...[
+                  else ...[
                     TarjetaCodigo(codigo: _sala.codigo),
                     const SizedBox(height: 12),
                   ],
@@ -163,12 +189,12 @@ class _SalaPartidaPageState extends State<SalaPartidaPage> {
                   TarjetaJugadores(sala: _sala, usuario: _usuario),
                   if (perdida == null) ...[
                     const SizedBox(height: 20),
-                    PanelInicioPartida(
+                    PanelListo(
                       sala: _sala,
-                      soyAnfitrion: _soyAnfitrion,
-                      iniciando: _iniciando,
-                      error: _errorInicio,
-                      onIniciar: _iniciar,
+                      usuario: _usuario,
+                      enviando: _enviandoListo,
+                      error: _errorListo,
+                      onCambiar: _marcarListo,
                     ),
                   ],
                   const SizedBox(height: 12),
