@@ -5,39 +5,91 @@ abstract class Tipo {
   final String color;
   final String regla;
   final int puntuacion;
+  final Map<int, int>? _puntosPorLugar;
 
   const Tipo._({
     required this.tipo,
     required this.color,
     required this.regla,
     required this.puntuacion,
-  });
+    Map<int, int>? puntosPorLugar,
+  }) : _puntosPorLugar = puntosPorLugar;
 
   factory Tipo({
     required TipoZona tipo,
     required String color,
     required String regla,
     required int puntuacion,
+    Map<int, int>? puntosPorLugar,
   }) {
     switch (tipo) {
       case TipoZona.azul:
-        return TipoAzul(color: color, regla: regla, puntuacion: puntuacion);
+        return TipoAzul(
+          color: color,
+          regla: regla,
+          puntuacion: puntuacion,
+          puntosPorLugar: puntosPorLugar,
+        );
       case TipoZona.rojo:
-        return TipoRojo(color: color, regla: regla, puntuacion: puntuacion);
+        return TipoRojo(
+          color: color,
+          regla: regla,
+          puntuacion: puntuacion,
+          puntosPorLugar: puntosPorLugar,
+        );
       case TipoZona.verde:
-        return TipoVerde(color: color, regla: regla, puntuacion: puntuacion);
+        return TipoVerde(
+          color: color,
+          regla: regla,
+          puntuacion: puntuacion,
+          puntosPorLugar: puntosPorLugar,
+        );
       case TipoZona.amarillo:
-        return TipoAmarillo(color: color, regla: regla, puntuacion: puntuacion);
+        return TipoAmarillo(
+          color: color,
+          regla: regla,
+          puntuacion: puntuacion,
+          puntosPorLugar: puntosPorLugar,
+        );
       case TipoZona.morado:
-        return TipoMorado(color: color, regla: regla, puntuacion: puntuacion);
+        return TipoMorado(
+          color: color,
+          regla: regla,
+          puntuacion: puntuacion,
+          puntosPorLugar: puntosPorLugar,
+        );
       case TipoZona.gris:
-        return TipoGris(color: color, regla: regla, puntuacion: puntuacion);
+        return TipoGris(
+          color: color,
+          regla: regla,
+          puntuacion: puntuacion,
+          puntosPorLugar: puntosPorLugar,
+        );
       case TipoZona.naranja:
-        return TipoNaranja(color: color, regla: regla, puntuacion: puntuacion);
+        return TipoNaranja(
+          color: color,
+          regla: regla,
+          puntuacion: puntuacion,
+          puntosPorLugar: puntosPorLugar,
+        );
     }
   }
 
-  Map<int, int> get puntuaciones;
+  /// Puntos de cada lugar en una partida multijugador. Cada mapa puede tener
+  /// los suyos; si no los indica, se usan los del color.
+  Map<int, int> get puntuaciones => _puntosPorLugar ?? puntuacionesDelColor;
+
+  /// Puntos que tiene este color cuando el mapa no indica otros.
+  Map<int, int> get puntuacionesDelColor;
+
+  /// Puntos de un lugar ya ganado. Del cuarto lugar en adelante no hay puntos,
+  /// aunque en una sala quepan hasta seis jugadores.
+  int puntosDeLugar(int lugar) {
+    if (lugar < 1) {
+      throw ArgumentError.value(lugar, 'lugar', 'Se cuenta desde 1.');
+    }
+    return puntuaciones[lugar] ?? 0;
+  }
 
   bool esPosibleAgregar(List<int> actuales, int posible);
 
@@ -68,10 +120,11 @@ class TipoAzul extends Tipo {
     required super.color,
     required super.regla,
     required super.puntuacion,
+    super.puntosPorLugar,
   }) : super._(tipo: TipoZona.azul);
 
   @override
-  Map<int, int> get puntuaciones => {1: 7, 2: 5, 3: 3};
+  Map<int, int> get puntuacionesDelColor => {1: 7, 2: 5, 3: 3};
 
   /// Todos los números deben ser iguales.
   @override
@@ -92,10 +145,11 @@ class TipoRojo extends Tipo {
     required super.color,
     required super.regla,
     required super.puntuacion,
+    super.puntosPorLugar,
   }) : super._(tipo: TipoZona.rojo);
 
   @override
-  Map<int, int> get puntuaciones => {1: 6, 2: 4, 3: 2};
+  Map<int, int> get puntuacionesDelColor => {1: 6, 2: 4, 3: 2};
 
   /// Todos los números deben ser diferentes.
   @override
@@ -113,10 +167,11 @@ class TipoVerde extends Tipo {
     required super.color,
     required super.regla,
     required super.puntuacion,
+    super.puntosPorLugar,
   }) : super._(tipo: TipoZona.verde);
 
   @override
-  Map<int, int> get puntuaciones => {1: 4, 2: 3, 3: 2};
+  Map<int, int> get puntuacionesDelColor => {1: 4, 2: 3, 3: 2};
 
   /// Cualquier combinación de números vale.
   @override
@@ -133,10 +188,11 @@ class TipoMorado extends Tipo {
     required super.color,
     required super.regla,
     required super.puntuacion,
+    super.puntosPorLugar,
   }) : super._(tipo: TipoZona.morado);
 
   @override
-  Map<int, int> get puntuaciones => {1: 6, 2: 4, 3: 2};
+  Map<int, int> get puntuacionesDelColor => {1: 6, 2: 4, 3: 2};
 
   /// Debe tener exactamente dos números distintos.
   @override
@@ -154,10 +210,11 @@ class TipoAmarillo extends Tipo {
     required super.color,
     required super.regla,
     required super.puntuacion,
+    super.puntosPorLugar,
   }) : super._(tipo: TipoZona.amarillo);
 
   @override
-  Map<int, int> get puntuaciones => {1: 8, 2: 6, 3: 4};
+  Map<int, int> get puntuacionesDelColor => {1: 8, 2: 6, 3: 4};
 
   /// Ningún número puede repetirse entre todas las celdas amarillas.
   @override
@@ -177,10 +234,11 @@ class TipoGris extends Tipo {
     required super.color,
     required super.regla,
     required super.puntuacion,
+    super.puntosPorLugar,
   }) : super._(tipo: TipoZona.gris);
 
   @override
-  Map<int, int> get puntuaciones => {1: 3, 2: 2, 3: 1};
+  Map<int, int> get puntuacionesDelColor => {1: 3, 2: 2, 3: 1};
 
   /// Todos los números deben ser iguales.
   @override
@@ -205,6 +263,7 @@ class TipoNaranja extends Tipo {
     required super.color,
     required super.regla,
     required super.puntuacion,
+    super.puntosPorLugar,
     this.minimo = 1,
     this.maximo = 6,
   }) : super._(tipo: TipoZona.naranja) {
@@ -224,7 +283,7 @@ class TipoNaranja extends Tipo {
   bool _enRango(int numero) => numero >= minimo && numero <= maximo;
 
   @override
-  Map<int, int> get puntuaciones => {1: 6, 2: 4, 3: 3};
+  Map<int, int> get puntuacionesDelColor => {1: 6, 2: 4, 3: 3};
 
   /// Todos los números deben estar dentro del rango.
   @override

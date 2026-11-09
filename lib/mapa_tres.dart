@@ -7,7 +7,7 @@ const mapaTres = MapaTres();
 
 /// Descripción del Mapa 3: su dibujo, sus puntos y sus celdas iniciales.
 ///
-/// Es de un solo jugador, así que cada color suma su primer puntaje (el más
+/// En una partida individual cada color suma su primer puntaje (el más
 /// alto): amarillo 7, morado 7, gris 8, rojo 6, verde 6 y azul 7.
 class MapaTres extends Mapa {
   const MapaTres();
@@ -61,36 +61,42 @@ class MapaTres extends Mapa {
         color: 'Azul',
         regla: 'Todos los numeros deben ser iguales',
         puntuacion: 7,
+        puntosPorLugar: const {1: 7, 2: 5, 3: 3},
       ),
       TipoZona.rojo => Tipo(
         tipo: TipoZona.rojo,
         color: 'Rojo',
         regla: 'Todos los numeros deben ser diferentes',
         puntuacion: 6,
+        puntosPorLugar: const {1: 6, 2: 4, 3: 2},
       ),
       TipoZona.verde => Tipo(
         tipo: TipoZona.verde,
         color: 'Verde',
         regla: 'Los numeros pueden repetirse',
         puntuacion: 6,
+        puntosPorLugar: const {1: 6, 2: 5, 3: 4},
       ),
       TipoZona.amarillo => Tipo(
         tipo: TipoZona.amarillo,
         color: 'Amarillo',
         regla: 'Ningun numero puede repetirse entre las zonas amarillas',
         puntuacion: 7,
+        puntosPorLugar: const {1: 7, 2: 5, 3: 3},
       ),
       TipoZona.morado => Tipo(
         tipo: TipoZona.morado,
         color: 'Morado',
         regla: 'Debe contener exactamente dos numeros diferentes',
         puntuacion: 7,
+        puntosPorLugar: const {1: 7, 2: 5, 3: 3},
       ),
       TipoZona.gris => Tipo(
         tipo: TipoZona.gris,
         color: 'Gris',
         regla: 'Todos los numeros grises deben ser iguales',
         puntuacion: 8,
+        puntosPorLugar: const {1: 8, 2: 6, 3: 4},
       ),
       TipoZona.naranja => throw ArgumentError.value(
         tipoZona,

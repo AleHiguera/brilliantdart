@@ -593,6 +593,59 @@ void main() {
       expect(servidor.de('turno'), hasLength(avisos));
     });
 
+    testWidgets('Mientras faltan otros no llega ningún lanzamiento', (
+      tester,
+    ) async {
+      final sonido = SonidoFalso();
+      await abrirTablero(tester, enRonda(), sonidoDados: sonido);
+      await mover(tester, 2);
+
+      for (var i = 0; i < 3; i++) {
+        await siguienteConsulta(tester);
+      }
+
+      expect(find.byKey(const Key('ronda-esperando')), findsOneWidget);
+      expect(find.text('Dados de la ronda 1: 2 y 6'), findsOneWidget);
+      expect(sonido.reproducciones, 1);
+    });
+
+    testWidgets('Quien espera no tiene cómo lanzar los dados', (tester) async {
+      final servidor = enRonda();
+      await abrirTablero(tester, servidor);
+      await mover(tester, 2);
+
+      expect(find.byKey(const Key('roll-dice-button')), findsNothing);
+      expect(find.byType(FilledButton), findsNothing);
+      expect(servidor.de('turno'), hasLength(1));
+    });
+
+    testWidgets('El procedimiento se repite ronda tras ronda', (tester) async {
+      final servidor = enRonda();
+      final sonido = SonidoFalso();
+      await abrirTablero(tester, servidor, sonidoDados: sonido);
+
+      await mover(tester, 2);
+      servidor.lanzar();
+      await siguienteConsulta(tester);
+
+      await pasar(tester);
+      expect(find.text('Dados de la ronda 2: 3 y 4'), findsOneWidget);
+      servidor.lanzar();
+      await siguienteConsulta(tester);
+
+      expect(find.text('Dado 1: 1'), findsOneWidget);
+      expect(find.text('Dado 2: 5'), findsOneWidget);
+      await mover(tester, 1);
+
+      expect(servidor.de('turno').map((p) => p.bodyFields['ronda']), [
+        '1',
+        '2',
+        '3',
+      ]);
+      expect(sonido.reproducciones, 3);
+      comprobarFilaHistorial(tester, 2, (3, 4), accion: 'Turno pasado');
+    });
+
     testWidgets('Una respuesta atrasada no regresa a la ronda anterior', (
       tester,
     ) async {

@@ -7,7 +7,7 @@ const mapaCuatro = MapaCuatro();
 
 /// Descripción del Mapa 4: su dibujo, sus puntos y sus celdas iniciales.
 ///
-/// Es de un solo jugador, así que cada color suma su primer puntaje (el más
+/// En una partida individual cada color suma su primer puntaje (el más
 /// alto): amarillo 8, rojo 6, azul 8, verde 3, morado 7 y naranja 6.
 class MapaCuatro extends Mapa {
   const MapaCuatro();
@@ -72,6 +72,7 @@ class MapaCuatro extends Mapa {
     color: 'Naranja',
     regla: 'Solo numeros del $minimo al $maximo; pueden repetirse',
     puntuacion: 6,
+    puntosPorLugar: const {1: 6, 2: 4, 3: 3},
     minimo: minimo,
     maximo: maximo,
   );
@@ -84,30 +85,35 @@ class MapaCuatro extends Mapa {
         color: 'Azul',
         regla: 'Todos los numeros deben ser iguales',
         puntuacion: 8,
+        puntosPorLugar: const {1: 8, 2: 6, 3: 4},
       ),
       TipoZona.rojo => Tipo(
         tipo: TipoZona.rojo,
         color: 'Rojo',
         regla: 'Todos los numeros deben ser diferentes',
         puntuacion: 6,
+        puntosPorLugar: const {1: 6, 2: 4, 3: 2},
       ),
       TipoZona.verde => Tipo(
         tipo: TipoZona.verde,
         color: 'Verde',
         regla: 'Los numeros pueden repetirse',
         puntuacion: 3,
+        puntosPorLugar: const {1: 3, 2: 2, 3: 1},
       ),
       TipoZona.amarillo => Tipo(
         tipo: TipoZona.amarillo,
         color: 'Amarillo',
         regla: 'Ningun numero puede repetirse entre las zonas amarillas',
         puntuacion: 8,
+        puntosPorLugar: const {1: 8, 2: 6, 3: 4},
       ),
       TipoZona.morado => Tipo(
         tipo: TipoZona.morado,
         color: 'Morado',
         regla: 'Debe contener exactamente dos numeros diferentes',
         puntuacion: 7,
+        puntosPorLugar: const {1: 7, 2: 5, 3: 3},
       ),
       // Sin saber de qué zona se trata, el naranja acepta del 1 al 6.
       TipoZona.naranja => _naranja(1, 6),
