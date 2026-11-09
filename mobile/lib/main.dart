@@ -593,10 +593,7 @@ class _TableroPageState extends State<TableroPage> {
     final compartida = widget.compartida!;
     final navegador = Navigator.of(context);
     if (compartida.perdida == null) {
-      final confirmado = await confirmarSalidaDePartida(
-        context,
-        anfitrion: compartida.soyAnfitrion,
-      );
+      final confirmado = await confirmarSalidaDePartida(context);
       if (!confirmado) return;
       await compartida.salir();
     }
@@ -711,6 +708,9 @@ class _TableroPageState extends State<TableroPage> {
               partidaFinalizada: _partidaFinalizada,
               sonidoDados: _sonidoDados,
               lanzamientoAutomatico: compartida != null,
+              textoPasarTurno: compartida == null
+                  ? 'Pasar turno'
+                  : 'Saltar turno',
             ),
             if (aviso != null)
               Padding(padding: const EdgeInsets.only(top: 8), child: aviso),
@@ -843,10 +843,7 @@ class _TableroPageState extends State<TableroPage> {
       // Se vuelve al menú que ya estaba abierto, con la sesión iniciada.
       final navegador = Navigator.of(context);
       if (compartida.perdida == null) {
-        final confirmado = await confirmarSalidaDePartida(
-          context,
-          anfitrion: compartida.soyAnfitrion,
-        );
+        final confirmado = await confirmarSalidaDePartida(context);
         if (!confirmado) return;
         await compartida.salir();
       }

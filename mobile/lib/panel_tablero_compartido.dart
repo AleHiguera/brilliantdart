@@ -107,7 +107,7 @@ class PanelEsperaRonda extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Turno terminado',
+            'Turno completado',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
@@ -172,20 +172,14 @@ class _EsperaDeTableros extends StatelessWidget {
   }
 }
 
-/// Pide confirmar antes de dejar una partida en la que otros están esperando.
-Future<bool> confirmarSalidaDePartida(
-  BuildContext context, {
-  required bool anfitrion,
-}) async {
+/// Pide confirmar antes de dejar una partida que ya comenzó. Es igual para el
+/// anfitrión: la partida sigue para los demás.
+Future<bool> confirmarSalidaDePartida(BuildContext context) async {
   final confirmado = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
       title: const Text('Salir de la partida'),
-      content: Text(
-        anfitrion
-            ? 'Eres el anfitrión: si sales, la partida se cierra para todos.'
-            : 'Si sales, ya no podrás volver a esta partida.',
-      ),
+      content: const Text('Si sales, ya no podrás volver a esta partida.'),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(dialogContext, false),

@@ -20,6 +20,7 @@ class PanelLanzamientoDados extends StatefulWidget {
     required this.partidaFinalizada,
     this.sonidoDados,
     this.lanzamientoAutomatico = false,
+    this.textoPasarTurno = 'Pasar turno',
   });
 
   final ValidadorAnclas validadorAnclas;
@@ -33,6 +34,7 @@ class PanelLanzamientoDados extends StatefulWidget {
   /// Los dados se lanzan solos al aparecer el panel y no hay botón: el jugador
   /// no decide cuándo, porque el resultado ya lo lanzó el servidor.
   final bool lanzamientoAutomatico;
+  final String textoPasarTurno;
 
   @override
   State<PanelLanzamientoDados> createState() => _PanelLanzamientoDadosState();
@@ -231,7 +233,7 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
                       key: const Key('pass-turn-button'),
                       style: estiloBotonPrincipal(),
                       onPressed: _pasarTurno,
-                      child: const Text('Pasar turno'),
+                      child: Text(widget.textoPasarTurno),
                     ),
                   ),
                 ],
@@ -269,7 +271,7 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
                 key: const Key('pass-turn-button'),
                 style: TextButton.styleFrom(foregroundColor: Colors.black87),
                 onPressed: _pasarTurno,
-                child: const Text('Pasar turno'),
+                child: Text(widget.textoPasarTurno),
               ),
             ),
           ),

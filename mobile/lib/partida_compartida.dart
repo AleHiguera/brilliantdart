@@ -36,7 +36,7 @@ class PartidaCompartida extends ChangeNotifier {
 
   SalaPartida get sala => _sala;
 
-  /// Por qué ya no se puede seguir, como que el anfitrión cerró la partida.
+  /// Por qué ya no se puede seguir, como que el servidor lo sacó por ausencia.
   String? get perdida => _perdida;
 
   /// Por qué no se pudo enviar el tablero; se puede volver a intentar.
@@ -44,7 +44,6 @@ class PartidaCompartida extends ChangeNotifier {
   bool get enviando => _enviando;
 
   String? get usuario => partidas.auth.sesion?.usuario;
-  bool get soyAnfitrion => _sala.anfitrion == usuario;
   bool get yaFinalice => _sala.haFinalizado(usuario);
 
   /// Todos terminaron: ya se pueden lanzar los dados.

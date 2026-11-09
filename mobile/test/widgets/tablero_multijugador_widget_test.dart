@@ -180,23 +180,19 @@ Future<void> siguienteConsulta(WidgetTester tester) async {
   await esperarServidor(tester);
 }
 
+Finder celdaCandidata() => find.byWidgetPredicate(
+  (widget) =>
+      widget.key is ValueKey<String> &&
+      (widget.key! as ValueKey<String>).value.startsWith('candidate-cell-'),
+);
+
 /// Usa [ancla] y coloca el otro número en la primera celda posible.
 Future<void> mover(WidgetTester tester, int ancla) async {
   await tester.ensureVisible(find.byKey(Key('anchor-option-$ancla')));
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(Key('anchor-option-$ancla')));
   await tester.pumpAndSettle();
-  await tester.tap(
-    find
-        .byWidgetPredicate(
-          (widget) =>
-              widget.key is ValueKey<String> &&
-              (widget.key! as ValueKey<String>).value.startsWith(
-                'candidate-cell-',
-              ),
-        )
-        .first,
-  );
+  await tester.tap(celdaCandidata().first);
   await tester.pumpAndSettle();
   await tester.ensureVisible(find.byKey(const Key('confirm-move-button')));
   await tester.pumpAndSettle();
@@ -449,7 +445,7 @@ void main() {
     testWidgets('Volver atrás pide confirmar; cancelar sigue en la partida', (
       tester,
     ) async {
-      final servidor = ServidorFalso()..anfitrion = 'luis';
+      final servidor = ServidorFalso();
       await abrirTablero(tester, servidor);
 
       await volverAtras(tester);
@@ -469,12 +465,12 @@ void main() {
       await abrirTablero(tester, servidor);
 
       await volverAtras(tester);
+      // Aquí sale quien creó la sala, y eso no cierra nada para los demás.
       expect(
-        find.text(
-          'Eres el anfitrión: si sales, la partida se cierra para todos.',
-        ),
+        find.text('Si sales, ya no podrás volver a esta partida.'),
         findsOneWidget,
       );
+      expect(find.textContaining('se cierra'), findsNothing);
       await tester.tap(find.byKey(const Key('tablero-salir-confirmar')));
       await esperarServidor(tester);
 
@@ -684,6 +680,170 @@ void main() {
         expect(find.text('Menú'), findsOneWidget);
         expect(find.byType(TableroPage), findsNothing);
       });
+    });
+
+    group('Movimientos individuales', () {
+      int colocados(Tablero tablero) =>
+          tablero.celdas.where((celda) => celda.valor != null).length;
+
+      /// Sale el mismo [dados] de siempre para quien abra este tablero.
+      ServidorFalso conDados(List<int> dados) => ServidorFalso()
+        ..finalizados = ['ana', 'luis']
+        ..miTablero = orden
+        ..proximosDados = [dados]
+        ..lanzar();
+
+      testWidgets('Con los mismos dados cada jugador decide distinto', (
+        tester,
+      ) async {
+        final deAna = mapaUno.crearTablero();
+        await abrirTablero(tester, enRonda(), tablero: deAna);
+        await mover(tester, 2);
+
+        final deLuis = mapaUno.crearTablero();
+        await abrirTablero(tester, enRonda(), tablero: deLuis);
+        await mover(tester, 6);
+
+        // Con ancla 2 se coloca el 6, y con ancla 6 se coloca el 2.
+        bool hayDos(Tablero tablero, int valor) =>
+            tablero.celdas.where((celda) => celda.valor == valor).length == 2;
+        expect(hayDos(deAna, 6), isTrue);
+        expect(hayDos(deAna, 2), isFalse);
+        expect(hayDos(deLuis, 2), isTrue);
+        expect(hayDos(deLuis, 6), isFalse);
+      });
+
+      testWidgets('El movimiento solo cuenta al confirmarlo', (tester) async {
+        final servidor = enRonda();
+        final tablero = mapaUno.crearTablero();
+        await abrirTablero(tester, servidor, tablero: tablero);
+
+        await tester.tap(find.byKey(const Key('anchor-option-2')));
+        await tester.pumpAndSettle();
+        await tester.tap(celdaCandidata().first);
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('movement-summary')), findsOneWidget);
+        expect(colocados(tablero), 6);
+        expect(servidor.de('turno'), isEmpty);
+      });
+
+      testWidgets('Una posición que no es válida no hace nada', (tester) async {
+        final tablero = mapaUno.crearTablero();
+        await abrirTablero(tester, enRonda(), tablero: tablero);
+        await tester.tap(find.byKey(const Key('anchor-option-2')));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('board-cell-1-1')));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('movement-summary')), findsNothing);
+        expect(colocados(tablero), 6);
+      });
+
+      testWidgets('Un movimiento válido queda registrado en el tablero', (
+        tester,
+      ) async {
+        final tablero = mapaUno.crearTablero();
+        await abrirTablero(tester, enRonda(), tablero: tablero);
+
+        await mover(tester, 2);
+
+        expect(colocados(tablero), 7);
+      });
+
+      testWidgets('La opción es Saltar turno, no Pasar turno', (tester) async {
+        await abrirTablero(tester, enRonda());
+
+        expect(find.text('Saltar turno'), findsOneWidget);
+        expect(find.text('Pasar turno'), findsNothing);
+      });
+
+      testWidgets('Saltar no coloca nada, completa el turno y espera', (
+        tester,
+      ) async {
+        final servidor = enRonda();
+        final tablero = mapaUno.crearTablero();
+        await abrirTablero(tester, servidor, tablero: tablero);
+
+        await pasar(tester);
+
+        expect(colocados(tablero), 6);
+        expect(servidor.de('turno').single.bodyFields, {
+          'codigo': 'ABC234',
+          'ronda': '1',
+          'lleno': 'false',
+        });
+        expect(find.text('Turno completado'), findsOneWidget);
+        expect(find.text('Falta por jugar: @luis'), findsOneWidget);
+        comprobarFilaHistorial(tester, 1, (2, 6), accion: 'Turno pasado');
+      });
+
+      testWidgets('Saltar con una opción elegida la descarta', (tester) async {
+        final tablero = mapaUno.crearTablero();
+        await abrirTablero(tester, enRonda(), tablero: tablero);
+        await tester.tap(find.byKey(const Key('anchor-option-2')));
+        await tester.pumpAndSettle();
+
+        await pasar(tester);
+
+        expect(celdaCandidata(), findsNothing);
+        expect(colocados(tablero), 6);
+      });
+
+      testWidgets('Quien no puede mover también puede saltar', (tester) async {
+        final servidor = conDados([4, 6]);
+        await abrirTablero(tester, servidor, tablero: tableroCasiLleno());
+
+        expect(
+          find.text('No se puede realizar ningún movimiento'),
+          findsOneWidget,
+        );
+        expect(find.text('Saltar turno'), findsOneWidget);
+
+        await pasar(tester);
+
+        expect(servidor.de('turno'), hasLength(1));
+        expect(find.byKey(const Key('ronda-esperando')), findsOneWidget);
+      });
+
+      testWidgets('Mientras espera ya no puede cambiar su decisión', (
+        tester,
+      ) async {
+        final tablero = mapaUno.crearTablero();
+        await abrirTablero(tester, enRonda(), tablero: tablero);
+        await mover(tester, 2);
+
+        expect(celdaCandidata(), findsNothing);
+        expect(find.byKey(const Key('anchor-option-6')), findsNothing);
+        expect(find.byKey(const Key('pass-turn-button')), findsNothing);
+      });
+
+      testWidgets('En una partida individual sigue siendo Pasar turno', (
+        tester,
+      ) async {
+        await abrirTableroCasiLleno(tester, [(2, 6)]);
+        await lanzarDados(tester);
+
+        expect(find.text('Pasar turno'), findsOneWidget);
+        expect(find.text('Saltar turno'), findsNothing);
+      });
+    });
+
+    testWidgets('Si se va el anfitrión la partida sigue para los demás', (
+      tester,
+    ) async {
+      final servidor = enRonda()
+        ..anfitrion = 'luis'
+        ..jugadores = ['ana', 'eva'];
+      await abrirTablero(tester, servidor);
+      await mover(tester, 2);
+
+      servidor.lanzar();
+      await siguienteConsulta(tester);
+
+      expect(find.byKey(const Key('tablero-perdido')), findsNothing);
+      expect(find.text('Dado 1: 3'), findsOneWidget);
     });
 
     testWidgets('Sin multijugador sigue siendo Comenzar', (tester) async {
