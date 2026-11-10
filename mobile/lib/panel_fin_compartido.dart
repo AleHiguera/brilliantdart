@@ -134,8 +134,25 @@ class _TablaClasificacion extends StatelessWidget {
   bool _empatado(Puesto puesto) =>
       puestos.where((otro) => otro.lugar == puesto.lugar).length > 1;
 
+  Widget _fila(Puesto puesto) => _FilaPuesto(
+    key: Key('clasificacion-${puesto.jugador}'),
+    lugar: _empatado(puesto)
+        ? '${ordinalDeLugar(puesto.lugar)} (empate)'
+        : ordinalDeLugar(puesto.lugar),
+    nombre: puesto.jugador == usuario
+        ? '@${puesto.jugador} (tú)'
+        : puesto.salio
+        ? '@${puesto.jugador} (salió)'
+        : '@${puesto.jugador}',
+    puntos: puesto.puntos,
+    soyYo: puesto.jugador == usuario,
+  );
+
   @override
   Widget build(BuildContext context) {
+    final ganadores = puestos.where((puesto) => puesto.lugar == 1).toList();
+    final resto = puestos.where((puesto) => puesto.lugar != 1).toList();
+
     return Container(
       key: const Key('clasificacion'),
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
@@ -148,20 +165,43 @@ class _TablaClasificacion extends StatelessWidget {
             'Clasificación',
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
           ),
-          for (final puesto in puestos)
-            _FilaPuesto(
-              key: Key('clasificacion-${puesto.jugador}'),
-              lugar: _empatado(puesto)
-                  ? '${ordinalDeLugar(puesto.lugar)} (empate)'
-                  : ordinalDeLugar(puesto.lugar),
-              nombre: puesto.jugador == usuario
-                  ? '@${puesto.jugador} (tú)'
-                  : puesto.salio
-                  ? '@${puesto.jugador} (salió)'
-                  : '@${puesto.jugador}',
-              puntos: puesto.puntos,
-              soyYo: puesto.jugador == usuario,
+          const SizedBox(height: 4),
+          // Quien ganó va aparte, bajo su propio título, como en el papel.
+          Container(
+            key: const Key('clasificacion-ganadores'),
+            padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF3C4),
+              borderRadius: BorderRadius.circular(6),
             ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.emoji_events,
+                      size: 16,
+                      color: Color(0xFF7A5C00),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      ganadores.length > 1 ? 'Ganadores' : 'Ganador',
+                      key: const Key('clasificacion-titulo-ganador'),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF7A5C00),
+                      ),
+                    ),
+                  ],
+                ),
+                for (final puesto in ganadores) _fila(puesto),
+              ],
+            ),
+          ),
+          for (final puesto in resto) _fila(puesto),
         ],
       ),
     );

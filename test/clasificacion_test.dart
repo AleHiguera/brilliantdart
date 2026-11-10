@@ -107,6 +107,48 @@ void main() {
       expect(clasificacion.puestos.map((puesto) => puesto.jugador), ['ana']);
     });
 
+    group('Ejemplos de la especificación', () {
+      test('A: tres jugadores, gana quien llegó a 24', () {
+        final clasificacion = Clasificacion(
+          puntos: {'jugador1': 24, 'jugador2': 21, 'jugador3': 17},
+          jugadores: ['jugador1', 'jugador2', 'jugador3'],
+        );
+
+        expect(resumen(clasificacion), [
+          (1, 'jugador1', 24),
+          (2, 'jugador2', 21),
+          (3, 'jugador3', 17),
+        ]);
+      });
+
+      test('B: cinco jugadores, gana quien llegó a 20', () {
+        final clasificacion = Clasificacion(
+          puntos: {
+            'jugador1': 19,
+            'jugador2': 13,
+            'jugador3': 20,
+            'jugador4': 16,
+            'jugador5': 10,
+          },
+          jugadores: [
+            'jugador1',
+            'jugador2',
+            'jugador3',
+            'jugador4',
+            'jugador5',
+          ],
+        );
+
+        expect(resumen(clasificacion), [
+          (1, 'jugador3', 20),
+          (2, 'jugador1', 19),
+          (3, 'jugador4', 16),
+          (4, 'jugador2', 13),
+          (5, 'jugador5', 10),
+        ]);
+      });
+    });
+
     test('Sabe el lugar de cada jugador', () {
       final clasificacion = Clasificacion(
         puntos: {'ana': 20, 'luis': 27, 'eva': 20},
