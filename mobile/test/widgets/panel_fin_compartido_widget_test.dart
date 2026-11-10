@@ -162,6 +162,40 @@ void main() {
       expect(enGanadores('@eva (tú)'), findsNothing);
     });
 
+    testWidgets('Los seis jugadores ven la misma clasificación', (
+      tester,
+    ) async {
+      const puntos = {'j1': 22, 'j2': 6, 'j3': 4, 'j4': 0, 'j5': 0, 'j6': 0};
+      List<String>? ordenDeReferencia;
+
+      for (final usuario in puntos.keys) {
+        await mostrarFinal(
+          tester,
+          puntos: puntos,
+          ganadores: ['j1'],
+          usuario: usuario,
+          meta: 20,
+        );
+
+        final orden = ordenEnPantalla(tester, puntos.keys);
+        ordenDeReferencia ??= orden;
+        expect(orden, ordenDeReferencia, reason: 'visto por $usuario');
+        expect(find.text('Se alcanzó la meta de 20 puntos.'), findsOneWidget);
+        expect(enPuesto('j1', '1.º'), findsOneWidget);
+        expect(enPuesto('j4', '4.º (empate)'), findsOneWidget);
+        expect(enPuesto('j6', '4.º (empate)'), findsOneWidget);
+        expect(
+          find.text(
+            usuario == 'j1'
+                ? 'Ganó @j1 (tú) con 22 puntos'
+                : 'Ganó @j1 con 22 puntos',
+          ),
+          findsOneWidget,
+          reason: 'visto por $usuario',
+        );
+      }
+    });
+
     testWidgets('B cabe en un celular', (tester) async {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1;
