@@ -14,9 +14,13 @@ class TablaPuntosPartida extends StatelessWidget {
     required this.jugadores,
     required this.usuario,
     required this.ronda,
+    this.meta = 0,
   });
 
   final PuntuacionMultijugador puntuacion;
+
+  /// Puntos para ganar; 0 si aún no se conoce.
+  final int meta;
 
   /// Quienes siguen en la partida.
   final List<String> jugadores;
@@ -35,6 +39,7 @@ class TablaPuntosPartida extends StatelessWidget {
           puntos: puntuacion.puntos,
           jugadores: jugadores,
           usuario: usuario,
+          meta: meta,
         ),
         const SizedBox(height: 8),
         _TarjetaZonas(zonas: puntuacion.zonas, usuario: usuario, ronda: ronda),
@@ -48,11 +53,13 @@ class _TarjetaJugadores extends StatelessWidget {
     required this.puntos,
     required this.jugadores,
     required this.usuario,
+    required this.meta,
   });
 
   final Map<String, int> puntos;
   final List<String> jugadores;
   final String? usuario;
+  final int meta;
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +89,16 @@ class _TarjetaJugadores extends StatelessWidget {
             icono: Icons.emoji_events_outlined,
             titulo: 'Puntos',
           ),
+          // En su propia línea: junto al título no cabe en la columna angosta.
+          if (meta > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                'Meta: $meta puntos',
+                key: const Key('meta-partida'),
+                style: const TextStyle(fontSize: 11, color: Colors.black54),
+              ),
+            ),
           const SizedBox(height: 4),
           for (final (_, jugador) in enOrden)
             _FilaJugador(

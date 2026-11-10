@@ -16,6 +16,7 @@ import 'package:brilliant_mobile/dados_compartidos.dart';
 import 'package:brilliant_mobile/historial_dados_view.dart';
 import 'package:brilliant_mobile/inicio_sesion.dart';
 import 'package:brilliant_mobile/latido_sesion.dart';
+import 'package:brilliant_mobile/panel_fin_compartido.dart';
 import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
 import 'package:brilliant_mobile/panel_tablero_compartido.dart';
 import 'package:brilliant_mobile/paneles_juego.dart';
@@ -544,6 +545,9 @@ class _TableroPageState extends State<TableroPage> {
   int? _numeroLanzamientoPendiente;
   int _rondaDados = 0;
 
+  /// Ya se celebró el fin de la partida compartida; evita repetir el sonido.
+  bool _finAnunciado = false;
+
   bool get _partidaFinalizada => _bloc.jugando && _tablero.estaLleno;
 
   /// Los puntos que ve el jugador: en multijugador dependen de su lugar en cada
@@ -566,6 +570,7 @@ class _TableroPageState extends State<TableroPage> {
       jugadores: compartida.sala.jugadores,
       usuario: compartida.usuario,
       ronda: compartida.rondaDeMiSiguienteJugada,
+      meta: compartida.sala.meta,
     );
   }
 
@@ -592,9 +597,13 @@ class _TableroPageState extends State<TableroPage> {
   /// números. Cuando todos terminaron, se pasa a lanzar los dados.
   void _sincronizarConCompartida() {
     final compartida = widget.compartida!;
-    if (compartida.perdida != null) {
+    if (compartida.perdida != null || compartida.terminada) {
       _opcionAnclaSeleccionada = null;
       _movimientoSeleccionado = null;
+    }
+    if (compartida.terminada && !_finAnunciado) {
+      _finAnunciado = true;
+      if (compartida.gane) _sonidoVictoria.reproducir();
     }
     if (_bloc.jugando) return;
     final guardados = compartida.sala.miTablero;
@@ -618,8 +627,11 @@ class _TableroPageState extends State<TableroPage> {
     final compartida = widget.compartida!;
     final navegador = Navigator.of(context);
     if (compartida.perdida == null) {
-      final confirmado = await confirmarSalidaDePartida(context);
-      if (!confirmado) return;
+      // Terminada la partida, ya nadie espera a este jugador.
+      if (!compartida.terminada) {
+        final confirmado = await confirmarSalidaDePartida(context);
+        if (!confirmado) return;
+      }
       await compartida.salir();
     }
     navegador.pop();
@@ -644,6 +656,30 @@ class _TableroPageState extends State<TableroPage> {
       (_numeroLanzamientoPendiente == null ? 1 : 0);
 
   Widget _seccionInferior(List<MovimientoAncla> movimientosDisponibles) {
+    final enComun = widget.compartida;
+    if (enComun != null && enComun.terminada) {
+      return KeyedSubtree(
+        key: const ValueKey('fase-final'),
+        child: PanelFinCompartido(
+          ganadores: enComun.sala.ganadores,
+          usuario: enComun.usuario,
+          puntos: PuntuacionMultijugador(
+            widget.mapa,
+            enComun.rondasPorZona,
+          ).puntos,
+          meta: enComun.sala.meta,
+          onVolver: _salirDePartida,
+        ),
+      );
+    }
+
+    if (_partidaFinalizada && enComun != null) {
+      return KeyedSubtree(
+        key: const ValueKey('fase-tablero-lleno'),
+        child: PanelTableroLleno(puntos: _misPuntos),
+      );
+    }
+
     if (_partidaFinalizada) {
       return KeyedSubtree(
         key: const ValueKey('fase-fin'),
@@ -840,7 +876,9 @@ class _TableroPageState extends State<TableroPage> {
       ),
     );
 
-    if (_partidaFinalizada) {
+    // En multijugador llenar el tablero no termina la partida: el final lo
+    // anuncia el servidor para todos a la vez.
+    if (_partidaFinalizada && widget.compartida == null) {
       _sonidoVictoria.reproducir();
       _mostrarFinDePartida();
     }

@@ -45,6 +45,9 @@ class ServidorFalso {
     'dados': <int>[],
     'jugaron': <String>[],
     'zonas': <String, Object>{},
+    'meta': 0,
+    'terminada': false,
+    'ganadores': <String>[],
   };
 
   /// Igual que el servidor real: empieza sola cuando todos (al menos 2) confirmaron.

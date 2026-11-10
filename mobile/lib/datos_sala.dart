@@ -19,6 +19,9 @@ class SalaPartida {
     required this.dados,
     required this.jugaron,
     this.zonas = const {},
+    this.meta = 0,
+    this.terminada = false,
+    this.ganadores = const [],
   });
 
   /// Lee la sala del servidor. Lo que no se pueda mostrar llega como [ErrorAuth],
@@ -40,6 +43,9 @@ class SalaPartida {
           'dados': final List<dynamic> dados,
           'jugaron': final List<dynamic> jugaron,
           'zonas': final Map<String, dynamic> zonas,
+          'meta': final int meta,
+          'terminada': final bool terminada,
+          'ganadores': final List<dynamic> ganadores,
         }
         when _sonTextos(jugadores) &&
             _sonTextos(listos) &&
@@ -47,7 +53,8 @@ class SalaPartida {
             _esTableroValido(miTablero) &&
             _sonTextos(jugaron) &&
             _sonDadosDeRonda(ronda, dados) &&
-            _sonZonas(zonas)) {
+            _sonZonas(zonas) &&
+            _sonTextos(ganadores)) {
       if (!mapasDisponibles.any((conocido) => conocido.numero == mapa)) {
         throw const ErrorAuth(
           'Esta partida usa un mapa que tu versión de la app no conoce.',
@@ -72,6 +79,9 @@ class SalaPartida {
             int.parse(zona): (rondas as Map<String, dynamic>)
                 .cast<String, int>(),
         },
+        meta: meta,
+        terminada: terminada,
+        ganadores: ganadores.cast<String>(),
       );
     }
     throw const ErrorAuth('Respuesta inesperada del servidor.');
@@ -141,6 +151,15 @@ class SalaPartida {
   /// Por número de zona, en qué ronda la completó cada jugador. Incluye a quien
   /// ya salió de la partida, porque su lugar sigue ocupado.
   final Map<int, Map<String, int>> zonas;
+
+  /// Puntos para ganar, según cuántos empezaron; 0 antes de comenzar.
+  final int meta;
+
+  /// El servidor dio la partida por terminada: ya no hay más rondas.
+  final bool terminada;
+
+  /// Quienes ganaron; varios si empataron en puntos.
+  final List<String> ganadores;
 
   bool estaListo(String? usuario) => listos.contains(usuario);
 

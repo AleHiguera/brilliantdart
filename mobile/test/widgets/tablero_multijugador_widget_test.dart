@@ -31,6 +31,9 @@ class ServidorFalso {
   List<String> jugaron = [];
   bool fallaTurno = false;
   Map<String, Map<String, int>> zonas = {};
+  int meta = 26;
+  bool terminada = false;
+  List<String> ganadores = [];
 
   /// Lo que el servidor sacará en cada lanzamiento.
   List<List<int>> proximosDados = [
@@ -64,6 +67,9 @@ class ServidorFalso {
     'dados': dadosRonda,
     'jugaron': jugaron,
     'zonas': zonas,
+    'meta': meta,
+    'terminada': terminada,
+    'ganadores': ganadores,
   };
 
   Iterable<http.Request> de(String accion) =>
@@ -143,6 +149,7 @@ Future<void> abrirTablero(
   Mapa mapa = mapaUno,
   Tablero? tablero,
   SonidoFalso? sonidoDados,
+  SonidoFalso? sonidoVictoria,
 }) async {
   await tester.pumpWidget(
     const MaterialApp(home: Scaffold(body: Text('Menú'))),
@@ -156,7 +163,7 @@ Future<void> abrirTablero(
             tablero: tablero,
             compartida: servidor.compartida(),
             sonidoDados: sonidoDados ?? SonidoFalso(),
-            sonidoVictoria: SonidoFalso(),
+            sonidoVictoria: sonidoVictoria ?? SonidoFalso(),
           ),
         ),
       );
@@ -717,12 +724,30 @@ void main() {
         return servidor;
       }
 
-      testWidgets('Avisa que ya no jugará más y termina', (tester) async {
-        final servidor = await llenar(tester);
+      testWidgets('Avisa que ya no jugará más, pero la partida sigue', (
+        tester,
+      ) async {
+        final sonido = SonidoFalso();
+        final servidor = enRonda()
+          ..proximosDados = [
+            [1, 3],
+          ];
+        servidor
+          ..ronda = 0
+          ..lanzar();
+        await abrirTablero(
+          tester,
+          servidor,
+          tablero: tableroCasiLleno(),
+          sonidoVictoria: sonido,
+        );
+        await mover(tester, 1);
 
         expect(servidor.de('turno').single.bodyFields['lleno'], 'true');
-        expect(find.byKey(const Key('game-over-dialog')), findsOneWidget);
+        expect(find.byKey(const Key('tablero-lleno')), findsOneWidget);
+        expect(find.byKey(const Key('game-over-dialog')), findsNothing);
         expect(find.byKey(const Key('ronda-esperando')), findsNothing);
+        expect(sonido.reproducciones, 0);
       });
 
       testWidgets('Avisa cuál zona completó con ese movimiento', (
@@ -762,13 +787,12 @@ void main() {
         expect(avisos.first.bodyFields['zona'], isNotNull);
       });
 
-      testWidgets('Jugar otra pide confirmar, avisa y vuelve al menú', (
+      testWidgets('Salir con el tablero lleno pide confirmar y avisa', (
         tester,
       ) async {
         final servidor = await llenar(tester);
 
-        await tester.tap(find.byKey(const Key('new-game-dialog-button')));
-        await tester.pumpAndSettle();
+        await volverAtras(tester);
         await tester.tap(find.byKey(const Key('tablero-salir-confirmar')));
         await esperarServidor(tester);
 
@@ -1041,30 +1065,14 @@ void main() {
         );
       });
 
-      testWidgets('El mensaje final usa el lugar, no el puntaje individual', (
+      testWidgets('Con el tablero lleno se ven los puntos por lugar', (
         tester,
       ) async {
         await ultimaJugada(tester, antes: {'luis': 1});
 
         // El verde vale 4, 3 y 2: llegó segundo a la única zona registrada.
-        expect(
-          find.descendant(
-            of: find.byKey(const Key('game-over-dialog')),
-            matching: find.text('Has puntuado 3 puntos'),
-          ),
-          findsOneWidget,
-        );
-      });
-
-      testWidgets('El panel final también usa el lugar', (tester) async {
-        await ultimaJugada(tester, antes: {'luis': 1});
-
-        await tester.tap(find.text('Aceptar'));
-        await tester.pumpAndSettle();
-
-        expect(find.byKey(const Key('game-finished-panel')), findsOneWidget);
-        expect(find.text('Has puntuado 3 puntos'), findsOneWidget);
-        expect(find.byKey(const Key('perfect-score')), findsNothing);
+        expect(find.text('Tus puntos: 3'), findsOneWidget);
+        expect(find.byKey(const Key('game-finished-panel')), findsNothing);
       });
 
       testWidgets('Los puntos propios se ven aunque el aviso no haya llegado', (
@@ -1082,13 +1090,7 @@ void main() {
         await mover(tester, 1);
 
         expect(servidor.zonas, isEmpty);
-        expect(
-          find.descendant(
-            of: find.byKey(const Key('game-over-dialog')),
-            matching: find.text('Has puntuado 4 puntos'),
-          ),
-          findsOneWidget,
-        );
+        expect(find.text('Tus puntos: 4'), findsOneWidget);
       });
 
       testWidgets('En un celular se juega con la tabla sin desbordes', (
@@ -1114,6 +1116,168 @@ void main() {
 
         expect(tester.takeException(), isNull);
         expect(find.byKey(const Key('tabla-zonas')), findsOneWidget);
+      });
+    });
+
+    group('Fin de la partida', () {
+      /// La zona amarilla del Mapa 1, que vale 8, 6 y 4.
+      final amarilla = mapaUno.crearTablero().regiones.first.id;
+
+      /// Partida que el servidor da por terminada mientras ana espera.
+      Future<ServidorFalso> terminar(
+        WidgetTester tester, {
+        required List<String> ganadores,
+        required Map<String, int> amarillos,
+        int meta = 26,
+        SonidoFalso? sonido,
+      }) async {
+        final servidor = enRonda()..meta = meta;
+        await abrirTablero(tester, servidor, sonidoVictoria: sonido);
+        await mover(tester, 2);
+
+        servidor
+          ..zonas = {'$amarilla': amarillos}
+          ..terminada = true
+          ..ganadores = ganadores;
+        await siguienteConsulta(tester);
+        return servidor;
+      }
+
+      testWidgets('Durante la partida se ve la meta', (tester) async {
+        await abrirTablero(tester, enRonda()..meta = 22);
+
+        expect(find.text('Meta: 22 puntos'), findsOneWidget);
+      });
+
+      testWidgets('Quien gana lo ve y suena la victoria', (tester) async {
+        final sonido = SonidoFalso();
+        await terminar(
+          tester,
+          ganadores: ['ana'],
+          amarillos: {'ana': 1},
+          meta: 8,
+          sonido: sonido,
+        );
+
+        expect(find.text('¡Ganaste!'), findsOneWidget);
+        expect(find.text('Ganó @ana (tú) con 8 puntos'), findsOneWidget);
+        expect(find.text('Se alcanzó la meta de 8 puntos.'), findsOneWidget);
+        expect(sonido.reproducciones, 1);
+      });
+
+      testWidgets('Los demás ven quién ganó, sin sonido de victoria', (
+        tester,
+      ) async {
+        final sonido = SonidoFalso();
+        await terminar(
+          tester,
+          ganadores: ['luis'],
+          amarillos: {'luis': 1, 'ana': 2},
+          meta: 8,
+          sonido: sonido,
+        );
+
+        expect(find.text('Fin de la partida'), findsOneWidget);
+        expect(find.text('Ganó @luis con 8 puntos'), findsOneWidget);
+        expect(find.text('Tus puntos: 6'), findsOneWidget);
+        expect(sonido.reproducciones, 0);
+      });
+
+      testWidgets('Un empate en puntos se muestra como triunfo compartido', (
+        tester,
+      ) async {
+        await terminar(
+          tester,
+          ganadores: ['ana', 'luis'],
+          amarillos: {'ana': 1, 'luis': 1},
+          meta: 8,
+        );
+
+        expect(find.text('¡Empataste en primer lugar!'), findsOneWidget);
+        expect(
+          find.text('Ganaron @ana (tú) y @luis con 8 puntos'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('Si nadie llegó a la meta se explica el motivo', (
+        tester,
+      ) async {
+        await terminar(tester, ganadores: ['luis'], amarillos: {'luis': 1});
+
+        expect(
+          find.text(
+            'Nadie llegó a la meta de 26 puntos: todos llenaron su tablero.',
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('Terminada, ya no hay dados ni se espera la ronda', (
+        tester,
+      ) async {
+        final servidor = await terminar(
+          tester,
+          ganadores: ['luis'],
+          amarillos: {'luis': 1},
+        );
+        final consultas = servidor.de('estado').length;
+
+        await siguienteConsulta(tester);
+
+        expect(dados(), findsNothing);
+        expect(find.byKey(const Key('ronda-esperando')), findsNothing);
+        expect(servidor.de('estado'), hasLength(consultas));
+      });
+
+      testWidgets('Volver al menú no pide confirmar y avisa al servidor', (
+        tester,
+      ) async {
+        final servidor = await terminar(
+          tester,
+          ganadores: ['luis'],
+          amarillos: {'luis': 1},
+        );
+
+        await tester.ensureVisible(find.byKey(const Key('fin-volver')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('fin-volver')));
+        await esperarServidor(tester);
+
+        expect(find.byKey(const Key('tablero-salir-confirmar')), findsNothing);
+        expect(servidor.de('salir'), hasLength(1));
+        expect(find.text('Menú'), findsOneWidget);
+      });
+
+      testWidgets('Quien vuelve a una partida terminada ve el final', (
+        tester,
+      ) async {
+        final servidor = enRonda()
+          ..terminada = true
+          ..ganadores = ['luis']
+          ..zonas = {
+            '$amarilla': {'luis': 1},
+          };
+
+        await abrirTablero(tester, servidor);
+
+        expect(find.byKey(const Key('fin-compartido')), findsOneWidget);
+        expect(dados(), findsNothing);
+      });
+
+      testWidgets('La pantalla final cabe en un celular', (tester) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        await terminar(
+          tester,
+          ganadores: ['ana', 'un_usuario_con_nombre_muy_largo_de_verdad'],
+          amarillos: {'ana': 1, 'un_usuario_con_nombre_muy_largo_de_verdad': 1},
+        );
+
+        expect(tester.takeException(), isNull);
+        expect(find.byKey(const Key('fin-compartido')), findsOneWidget);
       });
     });
 

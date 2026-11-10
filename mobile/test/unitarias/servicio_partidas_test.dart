@@ -28,6 +28,9 @@ const Map<String, Object> salaJson = {
   'zonas': {
     '3': {'ana': 1, 'luis': 2},
   },
+  'meta': 26,
+  'terminada': false,
+  'ganadores': <String>[],
 };
 
 http.Response json(Map<String, Object> datos, int codigo) =>
@@ -69,6 +72,9 @@ void main() {
       expect(sala.ronda, 2);
       expect(sala.dados, [5, 2]);
       expect(sala.jugaron, ['luis']);
+      expect(sala.meta, 26);
+      expect(sala.terminada, isFalse);
+      expect(sala.ganadores, isEmpty);
       expect(sala.zonas, {
         3: {'ana': 1, 'luis': 2},
       });
@@ -267,6 +273,10 @@ void main() {
       ('dados', ['5', '2']),
       ('jugaron', 'luis'),
       ('jugaron', [1]),
+      ('meta', '26'),
+      ('terminada', 'no'),
+      ('ganadores', 'ana'),
+      ('ganadores', [1]),
       ('zonas', 'nada'),
       (
         'zonas',

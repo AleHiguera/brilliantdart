@@ -31,6 +31,9 @@ http.Response sala() => json({
   'dados': <int>[],
   'jugaron': <String>[],
   'zonas': <String, Object>{},
+  'meta': 0,
+  'terminada': false,
+  'ganadores': <String>[],
 }, 200);
 
 http.Response rechazo(int codigo) =>

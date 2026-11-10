@@ -63,6 +63,9 @@ http.Response respuesta({
   'dados': dados,
   'jugaron': jugaron,
   'zonas': <String, Object>{},
+  'meta': 0,
+  'terminada': false,
+  'ganadores': <String>[],
 }, 200);
 
 PartidaCompartida compartida(

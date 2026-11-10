@@ -53,6 +53,9 @@ class PartidaCompartida extends ChangeNotifier {
   /// Mientras se envía o después de finalizar, el tablero ya no cambia.
   bool get puedeEditar => !_enviando && !yaFinalice && _perdida == null;
 
+  bool get terminada => _sala.terminada;
+  bool get gane => _sala.ganadores.contains(usuario);
+
   /// Hay un resultado que este jugador todavía no ha usado.
   bool get puedoJugarRonda =>
       _sala.ronda > 0 &&
@@ -147,6 +150,8 @@ class PartidaCompartida extends ChangeNotifier {
     // nunca retroceden.
     if (_cerrada || sala.ronda < _sala.ronda) return;
     _sala = sala;
+    // Terminada, ya no hay nada nuevo que consultar.
+    if (sala.terminada) _vigilante.detener();
     _avisar();
     if (_rondaJugada == sala.ronda &&
         _rondaJugada > 0 &&
