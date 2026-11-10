@@ -7,6 +7,7 @@ import 'package:brilliantdart/mapa_cuatro.dart';
 import 'package:brilliantdart/mapa_dos.dart';
 import 'package:brilliantdart/mapa_tres.dart';
 import 'package:brilliantdart/mapa_uno.dart';
+import 'package:brilliantdart/puntuacion_multijugador.dart';
 import 'package:brilliantdart/tablero.dart';
 import 'package:brilliantdart/tipoo.dart';
 import 'package:brilliantdart/validador_anclas.dart';
@@ -22,6 +23,7 @@ import 'package:brilliant_mobile/partida_compartida.dart';
 import 'package:brilliant_mobile/seccion_multijugador.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/sonidos.dart';
+import 'package:brilliant_mobile/tabla_puntos_partida.dart';
 import 'package:brilliant_mobile/tabla_puntuacion.dart';
 import 'package:brilliant_mobile/vista_mapa.dart';
 
@@ -544,6 +546,29 @@ class _TableroPageState extends State<TableroPage> {
 
   bool get _partidaFinalizada => _bloc.jugando && _tablero.estaLleno;
 
+  /// Los puntos que ve el jugador: en multijugador dependen de su lugar en cada
+  /// zona; en una partida individual, de las zonas que completó.
+  int get _misPuntos {
+    final compartida = widget.compartida;
+    if (compartida == null) return _tablero.puntuacionTotal;
+    return PuntuacionMultijugador(
+          widget.mapa,
+          compartida.rondasPorZona,
+        ).puntos[compartida.usuario] ??
+        0;
+  }
+
+  Widget _tablaDePuntos() {
+    final compartida = widget.compartida;
+    if (compartida == null) return TablaPuntuacion(tablero: _tablero);
+    return TablaPuntosPartida(
+      puntuacion: PuntuacionMultijugador(widget.mapa, compartida.rondasPorZona),
+      jugadores: compartida.sala.jugadores,
+      usuario: compartida.usuario,
+      ronda: compartida.rondaDeMiSiguienteJugada,
+    );
+  }
+
   bool get _puedeEditarIniciales =>
       !_bloc.jugando && (widget.compartida?.puedeEditar ?? true);
 
@@ -623,7 +648,7 @@ class _TableroPageState extends State<TableroPage> {
       return KeyedSubtree(
         key: const ValueKey('fase-fin'),
         child: PanelFinPartida(
-          puntos: _tablero.puntuacionTotal,
+          puntos: _misPuntos,
           maximo: _tablero.puntuacionMaxima,
           onNuevaPartida: _jugarNuevaPartida,
         ),
@@ -827,7 +852,7 @@ class _TableroPageState extends State<TableroPage> {
       builder: (dialogContext) => AlertDialog(
         key: const Key('game-over-dialog'),
         title: const Text('Fin de la partida'),
-        content: Text('Has puntuado ${_tablero.puntuacionTotal} puntos'),
+        content: Text('Has puntuado $_misPuntos puntos'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -1037,7 +1062,7 @@ class _TableroPageState extends State<TableroPage> {
                         children: [
                           fase,
                           const SizedBox(height: 10),
-                          TablaPuntuacion(tablero: _tablero),
+                          _tablaDePuntos(),
                           const SizedBox(height: 10),
                           HistorialDadosView(
                             historial: _dados.historial,
@@ -1078,10 +1103,7 @@ class _TableroPageState extends State<TableroPage> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              Expanded(
-                                flex: 7,
-                                child: TablaPuntuacion(tablero: _tablero),
-                              ),
+                              Expanded(flex: 7, child: _tablaDePuntos()),
                             ],
                           ),
                         ],

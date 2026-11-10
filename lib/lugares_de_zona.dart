@@ -26,6 +26,14 @@ class LugaresDeZona {
     };
   }
 
+  /// El lugar de quien complete la zona en [ronda]. Solo cuentan las rondas
+  /// anteriores: si otro la completó en esta misma, se empata con él.
+  int lugarEnRonda(int ronda) =>
+      rondaPorJugador.values.where((otra) => otra < ronda).toSet().length + 1;
+
+  /// Cuánto vale la zona para quien la complete en [ronda].
+  int puntosEnRonda(int ronda) => tipo.puntosDeLugar(lugarEnRonda(ronda));
+
   /// Los puntos que gana cada jugador que completó la zona. Cada uno recibe
   /// los puntos completos de su lugar, aunque lo comparta.
   Map<String, int> get puntos => {

@@ -8,7 +8,7 @@ class TablaPuntuacion extends StatelessWidget {
 
   final Tablero tablero;
 
-  static const Map<TipoZona, String> _nombres = {
+  static const Map<TipoZona, String> nombres = {
     TipoZona.morado: 'Morada',
     TipoZona.amarillo: 'Amarilla',
     TipoZona.verde: 'Verde',
@@ -111,7 +111,7 @@ class TablaPuntuacion extends StatelessWidget {
           const SizedBox(width: 6),
           Expanded(
             child: Text(
-              _nombres[tipo]!,
+              nombres[tipo]!,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 11),
             ),

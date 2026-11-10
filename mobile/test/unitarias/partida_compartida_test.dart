@@ -113,6 +113,92 @@ void main() {
       expect(dados.historial.lanzamientos, hasLength(2));
     });
 
+    test('El registro incluye la zona recién completada, sin esperar', () {
+      final fase = compartida(
+        (_) => Completer<http.Response>().future,
+        inicial: enRonda(),
+      );
+
+      fase.terminarTurno(tableroLleno: false, zonaCompletada: 3);
+
+      expect(fase.rondasPorZona, {
+        3: {'ana': 1},
+      });
+    });
+
+    test('Sin zona completada el registro es el del servidor', () {
+      final fase = compartida(
+        (_) async => respuesta(),
+        inicial: SalaPartida(
+          codigo: 'ABC234',
+          mapa: 1,
+          capacidad: 2,
+          anfitrion: 'ana',
+          jugadores: const ['ana', 'luis'],
+          listos: const ['ana', 'luis'],
+          comenzada: true,
+          finalizados: const ['ana', 'luis'],
+          configurada: true,
+          miTablero: numeros,
+          ronda: 1,
+          dados: const [5, 2],
+          jugaron: const [],
+          zonas: const {
+            3: {'luis': 1},
+          },
+        ),
+      );
+
+      expect(fase.rondasPorZona, {
+        3: {'luis': 1},
+      });
+    });
+
+    test('La ronda que ya registró el servidor no se cambia', () {
+      final fase = compartida(
+        (_) => Completer<http.Response>().future,
+        inicial: SalaPartida(
+          codigo: 'ABC234',
+          mapa: 1,
+          capacidad: 2,
+          anfitrion: 'ana',
+          jugadores: const ['ana', 'luis'],
+          listos: const ['ana', 'luis'],
+          comenzada: true,
+          finalizados: const ['ana', 'luis'],
+          configurada: true,
+          miTablero: numeros,
+          ronda: 4,
+          dados: const [5, 2],
+          jugaron: const [],
+          zonas: const {
+            3: {'ana': 2},
+          },
+        ),
+      );
+
+      fase.terminarTurno(tableroLleno: false, zonaCompletada: 3);
+
+      expect(fase.rondasPorZona[3], {'ana': 2});
+    });
+
+    test('Mientras puede jugar, su siguiente jugada es en esta ronda', () {
+      final fase = compartida((_) async => respuesta(), inicial: enRonda());
+
+      expect(fase.rondaDeMiSiguienteJugada, 1);
+    });
+
+    test('Si ya terminó su turno, su siguiente jugada es en la próxima', () {
+      final fase = compartida(
+        (_) => Completer<http.Response>().future,
+        inicial: enRonda(),
+      );
+
+      fase.terminarTurno(tableroLleno: false);
+
+      expect(fase.rondaDeMiSiguienteJugada, 2);
+    });
+
     test('Quien ya jugó según el servidor no vuelve a jugar', () {
       final fase = compartida(
         (_) async => respuesta(),

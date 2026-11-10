@@ -62,6 +62,27 @@ class PartidaCompartida extends ChangeNotifier {
   /// El resultado de la ronda en juego, el mismo para toda la partida.
   (int, int) get resultado => (_sala.dados[0], _sala.dados[1]);
 
+  /// El registro de zonas del servidor, más la que este jugador acaba de
+  /// completar: así sus puntos se ven al momento y no dependen de que el aviso
+  /// ya haya llegado. Su lugar no cambia, porque solo cuentan rondas anteriores.
+  Map<int, Map<String, int>> get rondasPorZona {
+    final zona = _zonaCompletada;
+    final yo = usuario;
+    final registro = {
+      for (final MapEntry(key: id, value: rondas) in _sala.zonas.entries)
+        id: {...rondas},
+    };
+    if (zona != null && yo != null) {
+      (registro[zona] ??= {}).putIfAbsent(yo, () => _rondaJugada);
+    }
+    return registro;
+  }
+
+  /// La ronda en que este jugador podría completar su siguiente zona: la actual
+  /// si aún no juega, o la próxima si ya terminó su turno.
+  int get rondaDeMiSiguienteJugada =>
+      puedoJugarRonda || _sala.ronda == 0 ? _sala.ronda : _sala.ronda + 1;
+
   /// Sigue la partida mientras el jugador esté en esta pantalla. También es la
   /// señal de que sigue ahí: sin ella el servidor lo sacaría de la partida.
   void iniciar() => _vigilante.iniciar();

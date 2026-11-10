@@ -30,6 +30,7 @@ class ServidorFalso {
   List<int> dadosRonda = [];
   List<String> jugaron = [];
   bool fallaTurno = false;
+  Map<String, Map<String, int>> zonas = {};
 
   /// Lo que el servidor sacará en cada lanzamiento.
   List<List<int>> proximosDados = [
@@ -62,7 +63,7 @@ class ServidorFalso {
     'ronda': ronda,
     'dados': dadosRonda,
     'jugaron': jugaron,
-    'zonas': <String, Object>{},
+    'zonas': zonas,
   };
 
   Iterable<http.Request> de(String accion) =>
@@ -83,8 +84,12 @@ class ServidorFalso {
     return _json(sala, 200);
   }
 
-  http.Response _terminarTurno() {
+  http.Response _terminarTurno(http.Request peticion) {
     if (fallaTurno) return _json({'ok': false, 'mensaje': 'Fallo.'}, 500);
+    final zona = peticion.bodyFields['zona'];
+    if (zona != null) {
+      (zonas[zona] ??= {}).putIfAbsent('ana', () => ronda);
+    }
     jugaron = [...jugaron, 'ana'];
     if (jugadores.every(jugaron.contains)) lanzar();
     return _json(sala, 200);
@@ -96,7 +101,7 @@ class ServidorFalso {
       case '/api/partida/finalizar':
         return _finalizar(peticion);
       case '/api/partida/turno':
-        return _terminarTurno();
+        return _terminarTurno(peticion);
       case '/api/partida/salir':
         return _json({'ok': true, 'mensaje': 'Saliste.'}, 200);
     }
@@ -961,6 +966,155 @@ void main() {
 
       expect(find.byKey(const Key('tablero-perdido')), findsNothing);
       expect(find.text('Dado 1: 3'), findsOneWidget);
+    });
+
+    group('Puntos en pantalla', () {
+      /// La zona verde de la (4, 7), que es la que falta en tableroCasiLleno.
+      final verde = mapaUno
+          .crearTablero()
+          .regiones
+          .firstWhere((zona) => zona.contieneCoordenada(3, 6))
+          .id;
+
+      /// Tablero al que le falta un número; la zona ya la completaron [antes].
+      Future<ServidorFalso> ultimaJugada(
+        WidgetTester tester, {
+        required Map<String, int> antes,
+      }) async {
+        final servidor = enRonda()
+          ..proximosDados = [
+            [1, 3],
+            [1, 3],
+          ]
+          ..ronda = 0
+          ..zonas = {'$verde': antes};
+        servidor
+          ..lanzar()
+          ..lanzar();
+        await abrirTablero(tester, servidor, tablero: tableroCasiLleno());
+        await mover(tester, 1);
+        return servidor;
+      }
+
+      testWidgets('Se ve la tabla de la partida, no la individual', (
+        tester,
+      ) async {
+        await abrirTablero(tester, enRonda());
+
+        expect(find.byKey(const Key('tabla-jugadores')), findsOneWidget);
+        expect(find.byKey(const Key('tabla-zonas')), findsOneWidget);
+        expect(find.byKey(const Key('score-table')), findsNothing);
+      });
+
+      testWidgets('También se ve mientras se colocan los números', (
+        tester,
+      ) async {
+        await abrirTablero(tester, ServidorFalso());
+
+        expect(find.byKey(const Key('tabla-jugadores')), findsOneWidget);
+      });
+
+      testWidgets('Una partida individual conserva su tabla', (tester) async {
+        await tester.pumpWidget(const MaterialApp(home: TableroPage()));
+
+        expect(find.byKey(const Key('score-table')), findsOneWidget);
+        expect(find.byKey(const Key('tabla-jugadores')), findsNothing);
+      });
+
+      testWidgets('Los puntos llegan del registro del servidor', (
+        tester,
+      ) async {
+        final servidor = enRonda();
+        await abrirTablero(tester, servidor);
+
+        servidor.zonas = {
+          '$verde': {'luis': 1},
+        };
+        await siguienteConsulta(tester);
+
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('puntos-luis')),
+            matching: find.text('4 pts'),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('El mensaje final usa el lugar, no el puntaje individual', (
+        tester,
+      ) async {
+        await ultimaJugada(tester, antes: {'luis': 1});
+
+        // El verde vale 4, 3 y 2: llegó segundo a la única zona registrada.
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('game-over-dialog')),
+            matching: find.text('Has puntuado 3 puntos'),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('El panel final también usa el lugar', (tester) async {
+        await ultimaJugada(tester, antes: {'luis': 1});
+
+        await tester.tap(find.text('Aceptar'));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('game-finished-panel')), findsOneWidget);
+        expect(find.text('Has puntuado 3 puntos'), findsOneWidget);
+        expect(find.byKey(const Key('perfect-score')), findsNothing);
+      });
+
+      testWidgets('Los puntos propios se ven aunque el aviso no haya llegado', (
+        tester,
+      ) async {
+        final servidor = enRonda()
+          ..proximosDados = [
+            [1, 3],
+          ]
+          ..ronda = 0
+          ..fallaTurno = true;
+        servidor.lanzar();
+        await abrirTablero(tester, servidor, tablero: tableroCasiLleno());
+
+        await mover(tester, 1);
+
+        expect(servidor.zonas, isEmpty);
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('game-over-dialog')),
+            matching: find.text('Has puntuado 4 puntos'),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('En un celular se juega con la tabla sin desbordes', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final servidor = enRonda()
+          ..jugadores = [
+            'ana',
+            'un_usuario_con_nombre_muy_largo_de_verdad',
+            'c',
+            'd',
+            'e',
+            'f',
+          ]
+          ..zonas = {
+            '$verde': {'c': 1, 'd': 1},
+          };
+
+        await abrirTablero(tester, servidor);
+
+        expect(tester.takeException(), isNull);
+        expect(find.byKey(const Key('tabla-zonas')), findsOneWidget);
+      });
     });
 
     testWidgets('Sin multijugador sigue siendo Comenzar', (tester) async {

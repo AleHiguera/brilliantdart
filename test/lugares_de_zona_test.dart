@@ -86,6 +86,49 @@ void main() {
       expect(reparto.puntos['e'], 0);
     });
 
+    group('Lo que vale si se completa en una ronda', () {
+      test('Sin nadie antes vale el primer lugar', () {
+        expect(zona({}).lugarEnRonda(5), 1);
+        expect(zona({}).puntosEnRonda(5), 6);
+      });
+
+      test('Cada ronda anterior con ganadores baja un lugar', () {
+        final reparto = zona({'ana': 2, 'luis': 3});
+
+        expect(reparto.lugarEnRonda(4), 3);
+        expect(reparto.puntosEnRonda(4), 2);
+      });
+
+      test('Un empate anterior cuenta como un solo lugar', () {
+        final reparto = zona({'ana': 2, 'luis': 2, 'eva': 2});
+
+        expect(reparto.lugarEnRonda(4), 2);
+        expect(reparto.puntosEnRonda(4), 4);
+      });
+
+      test('En la misma ronda de otro se empata con él', () {
+        final reparto = zona({'ana': 2, 'luis': 4});
+
+        expect(reparto.lugarEnRonda(4), 2);
+        expect(reparto.puntosEnRonda(4), 4);
+      });
+
+      test('Agotados los lugares vale 0', () {
+        final reparto = zona({'a': 1, 'b': 2, 'c': 3});
+
+        expect(reparto.lugarEnRonda(4), 4);
+        expect(reparto.puntosEnRonda(4), 0);
+      });
+
+      test('Coincide con el lugar que después se reparte', () {
+        final antes = zona({'ana': 2, 'luis': 2});
+        final despues = zona({'ana': 2, 'luis': 2, 'eva': 5});
+
+        expect(antes.lugarEnRonda(5), despues.lugares['eva']);
+        expect(antes.puntosEnRonda(5), despues.puntos['eva']);
+      });
+    });
+
     test('Usa los puntos propios del mapa', () {
       final gris = mapaNumero(3)
           .crearTablero()
