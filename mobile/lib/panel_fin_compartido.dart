@@ -1,29 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:brilliantdart/clasificacion.dart';
 import 'package:brilliant_mobile/colores_zonas.dart';
+import 'package:brilliant_mobile/tabla_puntos_partida.dart';
 
-/// La pantalla final, igual para todos: quién ganó, por qué terminó y cuántos
-/// puntos hizo cada uno. Los puntos de todos siguen en la tabla de la partida.
+/// La pantalla final, igual para todos: quién ganó, por qué terminó y la
+/// clasificación de todos los jugadores.
 class PanelFinCompartido extends StatelessWidget {
   const PanelFinCompartido({
     super.key,
     required this.ganadores,
     required this.usuario,
     required this.puntos,
+    required this.jugadores,
     required this.meta,
     required this.onVolver,
   });
 
+  /// Quienes ganaron según el servidor; varios si empataron en puntos.
   final List<String> ganadores;
   final String? usuario;
   final Map<String, int> puntos;
+
+  /// Quienes siguen en la partida, en orden de llegada.
+  final List<String> jugadores;
   final int meta;
   final VoidCallback onVolver;
 
   bool get _gane => ganadores.contains(usuario);
 
-  String get _titulo {
-    if (!_gane) return 'Fin de la partida';
-    return ganadores.length > 1 ? '¡Empataste en primer lugar!' : '¡Ganaste!';
+  String _titulo(int? miLugar) {
+    if (_gane) {
+      return ganadores.length > 1 ? '¡Empataste en primer lugar!' : '¡Ganaste!';
+    }
+    return miLugar == null
+        ? 'Fin de la partida'
+        : 'Quedaste en ${ordinalDeLugar(miLugar)} lugar';
   }
 
   String get _ganadores {
@@ -43,6 +54,7 @@ class PanelFinCompartido extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final llegaron = _puntosDe(ganadores.first) >= meta;
+    final clasificacion = Clasificacion(puntos: puntos, jugadores: jugadores);
 
     return Container(
       key: const Key('fin-compartido'),
@@ -59,6 +71,7 @@ class PanelFinCompartido extends StatelessWidget {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Icon(
             _gane ? Icons.emoji_events : Icons.flag_outlined,
@@ -67,7 +80,7 @@ class PanelFinCompartido extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            _titulo,
+            _titulo(clasificacion.lugarDe(usuario)),
             key: const Key('fin-titulo'),
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -83,6 +96,7 @@ class PanelFinCompartido extends StatelessWidget {
           Text(
             'Tus puntos: ${_puntosDe(usuario ?? '')}',
             key: const Key('fin-mis-puntos'),
+            textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 13),
           ),
           const SizedBox(height: 4),
@@ -95,6 +109,8 @@ class PanelFinCompartido extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 12, color: Colors.black54),
           ),
+          const SizedBox(height: 10),
+          _TablaClasificacion(puestos: clasificacion.puestos, usuario: usuario),
           const SizedBox(height: 12),
           FilledButton(
             key: const Key('fin-volver'),
@@ -102,6 +118,94 @@ class PanelFinCompartido extends StatelessWidget {
             onPressed: onVolver,
             child: const Text('Volver al menú'),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TablaClasificacion extends StatelessWidget {
+  const _TablaClasificacion({required this.puestos, required this.usuario});
+
+  final List<Puesto> puestos;
+  final String? usuario;
+
+  /// El lugar de quien empata dice «(empate)» para que se note a simple vista.
+  bool _empatado(Puesto puesto) =>
+      puestos.where((otro) => otro.lugar == puesto.lugar).length > 1;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const Key('clasificacion'),
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+      decoration: decoracionTarjeta(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Clasificación',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+          ),
+          for (final puesto in puestos)
+            _FilaPuesto(
+              key: Key('clasificacion-${puesto.jugador}'),
+              lugar: _empatado(puesto)
+                  ? '${ordinalDeLugar(puesto.lugar)} (empate)'
+                  : ordinalDeLugar(puesto.lugar),
+              nombre: puesto.jugador == usuario
+                  ? '@${puesto.jugador} (tú)'
+                  : puesto.salio
+                  ? '@${puesto.jugador} (salió)'
+                  : '@${puesto.jugador}',
+              puntos: puesto.puntos,
+              soyYo: puesto.jugador == usuario,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilaPuesto extends StatelessWidget {
+  const _FilaPuesto({
+    super.key,
+    required this.lugar,
+    required this.nombre,
+    required this.puntos,
+    required this.soyYo,
+  });
+
+  final String lugar;
+  final String nombre;
+  final int puntos;
+  final bool soyYo;
+
+  @override
+  Widget build(BuildContext context) {
+    final estilo = TextStyle(
+      fontSize: 12,
+      fontWeight: soyYo ? FontWeight.bold : FontWeight.normal,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Flexible(
+            flex: 2,
+            fit: FlexFit.tight,
+            child: Text(lugar, style: estilo),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            flex: 3,
+            child: Text(nombre, overflow: TextOverflow.ellipsis, style: estilo),
+          ),
+          const SizedBox(width: 6),
+          Text('$puntos pts', style: estilo),
         ],
       ),
     );

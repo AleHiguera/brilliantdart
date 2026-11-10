@@ -5,6 +5,9 @@ import 'package:brilliantdart/tipoo.dart';
 import 'package:brilliant_mobile/colores_zonas.dart';
 import 'package:brilliant_mobile/tabla_puntuacion.dart';
 
+/// Cómo se escribe un lugar: 1.º, 2.º, 3.er, 4.º...
+String ordinalDeLugar(int lugar) => lugar == 3 ? '3.er' : '$lugar.º';
+
 /// Puntos de una partida multijugador: cuánto lleva cada jugador y cuánto vale
 /// ahora cada zona. Solo dibuja; las cuentas son de [PuntuacionMultijugador].
 class TablaPuntosPartida extends StatelessWidget {
@@ -206,13 +209,11 @@ class _TarjetaZonas extends StatelessWidget {
   String _valorDe(LugaresDeZona zona) {
     final lugar = zona.lugares[usuario];
     if (lugar != null) {
-      return '${_ordinal(lugar)} · ${zona.puntos[usuario]} pts';
+      return '${ordinalDeLugar(lugar)} · ${zona.puntos[usuario]} pts';
     }
     final puntos = zona.puntosEnRonda(ronda);
     return puntos > 0 ? 'Vale $puntos' : 'Sin puntos';
   }
-
-  String _ordinal(int lugar) => lugar == 3 ? '3.er' : '$lugar.º';
 }
 
 class _FilaZona extends StatelessWidget {

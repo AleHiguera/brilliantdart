@@ -667,6 +667,7 @@ class _TableroPageState extends State<TableroPage> {
             widget.mapa,
             enComun.rondasPorZona,
           ).puntos,
+          jugadores: enComun.sala.jugadores,
           meta: enComun.sala.meta,
           onVolver: _salirDePartida,
         ),

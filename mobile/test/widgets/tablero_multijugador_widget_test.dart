@@ -1143,6 +1143,86 @@ void main() {
         return servidor;
       }
 
+      Finder enPuesto(String jugador, String texto) => find.descendant(
+        of: find.byKey(Key('clasificacion-$jugador')),
+        matching: find.text(texto),
+      );
+
+      testWidgets('La clasificación ordena a todos de mayor a menor', (
+        tester,
+      ) async {
+        final servidor = enRonda()
+          ..jugadores = ['ana', 'luis', 'eva', 'sol']
+          ..meta = 8;
+        await abrirTablero(tester, servidor);
+        await mover(tester, 2);
+        servidor
+          ..zonas = {
+            '$amarilla': {'luis': 1, 'eva': 2, 'ana': 3},
+          }
+          ..terminada = true
+          ..ganadores = ['luis'];
+        await siguienteConsulta(tester);
+
+        final orden = ['luis', 'eva', 'ana', 'sol']
+            .map(
+              (jugador) => tester
+                  .getTopLeft(find.byKey(Key('clasificacion-$jugador')))
+                  .dy,
+            )
+            .toList();
+        expect(orden, [...orden]..sort());
+        expect(enPuesto('luis', '1.º'), findsOneWidget);
+        expect(enPuesto('eva', '2.º'), findsOneWidget);
+        expect(enPuesto('ana', '3.er'), findsOneWidget);
+        expect(enPuesto('ana', '@ana (tú)'), findsOneWidget);
+        expect(enPuesto('sol', '4.º'), findsOneWidget);
+        expect(enPuesto('sol', '0 pts'), findsOneWidget);
+        expect(find.text('Quedaste en 3.er lugar'), findsOneWidget);
+      });
+
+      testWidgets('Los empatados comparten el lugar y se nota el empate', (
+        tester,
+      ) async {
+        final servidor = enRonda()
+          ..jugadores = ['ana', 'luis', 'eva']
+          ..meta = 8;
+        await abrirTablero(tester, servidor);
+        await mover(tester, 2);
+        servidor
+          ..zonas = {
+            '$amarilla': {'luis': 1, 'eva': 2, 'ana': 2},
+          }
+          ..terminada = true
+          ..ganadores = ['luis'];
+        await siguienteConsulta(tester);
+
+        expect(enPuesto('luis', '1.º'), findsOneWidget);
+        expect(enPuesto('ana', '2.º (empate)'), findsOneWidget);
+        expect(enPuesto('eva', '2.º (empate)'), findsOneWidget);
+        expect(find.text('Quedaste en 2.º lugar'), findsOneWidget);
+      });
+
+      testWidgets('Quien salió sigue en la clasificación con sus puntos', (
+        tester,
+      ) async {
+        final servidor = enRonda()..meta = 8;
+        await abrirTablero(tester, servidor);
+        await mover(tester, 2);
+        servidor
+          ..jugadores = ['ana']
+          ..zonas = {
+            '$amarilla': {'luis': 1},
+          }
+          ..terminada = true
+          ..ganadores = ['luis'];
+        await siguienteConsulta(tester);
+
+        expect(enPuesto('luis', '@luis (salió)'), findsOneWidget);
+        expect(enPuesto('luis', '8 pts'), findsOneWidget);
+        expect(enPuesto('ana', '2.º'), findsOneWidget);
+      });
+
       testWidgets('Durante la partida se ve la meta', (tester) async {
         await abrirTablero(tester, enRonda()..meta = 22);
 
@@ -1177,7 +1257,7 @@ void main() {
           sonido: sonido,
         );
 
-        expect(find.text('Fin de la partida'), findsOneWidget);
+        expect(find.text('Quedaste en 2.º lugar'), findsOneWidget);
         expect(find.text('Ganó @luis con 8 puntos'), findsOneWidget);
         expect(find.text('Tus puntos: 6'), findsOneWidget);
         expect(sonido.reproducciones, 0);
