@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:brilliantdart/bloc_valores_iniciales.dart';
 import 'package:brilliantdart/dados.dart';
+import 'package:brilliantdart/leyenda_reglas.dart';
 import 'package:brilliantdart/mapa.dart';
 import 'package:brilliantdart/mapa_cuatro.dart';
 import 'package:brilliantdart/mapa_dos.dart';
@@ -19,6 +20,7 @@ import 'package:brilliant_mobile/inicio_sesion.dart';
 import 'package:brilliant_mobile/latido_sesion.dart';
 import 'package:brilliant_mobile/panel_fin_compartido.dart';
 import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
+import 'package:brilliant_mobile/panel_reglas.dart';
 import 'package:brilliant_mobile/panel_tablero_compartido.dart';
 import 'package:brilliant_mobile/paneles_juego.dart';
 import 'package:brilliant_mobile/partida_compartida.dart';
@@ -556,6 +558,9 @@ class _TableroPageState extends State<TableroPage> {
     celdasIniciales: widget.mapa.celdasIniciales,
   );
   late final ValidadorAnclas _validadorAnclas = ValidadorAnclas(_tablero);
+
+  /// Las reglas del mapa no cambian durante la partida: se calculan una vez.
+  late final List<ReglaVisible> _reglas = LeyendaReglas(widget.mapa).reglas;
   OpcionAncla? _opcionAnclaSeleccionada;
   MovimientoAncla? _movimientoSeleccionado;
   int? _numeroLanzamientoPendiente;
@@ -1121,6 +1126,8 @@ class _TableroPageState extends State<TableroPage> {
                         children: [
                           fase,
                           const SizedBox(height: 10),
+                          PanelReglas(reglas: _reglas),
+                          const SizedBox(height: 10),
                           _tablaDePuntos(),
                           const SizedBox(height: 10),
                           HistorialDadosView(
@@ -1149,6 +1156,9 @@ class _TableroPageState extends State<TableroPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         fase,
+                        // Desde que se ponen los números iniciales.
+                        const SizedBox(height: 10),
+                        PanelReglas(reglas: _reglas),
                         if (_bloc.jugando) ...[
                           const SizedBox(height: 10),
                           Row(

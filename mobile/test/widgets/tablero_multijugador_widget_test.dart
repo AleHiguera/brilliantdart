@@ -1734,4 +1734,22 @@ void main() {
       );
     });
   });
+
+  group('Widgets: reglas en multijugador', () {
+    testWidgets('Se ven mientras cada uno pone sus números', (tester) async {
+      await abrirTablero(tester, ServidorFalso());
+
+      expect(find.text('Finalizado'), findsOneWidget);
+      expect(find.byKey(const Key('reglas')), findsOneWidget);
+    });
+
+    testWidgets('Siguen durante la ronda, con la tabla de la partida', (
+      tester,
+    ) async {
+      await abrirTablero(tester, enRonda());
+
+      expect(find.byKey(const Key('reglas')), findsOneWidget);
+      expect(dados(), findsOneWidget);
+    });
+  });
 }
