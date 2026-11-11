@@ -76,6 +76,34 @@ void main() {
     });
   });
 
+  group('Flechas de zona', () {
+    test('Mapa 4: el naranja de arriba lleva ↑ y el de abajo ↓', () {
+      final naranjas = {
+        for (final regla in LeyendaReglas(mapaCuatro).reglas)
+          if (regla.tipo == TipoZona.naranja) regla.simbolo: regla.flecha,
+      };
+
+      expect(naranjas, {'4-6': '↑', '1-3': '↓'});
+    });
+
+    for (final mapa in mapasDisponibles) {
+      test(
+        'Mapa ${mapa.numero}: solo llevan flecha los colores con dos reglas',
+        () {
+          final reglas = LeyendaReglas(mapa).reglas;
+          for (final regla in reglas) {
+            final mismoColor = reglas.where((otra) => otra.tipo == regla.tipo);
+            expect(
+              regla.flecha != null,
+              mismoColor.length > 1,
+              reason: '${regla.tipo.name} ${regla.simbolo}',
+            );
+          }
+        },
+      );
+    }
+  });
+
   group('Reglas de cada mapa', () {
     test(
       'El Mapa 4 muestra el naranja de arriba (4-6) y el de abajo (1-3)',

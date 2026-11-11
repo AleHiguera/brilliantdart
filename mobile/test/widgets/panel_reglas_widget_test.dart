@@ -124,7 +124,7 @@ void main() {
       await abrir(tester, mapaCuatro);
 
       for (final regla in LeyendaReglas(mapaCuatro).reglas) {
-        expect(find.byTooltip(regla.regla), findsWidgets);
+        expect(find.byTooltip(PanelReglas.explicacion(regla)), findsWidgets);
       }
     });
 
@@ -184,8 +184,18 @@ void main() {
           home: Scaffold(
             body: PanelReglas(
               reglas: [
-                (tipo: TipoZona.morado, simbolo: 'XO', regla: 'Dos números'),
-                (tipo: TipoZona.naranja, simbolo: '4-6', regla: 'Del 4 al 6'),
+                (
+                  tipo: TipoZona.morado,
+                  simbolo: 'XO',
+                  regla: 'Dos números',
+                  flecha: null,
+                ),
+                (
+                  tipo: TipoZona.naranja,
+                  simbolo: '4-6',
+                  regla: 'Del 4 al 6',
+                  flecha: '↑',
+                ),
               ],
             ),
           ),
@@ -195,7 +205,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(
         tester.getSize(cuadro(TipoZona.naranja, '4-6')),
-        const Size(CuadroRegla.lado, CuadroRegla.lado),
+        const Size(CuadroRegla.ladoMaximo, CuadroRegla.ladoMaximo),
       );
     });
 
@@ -214,6 +224,146 @@ void main() {
 
       expect(colorDelSigno(TipoZona.morado, 'XO'), Colors.white);
       expect(colorDelSigno(TipoZona.amarillo, '≠'), Colors.black87);
+    });
+  });
+
+  group('Widgets: reglas en una sola fila', () {
+    for (final (nombre, tamano) in [
+      ('celular chico (320)', const Size(320, 640)),
+      ('Samsung Galaxy A55 (360)', const Size(360, 800)),
+      ('celular grande (412)', const Size(412, 915)),
+      ('pantalla ancha', const Size(1200, 900)),
+    ]) {
+      for (final mapa in mapasDisponibles) {
+        testWidgets('$nombre, Mapa ${mapa.numero}: todos en la misma fila', (
+          tester,
+        ) async {
+          tester.view.physicalSize = tamano;
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+
+          await abrir(tester, mapa);
+
+          final filas = {
+            for (final elemento in find.byType(CuadroRegla).evaluate())
+              tester.getTopLeft(find.byWidget(elemento.widget)).dy,
+          };
+          expect(filas, hasLength(1));
+          final lado = tester.getSize(find.byType(CuadroRegla).first).width;
+          expect(lado, greaterThanOrEqualTo(CuadroRegla.ladoMinimo));
+          expect(lado, lessThanOrEqualTo(CuadroRegla.ladoMaximo));
+          expect(tester.takeException(), isNull);
+        });
+      }
+    }
+
+    test('El lado se ajusta al ancho, entre el mínimo y el máximo', () {
+      // 7 cuadros de 34 con 6 de separación ocupan 274.
+      expect(CuadroRegla.ladoPara(400, 7), CuadroRegla.ladoMaximo);
+      expect(CuadroRegla.ladoPara(274, 7), 34);
+      expect(CuadroRegla.ladoPara(268, 7), 33);
+      expect(CuadroRegla.ladoPara(100, 7), CuadroRegla.ladoMinimo);
+      expect(CuadroRegla.ladoPara(300, 0), CuadroRegla.ladoMaximo);
+      expect(CuadroRegla.ladoPara(double.infinity, 7), CuadroRegla.ladoMaximo);
+    });
+  });
+
+  group('Widgets: flechas de los naranjas', () {
+    testWidgets('El de arriba lleva ↑ y el de abajo ↓', (tester) async {
+      await abrir(tester, mapaCuatro);
+
+      expect(
+        find.descendant(
+          of: cuadro(TipoZona.naranja, '4-6'),
+          matching: find.text('↑'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: cuadro(TipoZona.naranja, '1-3'),
+          matching: find.text('↓'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Los demás colores no llevan flecha', (tester) async {
+      await abrir(tester, mapaCuatro);
+
+      expect(find.text('↑'), findsOneWidget);
+      expect(find.text('↓'), findsOneWidget);
+      for (final regla in LeyendaReglas(mapaCuatro).reglas) {
+        if (regla.tipo == TipoZona.naranja) continue;
+        expect(
+          find.byKey(Key('flecha-${regla.tipo.name}-${regla.simbolo}')),
+          findsNothing,
+        );
+      }
+    });
+
+    testWidgets(
+      'Al dejar el dedo encima dice si es la de arriba o la de abajo',
+      (tester) async {
+        await abrir(tester, mapaCuatro);
+
+        expect(
+          find.byTooltip(RegExp(r'^Zona de arriba: .*4 al 6')),
+          findsOneWidget,
+        );
+        expect(
+          find.byTooltip(RegExp(r'^Zona de abajo: .*1 al 3')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('La flecha y el rango caben en el cuadro chico', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await abrir(tester, mapaCuatro);
+
+      final cuadroNaranja = tester.getRect(cuadro(TipoZona.naranja, '4-6'));
+      for (final texto in ['↑', '4-6']) {
+        final rect = tester.getRect(
+          find.descendant(
+            of: cuadro(TipoZona.naranja, '4-6'),
+            matching: find.text(texto),
+          ),
+        );
+        expect(cuadroNaranja.contains(rect.topLeft), isTrue, reason: texto);
+        expect(
+          cuadroNaranja.inflate(0.5).contains(rect.bottomRight),
+          isTrue,
+          reason: texto,
+        );
+      }
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('Widgets: título del historial', () {
+    testWidgets('En el celular dice Historial completo, sin cortarse', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await abrirTableroCasiLleno(tester, const [(1, 3)]);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Historial'));
+      await tester.pumpAndSettle();
+
+      // Si se corta o no depende de la letra real: la de las pruebas es
+      // mucho más ancha. Aquí se revisa el título corto y que nada se desborde.
+      expect(find.text('Historial'), findsOneWidget);
+      expect(find.text('Historial de dados'), findsNothing);
+      expect(tester.takeException(), isNull);
     });
   });
 }

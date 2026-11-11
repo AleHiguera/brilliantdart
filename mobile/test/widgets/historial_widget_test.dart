@@ -27,7 +27,7 @@ void main() {
 
       comprobarFilaHistorial(tester, 1, (2, 6), accion: '5 ancla → coloca 2');
       comprobarFilaHistorial(tester, 2, (4, 1));
-      expect(find.text('Historial de dados'), findsOneWidget);
+      expect(find.text('Historial'), findsOneWidget);
       expect(
         tester.widget<Text>(find.byKey(const Key('dice-history-count'))).data,
         '2',
@@ -129,7 +129,7 @@ void main() {
         final puntuacion = tester.getRect(find.byKey(const Key('score-table')));
         expect(historial.left, greaterThanOrEqualTo(tablero.right));
         expect(puntuacion.left, greaterThanOrEqualTo(tablero.right));
-        expect(find.text('Historial de dados'), findsOneWidget);
+        expect(find.text('Historial'), findsOneWidget);
         expect(find.text('Puntuación'), findsOneWidget);
         expect(find.text('0 pts'), findsOneWidget);
       },

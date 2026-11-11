@@ -2,8 +2,14 @@ import 'mapa.dart';
 import 'tipoo.dart';
 
 /// Una regla tal como se muestra junto al tablero: el color de la zona y un
-/// signo que la resume.
-typedef ReglaVisible = ({TipoZona tipo, String simbolo, String regla});
+/// signo que la resume. Si el color tiene reglas distintas según la zona (los
+/// naranjas), [flecha] dice cuál es: ↑ la de más arriba, ↓ la de más abajo.
+typedef ReglaVisible = ({
+  TipoZona tipo,
+  String simbolo,
+  String regla,
+  String? flecha,
+});
 
 /// Las reglas de las zonas de un mapa, resumidas en un signo cada una:
 /// ≠ todos distintos, = todos iguales, XO dos números distintos, ? cualquier
@@ -61,14 +67,31 @@ class LeyendaReglas {
         });
 
     final vistas = <(TipoZona, String)>{};
-    return [
+    final distintas = [
       for (final zona in zonas)
-        if (vistas.add((zona.tipo.tipo, simboloDe(zona.tipo))))
-          (
-            tipo: zona.tipo.tipo,
-            simbolo: simboloDe(zona.tipo),
-            regla: zona.tipo.regla,
-          ),
+        if (vistas.add((zona.tipo.tipo, simboloDe(zona.tipo)))) zona.tipo,
+    ];
+
+    String? flechaDe(int indice) {
+      final tipo = distintas[indice].tipo;
+      final mismoColor = [
+        for (final (i, otra) in distintas.indexed)
+          if (otra.tipo == tipo) i,
+      ];
+      if (mismoColor.length < 2) return null;
+      if (indice == mismoColor.first) return '↑';
+      if (indice == mismoColor.last) return '↓';
+      return null;
+    }
+
+    return [
+      for (final (indice, tipo) in distintas.indexed)
+        (
+          tipo: tipo.tipo,
+          simbolo: simboloDe(tipo),
+          regla: tipo.regla,
+          flecha: flechaDe(indice),
+        ),
     ];
   }
 }

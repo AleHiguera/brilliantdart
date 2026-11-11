@@ -9,6 +9,14 @@ class PanelReglas extends StatelessWidget {
 
   final List<ReglaVisible> reglas;
 
+  /// Lo que se lee al dejar el dedo encima; dice de qué zona es si la flecha
+  /// la distingue.
+  static String explicacion(ReglaVisible regla) => switch (regla.flecha) {
+    '↑' => 'Zona de arriba: ${regla.regla}',
+    '↓' => 'Zona de abajo: ${regla.regla}',
+    _ => regla.regla,
+  };
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -25,16 +33,26 @@ class PanelReglas extends StatelessWidget {
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final regla in reglas)
-                Tooltip(
-                  message: regla.regla,
-                  child: CuadroRegla(regla: regla),
-                ),
-            ],
+          // Todos en una fila: si no caben, los cuadros se achican un poco
+          // (sin bajar de [CuadroRegla.ladoMinimo]).
+          LayoutBuilder(
+            builder: (context, limites) {
+              final lado = CuadroRegla.ladoPara(
+                limites.maxWidth,
+                reglas.length,
+              );
+              return Wrap(
+                spacing: CuadroRegla.separacion,
+                runSpacing: CuadroRegla.separacion,
+                children: [
+                  for (final regla in reglas)
+                    Tooltip(
+                      message: explicacion(regla),
+                      child: CuadroRegla(regla: regla, lado: lado),
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -43,21 +61,38 @@ class PanelReglas extends StatelessWidget {
 }
 
 class CuadroRegla extends StatelessWidget {
-  CuadroRegla({required this.regla})
+  CuadroRegla({required this.regla, this.lado = ladoMaximo})
     : super(key: Key('regla-${regla.tipo.name}-${regla.simbolo}'));
 
-  static const double lado = 38;
+  static const double ladoMaximo = 34;
+  static const double ladoMinimo = 24;
+  static const double separacion = 6;
+
+  /// El lado para que [cantidad] cuadros quepan en [ancho], entre el mínimo y
+  /// el máximo.
+  static double ladoPara(double ancho, int cantidad) {
+    if (cantidad == 0 || !ancho.isFinite) return ladoMaximo;
+    final justo = (ancho - separacion * (cantidad - 1)) / cantidad;
+    return justo.clamp(ladoMinimo, ladoMaximo).floorToDouble();
+  }
 
   final ReglaVisible regla;
+  final double lado;
 
   @override
   Widget build(BuildContext context) {
     final color = coloresZonas[regla.tipo]!;
     final oscuro =
         ThemeData.estimateBrightnessForColor(color) == Brightness.dark;
+    final estilo = TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+      height: 1.1,
+      color: oscuro ? Colors.white : Colors.black87,
+    );
 
     return Semantics(
-      label: '${regla.tipo.name}: ${regla.regla}',
+      label: '${regla.tipo.name}: ${PanelReglas.explicacion(regla)}',
       child: Container(
         width: lado,
         height: lado,
@@ -68,13 +103,17 @@ class CuadroRegla extends StatelessWidget {
           border: Border.all(color: Colors.black26),
         ),
         child: FittedBox(
-          child: Text(
-            regla.simbolo,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: oscuro ? Colors.white : Colors.black87,
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (regla.flecha case final flecha?)
+                Text(
+                  flecha,
+                  key: Key('flecha-${regla.tipo.name}-${regla.simbolo}'),
+                  style: estilo.copyWith(fontSize: 11, height: 1),
+                ),
+              Text(regla.simbolo, style: estilo),
+            ],
           ),
         ),
       ),

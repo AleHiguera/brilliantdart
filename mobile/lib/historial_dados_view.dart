@@ -28,7 +28,7 @@ class HistorialDadosView extends StatelessWidget {
         children: [
           EncabezadoTarjeta(
             icono: Icons.history,
-            titulo: 'Historial de dados',
+            titulo: 'Historial',
             extremo: lanzamientos.isEmpty
                 ? null
                 : Container(
