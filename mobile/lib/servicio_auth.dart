@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
+import 'package:brilliant_mobile/control_conexion.dart';
 
 /// Servidor de cuentas (proyecto RegistroClientes). Se puede cambiar al
 /// compilar con `--dart-define=SERVIDOR=https://192.168.1.5:8443`.
@@ -41,19 +42,54 @@ class ErrorAuth implements Exception {
   String toString() => mensaje;
 }
 
+/// La sesión se cerró sola porque se perdió la conexión con el servidor.
+class Desconexion {
+  const Desconexion({required this.abandonoPartida});
+
+  /// Estaba jugando una partida, que el servidor cuenta como abandonada.
+  final bool abandonoPartida;
+
+  String get mensaje => abandonoPartida
+      ? 'Te desconectaste del servidor y saliste de la partida: cuenta como '
+            'abandono. Revisa tu conexión a internet e inicia sesión de nuevo.'
+      : 'Te desconectaste del servidor. Revisa tu conexión a internet e '
+            'inicia sesión de nuevo.';
+}
+
 /// Inicia y cierra sesión contra la API HTTPS del servidor de cuentas.
 class ServicioAuth {
-  ServicioAuth({String? servidor, http.Client? cliente})
-    : servidor = servidor ?? servidorPorDefecto(),
-      _cliente = cliente ?? http.Client();
+  ServicioAuth({
+    String? servidor,
+    http.Client? cliente,
+    ControlConexion? conexion,
+  }) : servidor = servidor ?? servidorPorDefecto(),
+       _cliente = cliente ?? http.Client(),
+       conexion = conexion ?? ControlConexion();
 
   static const Duration _tiempoMaximo = Duration(seconds: 10);
+
+  /// Con la sesión abierta se espera menos: una respuesta que tarda tanto es
+  /// una conexión perdida, y hay que notarlo pronto.
+  static const Duration _tiempoMaximoConSesion = Duration(seconds: 5);
 
   String servidor;
   final http.Client _cliente;
   Sesion? sesion;
 
+  /// Cuenta las peticiones de la sesión que no llegaron al servidor.
+  final ControlConexion conexion;
+
+  /// Cambia cuando la sesión se cierra por haber perdido la conexión.
+  final ValueNotifier<Desconexion?> desconexion = ValueNotifier(null);
+
+  /// Código de la partida que se está jugando con esta sesión, si hay una.
+  String? partidaEnCurso;
+
+  /// La sesión que se perdió sin conexión: el servidor aún la cree abierta.
+  String? _tokenAbandonado;
+
   Future<Sesion> iniciarSesion(String usuario, String pin) async {
+    await _cerrarSesionAbandonada();
     final respuesta = await _enviar(
       'login',
       cuerpo: {'usuario': usuario.trim(), 'password': pin},
@@ -68,6 +104,7 @@ class ServicioAuth {
     required String correo,
     required String pin,
   }) async {
+    await _cerrarSesionAbandonada();
     final respuesta = await _enviar(
       'registro',
       cuerpo: {
@@ -80,7 +117,23 @@ class ServicioAuth {
     return _abrirSesion(respuesta);
   }
 
+  /// Quien perdió la conexión y vuelve a entrar cierra antes su sesión vieja:
+  /// si no, el servidor diría que el usuario ya está conectado, y así también
+  /// sabe que dejó la partida en la que estaba.
+  Future<void> _cerrarSesionAbandonada() async {
+    final token = _tokenAbandonado;
+    if (token == null) return;
+    try {
+      await _enviar('logout', cabeceras: {'Authorization': 'Bearer $token'});
+      _tokenAbandonado = null;
+    } on ErrorAuth {
+      // Se vuelve a intentar en la siguiente entrada.
+    }
+  }
+
   Sesion _abrirSesion(Map<String, dynamic> respuesta) {
+    conexion.reiniciar();
+    desconexion.value = null;
     return sesion = Sesion(
       usuario: respuesta['usuario'] as String,
       nombre: respuesta['nombre'] as String,
@@ -109,6 +162,7 @@ class ServicioAuth {
   Future<void> cerrarSesion() async {
     final actual = sesion;
     sesion = null;
+    partidaEnCurso = null;
     if (actual == null) return;
     try {
       await _enviar(
@@ -148,22 +202,30 @@ class ServicioAuth {
       throw const ErrorAuth('La dirección del servidor no es válida.');
     }
 
+    final autorizacion = cabeceras?['Authorization'];
     final http.Response respuesta;
     try {
       respuesta = await _cliente
           .post(url, body: cuerpo, headers: cabeceras)
-          .timeout(_tiempoMaximo);
+          .timeout(
+            autorizacion == null ? _tiempoMaximo : _tiempoMaximoConSesion,
+          );
     } on TimeoutException {
-      throw ErrorAuth('El servidor $servidor no respondió a tiempo.');
+      throw _sinConexion(
+        autorizacion,
+        'El servidor $servidor no respondió a tiempo.',
+      );
     } on http.ClientException {
       // En el navegador también llega aquí si aún no se aceptó el certificado
       // autofirmado del servidor.
-      throw ErrorAuth(
+      throw _sinConexion(
+        autorizacion,
         'No se pudo conectar con $servidor. Comprueba que el servidor esté '
         'encendido. Si es la primera vez, abre $servidor en el navegador y '
         'acepta el certificado.',
       );
     }
+    conexion.exito();
 
     final Map<String, dynamic> datos;
     try {
@@ -179,6 +241,28 @@ class ServicioAuth {
       );
     }
     return datos;
+  }
+}
+
+extension on ServicioAuth {
+  /// La petición no llegó al servidor. Con la sesión abierta cuenta para saber
+  /// si se perdió la conexión, y el mensaje ya no habla del certificado.
+  ErrorAuth _sinConexion(String? autorizacion, String sinSesion) {
+    final actual = sesion;
+    if (actual == null || autorizacion != 'Bearer ${actual.token}') {
+      return ErrorAuth(sinSesion);
+    }
+    if (conexion.fallo()) _desconectar(actual);
+    return const ErrorAuth('Se perdió la conexión con el servidor.');
+  }
+
+  void _desconectar(Sesion actual) {
+    _tokenAbandonado = actual.token;
+    sesion = null;
+    final abandono = partidaEnCurso != null;
+    partidaEnCurso = null;
+    conexion.reiniciar();
+    desconexion.value = Desconexion(abandonoPartida: abandono);
   }
 }
 

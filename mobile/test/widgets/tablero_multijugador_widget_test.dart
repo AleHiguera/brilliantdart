@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:brilliant_mobile/inicio_sesion.dart';
+import 'package:brilliant_mobile/latido_sesion.dart';
 import 'package:brilliant_mobile/main.dart';
 import 'package:brilliant_mobile/partida_compartida.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
@@ -34,6 +36,12 @@ class ServidorFalso {
   int meta = 26;
   bool terminada = false;
   List<String> ganadores = [];
+
+  /// Mientras sea true ninguna petición llega: se cortó la red.
+  bool sinRed = false;
+
+  /// La sesión de la última partida que se abrió.
+  late ServicioAuth auth;
 
   /// Lo que el servidor sacará en cada lanzamiento.
   List<List<int>> proximosDados = [
@@ -102,6 +110,7 @@ class ServidorFalso {
   }
 
   http.Response _responder(http.Request peticion) {
+    if (sinRed) throw http.ClientException('Sin red');
     peticiones.add(peticion);
     switch (peticion.url.path) {
       case '/api/partida/finalizar':
@@ -118,7 +127,7 @@ class ServidorFalso {
   }
 
   PartidaCompartida compartida() {
-    final auth = ServicioAuth(
+    auth = ServicioAuth(
       servidor: 'https://servidor:8443',
       cliente: MockClient((peticion) async => _responder(peticion)),
     )..sesion = const Sesion(usuario: 'ana', nombre: 'Ana', token: 'abc');
@@ -164,6 +173,48 @@ Future<void> abrirTablero(
             compartida: servidor.compartida(),
             sonidoDados: sonidoDados ?? SonidoFalso(),
             sonidoVictoria: sonidoVictoria ?? SonidoFalso(),
+          ),
+        ),
+      );
+  await esperarServidor(tester);
+}
+
+/// Como [abrirTablero], pero bajo el latido de la sesión, como en la app: así
+/// una desconexión lleva al inicio de sesión con su aviso.
+Future<void> abrirTableroConSesion(
+  WidgetTester tester,
+  ServidorFalso servidor,
+) async {
+  final compartida = servidor.compartida();
+  await tester.pumpWidget(
+    MaterialApp(
+      home: LatidoSesion(
+        auth: servidor.auth,
+        alPerderSesion: (_) {},
+        alDesconectarse: (context, desconexion) =>
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute<void>(
+                builder: (_) => InicioSesionPage(
+                  auth: servidor.auth,
+                  siguiente: (_) => const Text('Menú'),
+                  aviso: desconexion.mensaje,
+                ),
+              ),
+              (_) => false,
+            ),
+        child: const Scaffold(body: Text('Menú')),
+      ),
+    ),
+  );
+  tester
+      .state<NavigatorState>(find.byType(Navigator))
+      .push(
+        MaterialPageRoute<void>(
+          builder: (_) => TableroPage(
+            mapa: mapaUno,
+            compartida: compartida,
+            sonidoDados: SonidoFalso(),
+            sonidoVictoria: SonidoFalso(),
           ),
         ),
       );
@@ -448,6 +499,8 @@ void main() {
 
       expect(find.text('Esta partida ya no está disponible.'), findsOneWidget);
       expect(find.text('Finalizado'), findsNothing);
+      // Perder la conexión desde aquí ya no sería abandonar.
+      expect(servidor.auth.partidaEnCurso, isNull);
 
       await tester.tap(find.byKey(const Key('tablero-volver')));
       await tester.pumpAndSettle();
@@ -1387,6 +1440,101 @@ void main() {
       await abrirTablero(tester, servidor);
 
       expect(find.byKey(const Key('tablero-pendientes')), findsOneWidget);
+    });
+  });
+
+  group('Widgets: desconexión durante la partida', () {
+    Finder avisoDeAbandono() => find.descendant(
+      of: find.byKey(const Key('login-aviso')),
+      matching: find.textContaining('cuenta como abandono'),
+    );
+
+    testWidgets('Sin red unos segundos sale de la partida como abandono', (
+      tester,
+    ) async {
+      final servidor = enRonda();
+      await abrirTableroConSesion(tester, servidor);
+      expect(dados(), findsOneWidget);
+
+      servidor.sinRed = true;
+      for (var i = 0; i < 3; i++) {
+        await siguienteConsulta(tester);
+      }
+
+      expect(find.byType(TableroPage), findsNothing);
+      expect(find.text('Inicia sesión'), findsOneWidget);
+      expect(avisoDeAbandono(), findsOneWidget);
+      expect(servidor.auth.sesion, isNull);
+    });
+
+    testWidgets('Tampoco queda un error rojo de conexión', (tester) async {
+      final servidor = enRonda();
+      await abrirTableroConSesion(tester, servidor);
+
+      servidor.sinRed = true;
+      for (var i = 0; i < 3; i++) {
+        await siguienteConsulta(tester);
+      }
+
+      expect(find.textContaining('No se pudo conectar'), findsNothing);
+      expect(find.byKey(const Key('multijugador-error')), findsNothing);
+      expect(find.byKey(const Key('login-error')), findsNothing);
+    });
+
+    testWidgets('Un tropiezo de la red no saca de la partida', (tester) async {
+      final servidor = enRonda();
+      await abrirTableroConSesion(tester, servidor);
+
+      // Una consulta deja correr el reloj lo suficiente para fallar dos veces.
+      servidor.sinRed = true;
+      await siguienteConsulta(tester);
+      expect(servidor.auth.conexion.fallosSeguidos, 2);
+      servidor.sinRed = false;
+      await siguienteConsulta(tester);
+
+      expect(find.byType(TableroPage), findsOneWidget);
+      expect(dados(), findsOneWidget);
+      expect(servidor.auth.sesion, isNotNull);
+    });
+
+    testWidgets('También mientras se colocan los números iniciales', (
+      tester,
+    ) async {
+      final servidor = ServidorFalso();
+      await abrirTableroConSesion(tester, servidor);
+
+      servidor.sinRed = true;
+      for (var i = 0; i < 3; i++) {
+        await siguienteConsulta(tester);
+      }
+
+      expect(avisoDeAbandono(), findsOneWidget);
+    });
+
+    testWidgets('Con la partida ya terminada no es abandono', (tester) async {
+      final servidor = enRonda()
+        ..terminada = true
+        ..ganadores = ['luis'];
+      await abrirTableroConSesion(tester, servidor);
+      expect(find.byKey(const Key('fin-compartido')), findsOneWidget);
+
+      servidor.sinRed = true;
+      await tester.pump(LatidoSesion.intervalo);
+      await esperarServidor(tester);
+      for (var i = 0; i < 2; i++) {
+        await tester.pump(LatidoSesion.reintento);
+        await esperarServidor(tester);
+      }
+
+      expect(find.text('Inicia sesión'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('login-aviso')),
+          matching: find.textContaining('Te desconectaste del servidor.'),
+        ),
+        findsOneWidget,
+      );
+      expect(avisoDeAbandono(), findsNothing);
     });
   });
 }

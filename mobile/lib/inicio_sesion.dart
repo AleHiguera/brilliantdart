@@ -30,7 +30,8 @@ class _InicioSesionPageState extends State<InicioSesionPage> {
   final _pin = TextEditingController();
   late final _servidor = TextEditingController(text: widget.auth.servidor);
   bool _enviando = false;
-  late String? _error = widget.aviso;
+  late String? _aviso = widget.aviso;
+  String? _error;
 
   @override
   void dispose() {
@@ -45,6 +46,7 @@ class _InicioSesionPageState extends State<InicioSesionPage> {
     setState(() {
       _enviando = true;
       _error = null;
+      _aviso = null;
     });
 
     widget.auth.servidor = _servidor.text.trim();
@@ -185,6 +187,10 @@ class _InicioSesionPageState extends State<InicioSesionPage> {
                         const SizedBox(height: 8),
                       ],
                     ),
+                    if (_aviso case final aviso?) ...[
+                      const SizedBox(height: 8),
+                      AvisoSesion(aviso),
+                    ],
                     if (_error != null) ...[
                       const SizedBox(height: 8),
                       SelectableText(
@@ -224,6 +230,40 @@ class _InicioSesionPageState extends State<InicioSesionPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Por qué se volvió a esta pantalla, como una conexión perdida. Es un aviso,
+/// no un error: no se pinta de rojo.
+class AvisoSesion extends StatelessWidget {
+  const AvisoSesion(this.mensaje, {super.key});
+
+  final String mensaje;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const Key('login-aviso'),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F4F8),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFCBD5E1)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline, size: 20, color: Colors.black54),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              mensaje,
+              style: const TextStyle(fontSize: 13, color: Colors.black87),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -67,6 +67,8 @@ Widget _mapasConSesion(ServicioAuth auth) => LatidoSesion(
     auth,
     aviso: 'Tu sesión ya no está activa, inicia sesión de nuevo.',
   ),
+  alDesconectarse: (context, desconexion) =>
+      _volverAlInicio(Navigator.of(context), auth, aviso: desconexion.mensaje),
   child: const SeleccionMapaPage(),
 );
 

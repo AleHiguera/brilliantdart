@@ -8,11 +8,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
+/// Corta la red del servidor falso mientras [apagada] sea true.
+class Red {
+  bool apagada = false;
+}
+
 /// Servidor falso: acepta solo a "ana" con el PIN 1234.
-ServicioAuth authFalso({List<String>? peticiones, int codigoLatido = 200}) {
+ServicioAuth authFalso({
+  List<String>? peticiones,
+  int codigoLatido = 200,
+  Red? red,
+}) {
   return ServicioAuth(
     servidor: 'https://servidor:8443',
     cliente: MockClient((peticion) async {
+      if (red?.apagada ?? false) throw http.ClientException('Sin red');
       peticiones?.add(peticion.url.path);
       if (peticion.url.path == '/api/logout') {
         return respuesta({'ok': true, 'mensaje': 'Sesión cerrada.'}, 200);
@@ -64,6 +74,9 @@ http.Response respuesta(Map<String, Object> datos, int codigo) =>
 Future<void> entrar(WidgetTester tester, String usuario, String pin) async {
   await tester.enterText(find.byKey(const Key('login-usuario')), usuario);
   await tester.enterText(find.byKey(const Key('login-pin')), pin);
+  // Con un aviso arriba el botón puede quedar más abajo de la pantalla.
+  await tester.ensureVisible(find.byKey(const Key('login-entrar')));
+  await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('login-entrar')));
   await esperarServidor(tester);
 }
@@ -200,6 +213,125 @@ void main() {
         findsOneWidget,
       );
       expect(auth.sesion, isNull);
+    });
+  });
+
+  group('Widgets: desconexión de la red', () {
+    /// Entra con la sesión de «ana» y corta la red.
+    Future<(ServicioAuth, Red, List<String>)> sinRed(
+      WidgetTester tester,
+    ) async {
+      final red = Red();
+      final peticiones = <String>[];
+      final auth = authFalso(red: red, peticiones: peticiones);
+      await tester.pumpWidget(BrilliantApp(auth: auth));
+      await entrar(tester, 'ana', '1234');
+      red.apagada = true;
+      return (auth, red, peticiones);
+    }
+
+    Future<void> latido(WidgetTester tester, Duration espera) async {
+      await tester.pump(espera);
+      await esperarServidor(tester);
+    }
+
+    testWidgets('Sin red, a los pocos segundos vuelve al inicio con un aviso', (
+      tester,
+    ) async {
+      final (auth, _, _) = await sinRed(tester);
+
+      await latido(tester, LatidoSesion.intervalo);
+      await latido(tester, LatidoSesion.reintento);
+      expect(find.text('Elige tu mapa'), findsOneWidget);
+      await latido(tester, LatidoSesion.reintento);
+
+      expect(find.text('Inicia sesión'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('login-aviso')),
+          matching: find.textContaining('Te desconectaste del servidor.'),
+        ),
+        findsOneWidget,
+      );
+      expect(auth.sesion, isNull);
+    });
+
+    testWidgets('El aviso no es un error rojo', (tester) async {
+      await sinRed(tester);
+
+      await latido(tester, LatidoSesion.intervalo);
+      await latido(tester, LatidoSesion.reintento);
+      await latido(tester, LatidoSesion.reintento);
+
+      expect(find.byKey(const Key('login-error')), findsNothing);
+      final texto = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const Key('login-aviso')),
+          matching: find.byType(Text),
+        ),
+      );
+      final rojo = Theme.of(
+        tester.element(find.byKey(const Key('login-aviso'))),
+      ).colorScheme.error;
+      expect(texto.style?.color, isNot(rojo));
+      expect(find.textContaining('No se pudo conectar'), findsNothing);
+    });
+
+    testWidgets('Tras un latido perdido se reintenta enseguida', (
+      tester,
+    ) async {
+      final (_, red, peticiones) = await sinRed(tester);
+
+      await latido(tester, LatidoSesion.intervalo);
+      red.apagada = false;
+      await latido(tester, LatidoSesion.reintento);
+
+      expect(peticiones, ['/api/login', '/api/latido']);
+    });
+
+    testWidgets('Si la red vuelve a tiempo se sigue jugando', (tester) async {
+      final (auth, red, _) = await sinRed(tester);
+
+      await latido(tester, LatidoSesion.intervalo);
+      await latido(tester, LatidoSesion.reintento);
+      red.apagada = false;
+      await latido(tester, LatidoSesion.reintento);
+      red.apagada = true;
+      await latido(tester, LatidoSesion.intervalo);
+      await latido(tester, LatidoSesion.reintento);
+
+      expect(find.text('Elige tu mapa'), findsOneWidget);
+      expect(auth.sesion, isNotNull);
+    });
+
+    testWidgets('Al volver a entrar se cierra la sesión vieja y se entra', (
+      tester,
+    ) async {
+      final (_, red, peticiones) = await sinRed(tester);
+      await latido(tester, LatidoSesion.intervalo);
+      await latido(tester, LatidoSesion.reintento);
+      await latido(tester, LatidoSesion.reintento);
+
+      red.apagada = false;
+      await entrar(tester, 'ana', '1234');
+      // Son dos peticiones seguidas: cerrar la vieja y entrar.
+      await esperarServidor(tester);
+
+      expect(find.text('Elige tu mapa'), findsOneWidget);
+      expect(peticiones, ['/api/login', '/api/logout', '/api/login']);
+      expect(find.byKey(const Key('login-aviso')), findsNothing);
+    });
+
+    testWidgets('Entrar sin red sí muestra el error de conexión', (
+      tester,
+    ) async {
+      final red = Red()..apagada = true;
+      await tester.pumpWidget(BrilliantApp(auth: authFalso(red: red)));
+
+      await entrar(tester, 'ana', '1234');
+
+      expect(find.byKey(const Key('login-error')), findsOneWidget);
+      expect(find.text('Inicia sesión'), findsOneWidget);
     });
   });
 

@@ -359,4 +359,86 @@ void main() {
       expect(avisos, 0);
     });
   });
+
+  group('Unitarias: la sesión sabe si está en partida', () {
+    http.Response terminada() {
+      final datos =
+          jsonDecode(utf8.decode(respuesta().bodyBytes))
+              as Map<String, Object?>;
+      return http.Response.bytes(
+        utf8.encode(
+          jsonEncode({
+            ...datos,
+            'terminada': true,
+            'ganadores': ['ana'],
+          }),
+        ),
+        200,
+      );
+    }
+
+    test('Al empezar a seguir la partida queda en curso', () {
+      final fase = compartida((_) async => respuesta());
+      addTearDown(fase.dispose);
+
+      fase.iniciar();
+
+      expect(fase.partidas.auth.partidaEnCurso, 'ABC234');
+    });
+
+    test('Antes de empezar a seguirla no hay partida en curso', () {
+      final fase = compartida((_) async => respuesta());
+      addTearDown(fase.dispose);
+
+      expect(fase.partidas.auth.partidaEnCurso, isNull);
+    });
+
+    test('Al salir ya no está en partida', () async {
+      final fase = compartida((_) async => respuesta())..iniciar();
+      addTearDown(fase.dispose);
+
+      await fase.salir();
+
+      expect(fase.partidas.auth.partidaEnCurso, isNull);
+    });
+
+    test('Al cerrar la pantalla ya no está en partida', () {
+      final fase = compartida((_) async => respuesta())..iniciar();
+
+      fase.dispose();
+
+      expect(fase.partidas.auth.partidaEnCurso, isNull);
+    });
+
+    test('Cuando la partida termina ya no está en partida', () async {
+      final fase = compartida((_) async => terminada())..iniciar();
+      addTearDown(fase.dispose);
+
+      await fase.finalizar(numeros);
+
+      expect(fase.terminada, isTrue);
+      expect(fase.partidas.auth.partidaEnCurso, isNull);
+    });
+
+    test('Una partida que ya terminó no queda en curso', () async {
+      final fase = compartida((_) async => terminada());
+      await fase.finalizar(numeros);
+      final otra = PartidaCompartida(partidas: fase.partidas, sala: fase.sala);
+      addTearDown(fase.dispose);
+      addTearDown(otra.dispose);
+
+      otra.iniciar();
+
+      expect(otra.partidas.auth.partidaEnCurso, isNull);
+    });
+
+    test('Cerrar una pantalla vieja no borra otra partida en curso', () {
+      final fase = compartida((_) async => respuesta())..iniciar();
+      fase.partidas.auth.partidaEnCurso = 'XYZ789';
+
+      fase.dispose();
+
+      expect(fase.partidas.auth.partidaEnCurso, 'XYZ789');
+    });
+  });
 }

@@ -15,6 +15,7 @@ class PartidaCompartida extends ChangeNotifier {
       alCambiar: _actualizar,
       alTerminar: (mensaje) {
         _perdida = mensaje;
+        _dejarDeJugar();
         _avisar();
       },
     );
@@ -88,7 +89,18 @@ class PartidaCompartida extends ChangeNotifier {
 
   /// Sigue la partida mientras el jugador esté en esta pantalla. También es la
   /// señal de que sigue ahí: sin ella el servidor lo sacaría de la partida.
-  void iniciar() => _vigilante.iniciar();
+  /// Si se pierde la conexión mientras tanto, la sesión sabe que abandonó.
+  void iniciar() {
+    if (!_sala.terminada) partidas.auth.partidaEnCurso = _sala.codigo;
+    _vigilante.iniciar();
+  }
+
+  /// Ya no está jugando: perder la conexión desde ahora no es abandonar.
+  void _dejarDeJugar() {
+    if (partidas.auth.partidaEnCurso == _sala.codigo) {
+      partidas.auth.partidaEnCurso = null;
+    }
+  }
 
   /// El jugador ya movió o pasó. Si el aviso no llega se repite en la siguiente
   /// consulta: perderlo dejaría a todos esperando la próxima ronda.
@@ -138,6 +150,7 @@ class PartidaCompartida extends ChangeNotifier {
   /// dejar de recibir consultas.
   Future<void> salir() async {
     _vigilante.detener();
+    _dejarDeJugar();
     try {
       await partidas.salir(_sala.codigo);
     } on ErrorAuth {
@@ -151,7 +164,10 @@ class PartidaCompartida extends ChangeNotifier {
     if (_cerrada || sala.ronda < _sala.ronda) return;
     _sala = sala;
     // Terminada, ya no hay nada nuevo que consultar.
-    if (sala.terminada) _vigilante.detener();
+    if (sala.terminada) {
+      _vigilante.detener();
+      _dejarDeJugar();
+    }
     _avisar();
     if (_rondaJugada == sala.ronda &&
         _rondaJugada > 0 &&
@@ -168,6 +184,7 @@ class PartidaCompartida extends ChangeNotifier {
   void dispose() {
     _cerrada = true;
     _vigilante.detener();
+    _dejarDeJugar();
     super.dispose();
   }
 }
