@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:brilliant_mobile/dados_compartidos.dart';
+import 'package:brilliant_mobile/guardado_partida.dart';
 import 'package:brilliant_mobile/partida_compartida.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/servicio_partidas.dart';
@@ -439,6 +440,85 @@ void main() {
       fase.dispose();
 
       expect(fase.partidas.auth.partidaEnCurso, 'XYZ789');
+    });
+  });
+
+  group('Unitarias: recargar la página en plena partida', () {
+    SalaPartida enRonda() => sala(
+      finalizados: ['ana', 'luis'],
+      configurada: true,
+      miTablero: numeros,
+      ronda: 1,
+      dados: [5, 2],
+    );
+
+    PartidaCompartida enEspera() => compartida(
+      (_) => Completer<http.Response>().future,
+      inicial: enRonda(),
+    );
+
+    GuardadoPartida guardadoDe(PartidaCompartida fase) =>
+        GuardadoPartida(fase.partidas.auth.almacen, 'ABC234');
+
+    test('Al jugar el turno queda guardado en la pestaña', () {
+      final fase = enEspera();
+      addTearDown(fase.dispose);
+
+      fase.terminarTurno(tableroLleno: false, zonaCompletada: 3);
+
+      expect(guardadoDe(fase).leerTurno(), (
+        ronda: 1,
+        tableroLleno: false,
+        zona: 3,
+      ));
+    });
+
+    test('Tras recargar, el turno ya jugado no se vuelve a jugar', () {
+      final fase = enEspera()
+        ..terminarTurno(tableroLleno: false, zonaCompletada: 3);
+      final recargada = PartidaCompartida(
+        partidas: fase.partidas,
+        sala: enRonda(),
+      );
+      addTearDown(fase.dispose);
+      addTearDown(recargada.dispose);
+
+      expect(recargada.puedoJugarRonda, isFalse);
+      expect(recargada.rondasPorZona, {
+        3: {'ana': 1},
+      });
+    });
+
+    test('Lo guardado de otra partida no cuenta', () {
+      final fase = enEspera();
+      addTearDown(fase.dispose);
+      GuardadoPartida(
+        fase.partidas.auth.almacen,
+        'OTRA11',
+      ).guardarTurno((ronda: 1, tableroLleno: false, zona: 2));
+
+      final otra = PartidaCompartida(partidas: fase.partidas, sala: enRonda());
+      addTearDown(otra.dispose);
+
+      expect(otra.puedoJugarRonda, isTrue);
+    });
+
+    test('Salir de la partida borra lo guardado', () async {
+      final fase = compartida((_) async => respuesta(), inicial: enRonda())
+        ..terminarTurno(tableroLleno: false);
+      addTearDown(fase.dispose);
+
+      await fase.salir();
+
+      expect(guardadoDe(fase).leerTurno(), isNull);
+    });
+
+    test('Cerrar la pantalla también lo borra', () {
+      final fase = enEspera()..terminarTurno(tableroLleno: false);
+
+      fase.dispose();
+
+      expect(guardadoDe(fase).leerTurno(), isNull);
     });
   });
 }

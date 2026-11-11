@@ -14,6 +14,7 @@ class PanelFinCompartido extends StatelessWidget {
     required this.jugadores,
     required this.meta,
     required this.onVolver,
+    this.porAbandono = false,
   });
 
   /// Quienes ganaron según el servidor; varios si empataron en puntos.
@@ -25,6 +26,9 @@ class PanelFinCompartido extends StatelessWidget {
   final List<String> jugadores;
   final int meta;
   final VoidCallback onVolver;
+
+  /// Terminó porque los demás salieron, no por la meta ni por llenar tableros.
+  final bool porAbandono;
 
   bool get _gane => ganadores.contains(usuario);
 
@@ -51,10 +55,25 @@ class PanelFinCompartido extends StatelessWidget {
 
   int _puntosDe(String jugador) => puntos[jugador] ?? 0;
 
+  /// Por qué terminó la partida.
+  String get _motivo {
+    if (porAbandono) {
+      return _gane
+          ? 'Ganaste por abandono: los demás jugadores salieron de la partida.'
+          : 'Ganó por abandono: los demás jugadores salieron de la partida.';
+    }
+    return _puntosDe(ganadores.first) >= meta
+        ? 'Se alcanzó la meta de $meta puntos.'
+        : 'Nadie llegó a la meta de $meta puntos: todos llenaron su tablero.';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final llegaron = _puntosDe(ganadores.first) >= meta;
-    final clasificacion = Clasificacion(puntos: puntos, jugadores: jugadores);
+    final clasificacion = Clasificacion(
+      puntos: puntos,
+      jugadores: jugadores,
+      ganadores: ganadores,
+    );
 
     return Container(
       key: const Key('fin-compartido'),
@@ -101,10 +120,7 @@ class PanelFinCompartido extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            llegaron
-                ? 'Se alcanzó la meta de $meta puntos.'
-                : 'Nadie llegó a la meta de $meta puntos: '
-                      'todos llenaron su tablero.',
+            _motivo,
             key: const Key('fin-motivo'),
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 12, color: Colors.black54),

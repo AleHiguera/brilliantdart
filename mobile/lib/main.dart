@@ -11,6 +11,7 @@ import 'package:brilliantdart/puntuacion_multijugador.dart';
 import 'package:brilliantdart/tablero.dart';
 import 'package:brilliantdart/tipoo.dart';
 import 'package:brilliantdart/validador_anclas.dart';
+import 'package:brilliant_mobile/almacen_pestana.dart';
 import 'package:brilliant_mobile/colores_zonas.dart' as estilo;
 import 'package:brilliant_mobile/dados_compartidos.dart';
 import 'package:brilliant_mobile/historial_dados_view.dart';
@@ -21,6 +22,7 @@ import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
 import 'package:brilliant_mobile/panel_tablero_compartido.dart';
 import 'package:brilliant_mobile/paneles_juego.dart';
 import 'package:brilliant_mobile/partida_compartida.dart';
+import 'package:brilliant_mobile/reanudar_partida.dart';
 import 'package:brilliant_mobile/seccion_multijugador.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/sonidos.dart';
@@ -29,7 +31,9 @@ import 'package:brilliant_mobile/tabla_puntuacion.dart';
 import 'package:brilliant_mobile/vista_mapa.dart';
 
 void main() {
-  runApp(BrilliantApp(auth: ServicioAuth()));
+  runApp(
+    BrilliantApp(auth: ServicioAuth(almacen: AlmacenPestana.deLaPestana())),
+  );
 }
 
 class BrilliantApp extends StatelessWidget {
@@ -49,19 +53,29 @@ class BrilliantApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.black),
         scaffoldBackgroundColor: Colors.white,
       ),
-      home: auth == null
-          ? const SeleccionMapaPage()
-          : InicioSesionPage(
-              auth: auth,
-              siguiente: (_) => _mapasConSesion(auth),
-            ),
+      home: switch (auth) {
+        null => const SeleccionMapaPage(),
+        // Se recargó la página con la sesión abierta: se sigue donde iba.
+        ServicioAuth(sesion: _?) => _mapasConSesion(
+          auth,
+          primerLatido: Duration.zero,
+        ),
+        _ => InicioSesionPage(
+          auth: auth,
+          siguiente: (_) => _mapasConSesion(auth),
+        ),
+      },
     );
     return auth == null ? app : ProveedorAuth(auth: auth, child: app);
   }
 }
 
-Widget _mapasConSesion(ServicioAuth auth) => LatidoSesion(
+Widget _mapasConSesion(
+  ServicioAuth auth, {
+  Duration primerLatido = LatidoSesion.intervalo,
+}) => LatidoSesion(
   auth: auth,
+  primerLatido: primerLatido,
   alPerderSesion: (context) => _volverAlInicio(
     Navigator.of(context),
     auth,
@@ -69,7 +83,7 @@ Widget _mapasConSesion(ServicioAuth auth) => LatidoSesion(
   ),
   alDesconectarse: (context, desconexion) =>
       _volverAlInicio(Navigator.of(context), auth, aviso: desconexion.mensaje),
-  child: const SeleccionMapaPage(),
+  child: ReanudarPartida(auth: auth, child: const SeleccionMapaPage()),
 );
 
 void _volverAlInicio(
@@ -584,6 +598,8 @@ class _TableroPageState extends State<TableroPage> {
     super.initState();
     final compartida = widget.compartida;
     if (compartida != null) {
+      // Tras recargar la página vuelven los números que ya se habían puesto.
+      if (widget.tablero == null) compartida.guardado.restaurarCeldas(_tablero);
       _sincronizarConCompartida();
       compartida
         ..addListener(_alCambiarCompartida)
@@ -671,6 +687,7 @@ class _TableroPageState extends State<TableroPage> {
           ).puntos,
           jugadores: enComun.sala.jugadores,
           meta: enComun.sala.meta,
+          porAbandono: enComun.sala.porAbandono,
           onVolver: _salirDePartida,
         ),
       );
@@ -871,6 +888,7 @@ class _TableroPageState extends State<TableroPage> {
       _numeroLanzamientoPendiente = null;
       _rondaDados++;
     });
+    widget.compartida?.guardado.guardarCeldas(_tablero);
     widget.compartida?.terminarTurno(
       tableroLleno: _tablero.estaLleno,
       zonaCompletada: _tablero.zonaCompletadaEn(

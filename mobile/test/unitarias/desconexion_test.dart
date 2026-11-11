@@ -124,7 +124,7 @@ void main() {
           isA<ErrorAuth>().having(
             (e) => e.mensaje,
             'mensaje',
-            'Se perdió la conexión con el servidor.',
+            'No hay conexión con el servidor.',
           ),
         ),
       );
@@ -247,17 +247,23 @@ void main() {
   });
 
   group('Mensaje de la desconexión', () {
-    test('Sin partida dice que se desconectó, sin hablar de abandono', () {
+    test('Sin partida dice que no hay conexión, sin hablar de abandono', () {
       const desconexion = Desconexion(abandonoPartida: false);
 
-      expect(desconexion.mensaje, startsWith('Te desconectaste del servidor.'));
+      expect(
+        desconexion.mensaje,
+        startsWith('No hay conexión con el servidor.'),
+      );
       expect(desconexion.mensaje, isNot(contains('abandono')));
     });
 
     test('En partida dice que cuenta como abandono', () {
       const desconexion = Desconexion(abandonoPartida: true);
 
-      expect(desconexion.mensaje, startsWith('Te desconectaste del servidor'));
+      expect(
+        desconexion.mensaje,
+        startsWith('No hay conexión con el servidor'),
+      );
       expect(desconexion.mensaje, contains('cuenta como abandono'));
     });
   });

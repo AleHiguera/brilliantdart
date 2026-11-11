@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:brilliant_mobile/guardado_partida.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/servicio_partidas.dart';
 import 'package:brilliant_mobile/vigilante_sala.dart';
@@ -8,7 +9,14 @@ import 'package:brilliant_mobile/vigilante_sala.dart';
 /// terminó su turno. No sabe nada de pantallas ni de las reglas del tablero.
 class PartidaCompartida extends ChangeNotifier {
   PartidaCompartida({required this.partidas, required SalaPartida sala})
-    : _sala = sala {
+    : _sala = sala,
+      guardado = GuardadoPartida(partidas.auth.almacen, sala.codigo) {
+    // Tras recargar la página se sabe qué turno ya se había jugado.
+    if (guardado.leerTurno() case final turno?) {
+      _rondaJugada = turno.ronda;
+      _tableroLleno = turno.tableroLleno;
+      _zonaCompletada = turno.zona;
+    }
     _vigilante = VigilanteSala(
       partidas: partidas,
       codigo: sala.codigo,
@@ -22,6 +30,9 @@ class PartidaCompartida extends ChangeNotifier {
   }
 
   final ServicioPartidas partidas;
+
+  /// Lo que se guarda en la pestaña para seguir la partida tras recargar.
+  final GuardadoPartida guardado;
   late final VigilanteSala _vigilante;
 
   SalaPartida _sala;
@@ -95,11 +106,13 @@ class PartidaCompartida extends ChangeNotifier {
     _vigilante.iniciar();
   }
 
-  /// Ya no está jugando: perder la conexión desde ahora no es abandonar.
+  /// Ya no está jugando: perder la conexión desde ahora no es abandonar, y
+  /// recargar la página ya no tiene a qué partida volver.
   void _dejarDeJugar() {
     if (partidas.auth.partidaEnCurso == _sala.codigo) {
       partidas.auth.partidaEnCurso = null;
     }
+    guardado.borrar();
   }
 
   /// El jugador ya movió o pasó. Si el aviso no llega se repite en la siguiente
@@ -108,6 +121,11 @@ class PartidaCompartida extends ChangeNotifier {
     _rondaJugada = _sala.ronda;
     _tableroLleno = tableroLleno;
     _zonaCompletada = zonaCompletada;
+    guardado.guardarTurno((
+      ronda: _rondaJugada,
+      tableroLleno: tableroLleno,
+      zona: zonaCompletada,
+    ));
     _avisar();
     _avisarTurno();
   }

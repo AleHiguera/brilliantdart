@@ -180,4 +180,69 @@ void main() {
       ]);
     });
   });
+
+  group('Ganar por abandono', () {
+    test('Quien se quedó va primero aunque tenga menos puntos', () {
+      final clasificacion = Clasificacion(
+        puntos: {'ana': 4, 'luis': 12, 'eva': 7},
+        jugadores: ['ana'],
+        ganadores: ['ana'],
+      );
+
+      expect(resumen(clasificacion), [
+        (1, 'ana', 4),
+        (2, 'luis', 12),
+        (3, 'eva', 7),
+      ]);
+    });
+
+    test('Los que salieron siguen en la lista, marcados como fuera', () {
+      final clasificacion = Clasificacion(
+        puntos: {'luis': 6},
+        jugadores: ['ana'],
+        ganadores: ['ana'],
+      );
+
+      expect(clasificacion.puestos.map((p) => (p.jugador, p.salio)), [
+        ('ana', false),
+        ('luis', true),
+      ]);
+    });
+
+    test('Ganar sin puntos también va primero', () {
+      final clasificacion = Clasificacion(
+        puntos: {'luis': 6, 'eva': 6},
+        jugadores: ['ana'],
+        ganadores: ['ana'],
+      );
+
+      expect(resumen(clasificacion), [
+        (1, 'ana', 0),
+        (2, 'luis', 6),
+        (2, 'eva', 6),
+      ]);
+      expect(clasificacion.lugarDe('ana'), 1);
+    });
+
+    test('Si los ganadores son los de más puntos, nada cambia', () {
+      for (final (puntos, ganadores) in [
+        ({'ana': 26, 'luis': 20, 'eva': 20, 'leo': 3}, ['ana']),
+        ({'ana': 26, 'luis': 26, 'eva': 10}, ['ana', 'luis']),
+        ({'ana': 8, 'luis': 0}, ['ana']),
+      ]) {
+        final jugadores = puntos.keys.toList();
+        expect(
+          resumen(
+            Clasificacion(
+              puntos: puntos,
+              jugadores: jugadores,
+              ganadores: ganadores,
+            ),
+          ),
+          resumen(Clasificacion(puntos: puntos, jugadores: jugadores)),
+          reason: '$puntos',
+        );
+      }
+    });
+  });
 }

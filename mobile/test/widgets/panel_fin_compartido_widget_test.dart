@@ -8,6 +8,8 @@ Future<void> mostrarFinal(
   required List<String> ganadores,
   required String usuario,
   required int meta,
+  List<String>? jugadores,
+  bool porAbandono = false,
 }) => tester.pumpWidget(
   MaterialApp(
     home: Scaffold(
@@ -16,8 +18,9 @@ Future<void> mostrarFinal(
           ganadores: ganadores,
           usuario: usuario,
           puntos: puntos,
-          jugadores: puntos.keys.toList(),
+          jugadores: jugadores ?? puntos.keys.toList(),
           meta: meta,
+          porAbandono: porAbandono,
           onVolver: () {},
         ),
       ),
@@ -210,6 +213,61 @@ void main() {
       );
 
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('Widgets: ganar por abandono', () {
+    // luis y eva salieron con más puntos que ana, que se quedó.
+    const puntos = {'ana': 4, 'luis': 12, 'eva': 7};
+
+    Future<void> mostrar(WidgetTester tester, String usuario) => mostrarFinal(
+      tester,
+      puntos: puntos,
+      ganadores: ['ana'],
+      usuario: usuario,
+      meta: 24,
+      jugadores: ['ana'],
+      porAbandono: true,
+    );
+
+    testWidgets('Quien se quedó ve que ganó por abandono', (tester) async {
+      await mostrar(tester, 'ana');
+
+      expect(find.text('¡Ganaste!'), findsOneWidget);
+      expect(
+        find.text(
+          'Ganaste por abandono: los demás jugadores salieron de la partida.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('meta'), findsNothing);
+    });
+
+    testWidgets('Los demás leen que ganó por abandono', (tester) async {
+      await mostrar(tester, 'luis');
+
+      expect(
+        find.text(
+          'Ganó por abandono: los demás jugadores salieron de la partida.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Va primero aunque tenga menos puntos', (tester) async {
+      await mostrar(tester, 'ana');
+
+      expect(ordenEnPantalla(tester, puntos.keys), ['ana', 'luis', 'eva']);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('clasificacion-ganadores')),
+          matching: find.text('@ana (tú)'),
+        ),
+        findsOneWidget,
+      );
+      expect(enPuesto('luis', '2.º'), findsOneWidget);
+      expect(enPuesto('luis', '@luis (salió)'), findsOneWidget);
+      expect(enPuesto('eva', '3.er'), findsOneWidget);
     });
   });
 }

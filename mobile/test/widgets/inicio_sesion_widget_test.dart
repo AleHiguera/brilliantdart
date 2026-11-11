@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:brilliant_mobile/almacen_pestana.dart';
 import 'package:brilliant_mobile/latido_sesion.dart';
 import 'package:brilliant_mobile/main.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
@@ -18,9 +19,11 @@ ServicioAuth authFalso({
   List<String>? peticiones,
   int codigoLatido = 200,
   Red? red,
+  AlmacenPestana? almacen,
 }) {
   return ServicioAuth(
     servidor: 'https://servidor:8443',
+    almacen: almacen,
     cliente: MockClient((peticion) async {
       if (red?.apagada ?? false) throw http.ClientException('Sin red');
       peticiones?.add(peticion.url.path);
@@ -249,7 +252,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(const Key('login-aviso')),
-          matching: find.textContaining('Te desconectaste del servidor.'),
+          matching: find.textContaining('No hay conexión con el servidor.'),
         ),
         findsOneWidget,
       );
@@ -331,6 +334,82 @@ void main() {
       await entrar(tester, 'ana', '1234');
 
       expect(find.byKey(const Key('login-error')), findsOneWidget);
+      expect(find.text('Inicia sesión'), findsOneWidget);
+    });
+  });
+
+  group('Widgets: recargar la página', () {
+    testWidgets('Tras entrar, recargar no pide entrar de nuevo', (
+      tester,
+    ) async {
+      final almacen = AlmacenEnMemoria();
+      await tester.pumpWidget(BrilliantApp(auth: authFalso(almacen: almacen)));
+      await entrar(tester, 'ana', '1234');
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(BrilliantApp(auth: authFalso(almacen: almacen)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Elige tu mapa'), findsOneWidget);
+      expect(find.text('Inicia sesión'), findsNothing);
+    });
+
+    testWidgets('La sesión recuperada se comprueba enseguida', (tester) async {
+      final almacen = AlmacenEnMemoria();
+      authFalso(almacen: almacen).sesion = const Sesion(
+        usuario: 'ana',
+        nombre: 'Ana',
+        token: 'abc',
+      );
+      final peticiones = <String>[];
+
+      await tester.pumpWidget(
+        BrilliantApp(
+          auth: authFalso(almacen: almacen, peticiones: peticiones),
+        ),
+      );
+      await tester.pump();
+      await esperarServidor(tester);
+
+      expect(peticiones, ['/api/latido']);
+    });
+
+    testWidgets('Si el servidor ya no la reconoce, vuelve al inicio', (
+      tester,
+    ) async {
+      final almacen = AlmacenEnMemoria();
+      authFalso(almacen: almacen).sesion = const Sesion(
+        usuario: 'ana',
+        nombre: 'Ana',
+        token: 'abc',
+      );
+
+      await tester.pumpWidget(
+        BrilliantApp(auth: authFalso(almacen: almacen, codigoLatido: 401)),
+      );
+      await tester.pump();
+      await esperarServidor(tester);
+
+      expect(find.text('Inicia sesión'), findsOneWidget);
+      expect(
+        find.text('Tu sesión ya no está activa, inicia sesión de nuevo.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Tras cerrar sesión, recargar pide entrar', (tester) async {
+      final almacen = AlmacenEnMemoria();
+      await tester.pumpWidget(BrilliantApp(auth: authFalso(almacen: almacen)));
+      await entrar(tester, 'ana', '1234');
+      await tester.tap(find.byKey(const Key('logout-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('logout-confirm')));
+      await esperarServidor(tester);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(BrilliantApp(auth: authFalso(almacen: almacen)));
+      await tester.pumpAndSettle();
+
       expect(find.text('Inicia sesión'), findsOneWidget);
     });
   });

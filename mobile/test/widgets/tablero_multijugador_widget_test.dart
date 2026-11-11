@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:brilliant_mobile/almacen_pestana.dart';
+import 'package:brilliant_mobile/guardado_partida.dart';
 import 'package:brilliant_mobile/inicio_sesion.dart';
 import 'package:brilliant_mobile/latido_sesion.dart';
 import 'package:brilliant_mobile/main.dart';
@@ -43,6 +45,12 @@ class ServidorFalso {
   /// La sesión de la última partida que se abrió.
   late ServicioAuth auth;
 
+  /// La pestaña del navegador: sobrevive a [nuevaSesion], como a recargar.
+  final AlmacenEnMemoria almacen = AlmacenEnMemoria();
+
+  bool porAbandono = false;
+  String? rechazoUnirse;
+
   /// Lo que el servidor sacará en cada lanzamiento.
   List<List<int>> proximosDados = [
     [2, 6],
@@ -78,6 +86,7 @@ class ServidorFalso {
     'meta': meta,
     'terminada': terminada,
     'ganadores': ganadores,
+    'porAbandono': porAbandono,
   };
 
   Iterable<http.Request> de(String accion) =>
@@ -119,6 +128,8 @@ class ServidorFalso {
         return _terminarTurno(peticion);
       case '/api/partida/salir':
         return _json({'ok': true, 'mensaje': 'Saliste.'}, 200);
+      case '/api/partida/unirse' when rechazoUnirse != null:
+        return _json({'ok': false, 'mensaje': rechazoUnirse!}, 409);
     }
     final rechazo = rechazoEstado;
     return rechazo != null
@@ -126,11 +137,19 @@ class ServidorFalso {
         : _json(sala, 200);
   }
 
+  /// Abre la app como al recargar la página: con lo que haya en [almacen].
+  ServicioAuth nuevaSesion() => auth = ServicioAuth(
+    servidor: 'https://servidor:8443',
+    almacen: almacen,
+    cliente: MockClient((peticion) async => _responder(peticion)),
+  );
+
   PartidaCompartida compartida() {
-    auth = ServicioAuth(
-      servidor: 'https://servidor:8443',
-      cliente: MockClient((peticion) async => _responder(peticion)),
-    )..sesion = const Sesion(usuario: 'ana', nombre: 'Ana', token: 'abc');
+    nuevaSesion().sesion = const Sesion(
+      usuario: 'ana',
+      nombre: 'Ana',
+      token: 'abc',
+    );
     return PartidaCompartida(
       partidas: ServicioPartidas(auth),
       sala: SalaPartida.desdeJson(sala),
@@ -1530,11 +1549,189 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(const Key('login-aviso')),
-          matching: find.textContaining('Te desconectaste del servidor.'),
+          matching: find.textContaining('No hay conexión con el servidor.'),
         ),
         findsOneWidget,
       );
       expect(avisoDeAbandono(), findsNothing);
+    });
+  });
+
+  group('Widgets: recargar la página en plena partida', () {
+    /// Una celda que no es inicial (desde 0, como el tablero), para un número
+    /// puesto con los dados. Las celdas iniciales y la pantalla cuentan desde 1.
+    (int, int) celdaLibre() {
+      for (var fila = 0; fila < Tablero.filas; fila++) {
+        for (var columna = 0; columna < Tablero.columnas; columna++) {
+          if (!mapaUno.celdasIniciales.contains((fila + 1, columna + 1))) {
+            return (fila, columna);
+          }
+        }
+      }
+      throw StateError('Sin celdas libres');
+    }
+
+    /// Lo que quedó en la pestaña antes de recargar: la sesión de «ana»,
+    /// jugando la partida ABC234.
+    void enLaPestana(ServidorFalso servidor) {
+      servidor.nuevaSesion()
+        ..sesion = const Sesion(usuario: 'ana', nombre: 'Ana', token: 'abc')
+        ..partidaEnCurso = 'ABC234';
+    }
+
+    /// Recarga: la app arranca de cero con lo guardado.
+    Future<void> recargar(WidgetTester tester, ServidorFalso servidor) async {
+      await tester.pumpWidget(BrilliantApp(auth: servidor.nuevaSesion()));
+      await esperarServidor(tester);
+      await esperarServidor(tester);
+    }
+
+    testWidgets('Vuelve sola al tablero de la partida', (tester) async {
+      final servidor = enRonda();
+      enLaPestana(servidor);
+
+      await recargar(tester, servidor);
+
+      expect(find.byType(TableroPage), findsOneWidget);
+      expect(find.text('Inicia sesión'), findsNothing);
+      expect(servidor.de('unirse'), hasLength(1));
+    });
+
+    testWidgets('Vuelven los números ya puestos y el turno ya jugado', (
+      tester,
+    ) async {
+      final servidor = enRonda();
+      enLaPestana(servidor);
+      final (fila, columna) = celdaLibre();
+      final tablero = mapaUno.crearTablero();
+      for (final (i, (f, c)) in mapaUno.celdasIniciales.indexed) {
+        tablero.colocarDato(f - 1, c - 1, orden[i]);
+      }
+      tablero.colocarDato(fila, columna, 4);
+      GuardadoPartida(servidor.almacen, 'ABC234')
+        ..guardarCeldas(tablero)
+        ..guardarTurno((ronda: 1, tableroLleno: false, zona: null));
+      servidor.jugaron = ['ana'];
+
+      await recargar(tester, servidor);
+
+      expect(
+        textoEn('board-cell-${fila + 1}-${columna + 1}', '4'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('ronda-esperando')), findsOneWidget);
+      expect(dados(), findsNothing);
+    });
+
+    testWidgets('Si el aviso del turno no había llegado, se repite', (
+      tester,
+    ) async {
+      final servidor = enRonda();
+      enLaPestana(servidor);
+      GuardadoPartida(
+        servidor.almacen,
+        'ABC234',
+      ).guardarTurno((ronda: 1, tableroLleno: false, zona: 3));
+
+      await recargar(tester, servidor);
+      await siguienteConsulta(tester);
+
+      expect(servidor.de('turno'), isNotEmpty);
+      expect(servidor.de('turno').last.bodyFields['zona'], '3');
+    });
+
+    testWidgets('Si ya lo sacaron, lo explica y se queda en el menú', (
+      tester,
+    ) async {
+      final servidor = enRonda()..rechazoUnirse = 'Te sacaron por inactividad.';
+      enLaPestana(servidor);
+
+      await recargar(tester, servidor);
+
+      expect(
+        textoEn('reanudar-aviso', 'Te sacaron por inactividad.'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Aceptar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Elige tu mapa'), findsOneWidget);
+      expect(find.byType(TableroPage), findsNothing);
+      expect(servidor.auth.partidaEnCurso, isNull);
+    });
+
+    testWidgets('Sin partida guardada, recargar deja en el menú', (
+      tester,
+    ) async {
+      final servidor = enRonda();
+      servidor.nuevaSesion().sesion = const Sesion(
+        usuario: 'ana',
+        nombre: 'Ana',
+        token: 'abc',
+      );
+
+      await recargar(tester, servidor);
+
+      expect(find.text('Elige tu mapa'), findsOneWidget);
+      expect(servidor.de('unirse'), isEmpty);
+    });
+
+    testWidgets('Al mover, el tablero queda guardado en la pestaña', (
+      tester,
+    ) async {
+      final servidor = enRonda();
+      await abrirTablero(tester, servidor);
+
+      await mover(tester, 2);
+
+      final recuperado = mapaUno.crearTablero();
+      expect(
+        GuardadoPartida(servidor.almacen, 'ABC234').restaurarCeldas(recuperado),
+        isTrue,
+      );
+      expect(recuperado.celdas.where((c) => c.valor != null), hasLength(7));
+    });
+  });
+
+  group('Widgets: inactividad y abandono', () {
+    testWidgets('Si el servidor lo sacó por inactividad, lo dice', (
+      tester,
+    ) async {
+      final servidor = enRonda();
+      await abrirTablero(tester, servidor);
+
+      servidor.rechazoEstado = 'Te sacaron por inactividad.';
+      await siguienteConsulta(tester);
+
+      expect(find.text('Te sacaron por inactividad.'), findsOneWidget);
+      expect(find.byKey(const Key('tablero-volver')), findsOneWidget);
+    });
+
+    testWidgets('Quien queda solo ve que ganó por abandono', (tester) async {
+      final servidor = enRonda()
+        ..jugadores = ['ana']
+        ..zonas = {
+          '1': {'luis': 1},
+        }
+        ..terminada = true
+        ..porAbandono = true
+        ..ganadores = ['ana'];
+
+      await abrirTablero(tester, servidor);
+
+      expect(find.text('¡Ganaste!'), findsOneWidget);
+      expect(
+        find.text(
+          'Ganaste por abandono: los demás jugadores salieron de la partida.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('clasificacion-ganadores')),
+          matching: find.text('@ana (tú)'),
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

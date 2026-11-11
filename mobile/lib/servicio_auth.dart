@@ -3,7 +3,9 @@ import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
+import 'package:brilliant_mobile/almacen_pestana.dart';
 import 'package:brilliant_mobile/control_conexion.dart';
+import 'package:brilliant_mobile/sesion_guardada.dart';
 
 /// Servidor de cuentas (proyecto RegistroClientes). Se puede cambiar al
 /// compilar con `--dart-define=SERVIDOR=https://192.168.1.5:8443`.
@@ -49,22 +51,37 @@ class Desconexion {
   /// Estaba jugando una partida, que el servidor cuenta como abandonada.
   final bool abandonoPartida;
 
+  /// No dice si falló el internet o el servidor: desde la app no se distingue.
   String get mensaje => abandonoPartida
-      ? 'Te desconectaste del servidor y saliste de la partida: cuenta como '
-            'abandono. Revisa tu conexión a internet e inicia sesión de nuevo.'
-      : 'Te desconectaste del servidor. Revisa tu conexión a internet e '
-            'inicia sesión de nuevo.';
+      ? 'No hay conexión con el servidor y saliste de la partida: cuenta como '
+            'abandono. Inicia sesión de nuevo cuando vuelva la conexión.'
+      : 'No hay conexión con el servidor. Inicia sesión de nuevo cuando '
+            'vuelva la conexión.';
 }
 
 /// Inicia y cierra sesión contra la API HTTPS del servidor de cuentas.
 class ServicioAuth {
+  /// Recupera lo que [almacen] guardó antes de recargar la página: la sesión,
+  /// la partida en juego y la sesión que quedó abandonada sin conexión.
   ServicioAuth({
     String? servidor,
     http.Client? cliente,
     ControlConexion? conexion,
+    AlmacenPestana? almacen,
   }) : servidor = servidor ?? servidorPorDefecto(),
        _cliente = cliente ?? http.Client(),
-       conexion = conexion ?? ControlConexion();
+       conexion = conexion ?? ControlConexion(),
+       _guardada = SesionGuardada(almacen ?? AlmacenEnMemoria()) {
+    if (_guardada.leerSesion() case final guardada?) {
+      _sesion = Sesion(
+        usuario: guardada.usuario,
+        nombre: guardada.nombre,
+        token: guardada.token,
+      );
+      _partidaEnCurso = _guardada.leerPartida();
+    }
+    _tokenAbandonado = _guardada.leerTokenAbandonado();
+  }
 
   static const Duration _tiempoMaximo = Duration(seconds: 10);
 
@@ -74,7 +91,22 @@ class ServicioAuth {
 
   String servidor;
   final http.Client _cliente;
-  Sesion? sesion;
+  final SesionGuardada _guardada;
+
+  /// El almacén de la pestaña, para lo que otras partes quieran conservar.
+  AlmacenPestana get almacen => _guardada.almacen;
+
+  Sesion? _sesion;
+  Sesion? get sesion => _sesion;
+  set sesion(Sesion? nueva) {
+    _sesion = nueva;
+    _guardada.guardarSesion(
+      nueva == null
+          ? null
+          : (usuario: nueva.usuario, nombre: nueva.nombre, token: nueva.token),
+    );
+    if (nueva == null) partidaEnCurso = null;
+  }
 
   /// Cuenta las peticiones de la sesión que no llegaron al servidor.
   final ControlConexion conexion;
@@ -83,10 +115,21 @@ class ServicioAuth {
   final ValueNotifier<Desconexion?> desconexion = ValueNotifier(null);
 
   /// Código de la partida que se está jugando con esta sesión, si hay una.
-  String? partidaEnCurso;
+  /// Se guarda para volver a ella si se recarga la página.
+  String? _partidaEnCurso;
+  String? get partidaEnCurso => _partidaEnCurso;
+  set partidaEnCurso(String? codigo) {
+    _partidaEnCurso = codigo;
+    _guardada.guardarPartida(codigo);
+  }
 
   /// La sesión que se perdió sin conexión: el servidor aún la cree abierta.
-  String? _tokenAbandonado;
+  String? _tokenAbandonadoActual;
+  String? get _tokenAbandonado => _tokenAbandonadoActual;
+  set _tokenAbandonado(String? token) {
+    _tokenAbandonadoActual = token;
+    _guardada.guardarTokenAbandonado(token);
+  }
 
   Future<Sesion> iniciarSesion(String usuario, String pin) async {
     await _cerrarSesionAbandonada();
@@ -162,7 +205,6 @@ class ServicioAuth {
   Future<void> cerrarSesion() async {
     final actual = sesion;
     sesion = null;
-    partidaEnCurso = null;
     if (actual == null) return;
     try {
       await _enviar(
@@ -253,14 +295,13 @@ extension on ServicioAuth {
       return ErrorAuth(sinSesion);
     }
     if (conexion.fallo()) _desconectar(actual);
-    return const ErrorAuth('Se perdió la conexión con el servidor.');
+    return const ErrorAuth('No hay conexión con el servidor.');
   }
 
   void _desconectar(Sesion actual) {
     _tokenAbandonado = actual.token;
-    sesion = null;
     final abandono = partidaEnCurso != null;
-    partidaEnCurso = null;
+    sesion = null;
     conexion.reiniciar();
     desconexion.value = Desconexion(abandonoPartida: abandono);
   }

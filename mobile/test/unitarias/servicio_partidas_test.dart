@@ -56,6 +56,27 @@ ServicioPartidas servicio(
 
 void main() {
   group('Unitarias: servicio de partidas', () {
+    test('Sin porAbandono, la partida no terminó por abandono', () async {
+      final sala = await servicio([]).consultar('ABC234');
+
+      expect(sala.porAbandono, isFalse);
+    });
+
+    test('Lee si la partida terminó por abandono', () async {
+      final sala = await servicio(
+        [],
+        respuesta: json({
+          ...salaJson,
+          'terminada': true,
+          'ganadores': ['ana'],
+          'porAbandono': true,
+        }, 200),
+      ).consultar('ABC234');
+
+      expect(sala.porAbandono, isTrue);
+      expect(sala.ganadores, ['ana']);
+    });
+
     test('Lee la sala que responde el servidor', () async {
       final sala = await servicio([]).crear(mapa: 2, jugadores: 3);
 
@@ -277,6 +298,7 @@ void main() {
       ('terminada', 'no'),
       ('ganadores', 'ana'),
       ('ganadores', [1]),
+      ('porAbandono', 'si'),
       ('zonas', 'nada'),
       (
         'zonas',

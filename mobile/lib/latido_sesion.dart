@@ -13,6 +13,7 @@ class LatidoSesion extends StatefulWidget {
     required this.alPerderSesion,
     required this.alDesconectarse,
     required this.child,
+    this.primerLatido = intervalo,
   });
 
   static const Duration intervalo = Duration(seconds: 10);
@@ -31,6 +32,10 @@ class LatidoSesion extends StatefulWidget {
   alDesconectarse;
   final Widget child;
 
+  /// Cuánto esperar el primer latido. Una sesión recuperada al recargar la
+  /// página se comprueba enseguida: el servidor pudo haberla cerrado.
+  final Duration primerLatido;
+
   @override
   State<LatidoSesion> createState() => _LatidoSesionState();
 }
@@ -43,7 +48,7 @@ class _LatidoSesionState extends State<LatidoSesion> {
   void initState() {
     super.initState();
     widget.auth.desconexion.addListener(_revisarDesconexion);
-    _programar(LatidoSesion.intervalo);
+    _programar(widget.primerLatido);
   }
 
   @override

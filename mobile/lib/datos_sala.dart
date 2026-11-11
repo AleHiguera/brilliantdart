@@ -22,6 +22,7 @@ class SalaPartida {
     this.meta = 0,
     this.terminada = false,
     this.ganadores = const [],
+    this.porAbandono = false,
   });
 
   /// Lee la sala del servidor. Lo que no se pueda mostrar llega como [ErrorAuth],
@@ -54,7 +55,9 @@ class SalaPartida {
             _sonTextos(jugaron) &&
             _sonDadosDeRonda(ronda, dados) &&
             _sonZonas(zonas) &&
-            _sonTextos(ganadores)) {
+            _sonTextos(ganadores) &&
+            // Un servidor anterior no lo envía: entonces no fue por abandono.
+            (datos['porAbandono'] ?? false) is bool) {
       if (!mapasDisponibles.any((conocido) => conocido.numero == mapa)) {
         throw const ErrorAuth(
           'Esta partida usa un mapa que tu versión de la app no conoce.',
@@ -82,6 +85,7 @@ class SalaPartida {
         meta: meta,
         terminada: terminada,
         ganadores: ganadores.cast<String>(),
+        porAbandono: datos['porAbandono'] as bool? ?? false,
       );
     }
     throw const ErrorAuth('Respuesta inesperada del servidor.');
@@ -160,6 +164,10 @@ class SalaPartida {
 
   /// Quienes ganaron; varios si empataron en puntos.
   final List<String> ganadores;
+
+  /// Terminó porque los demás salieron: gana quien quedó, con los puntos que
+  /// tenga.
+  final bool porAbandono;
 
   bool estaListo(String? usuario) => listos.contains(usuario);
 
