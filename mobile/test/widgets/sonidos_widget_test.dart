@@ -1,4 +1,5 @@
 import 'package:brilliantdart/mapa_uno.dart';
+import 'package:brilliantdart/tablero.dart';
 import 'package:brilliantdart/validador_anclas.dart';
 import 'package:brilliant_mobile/main.dart';
 import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
@@ -37,7 +38,12 @@ void main() {
     testWidgets('Los archivos de sonido vienen incluidos en la app', (
       tester,
     ) async {
-      for (final ruta in [Sonido.dados, Sonido.victoria]) {
+      for (final ruta in [
+        Sonido.dados,
+        Sonido.victoria,
+        Sonido.aplausos,
+        Sonido.tristeza,
+      ]) {
         final datos = await rootBundle.load('assets/$ruta');
 
         expect(datos.lengthInBytes, greaterThan(44), reason: ruta);
@@ -48,6 +54,55 @@ void main() {
         );
       }
     });
+
+    Future<(SonidoFalso, SonidoFalso)> partidaIndividual(
+      WidgetTester tester,
+      Tablero tablero,
+    ) async {
+      final aplausos = SonidoFalso();
+      final victoria = SonidoFalso();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: TableroPage(
+            dados: DadosFijos(const [(1, 3)]),
+            tablero: tablero,
+            sonidoDados: SonidoFalso(),
+            sonidoVictoria: victoria,
+            sonidoAplausos: aplausos,
+            sonidoTristeza: SonidoFalso(),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Comenzar'));
+      await tester.pumpAndSettle();
+      return (aplausos, victoria);
+    }
+
+    testWidgets('En individual, completar una zona aplaude', (tester) async {
+      // Queda otra celda vacía lejos: completar la verde no termina la partida.
+      final tablero = tableroCasiLleno()..colocarDato(0, 0, null);
+      final (aplausos, victoria) = await partidaIndividual(tester, tablero);
+
+      await jugarUltimaCelda(tester);
+
+      expect(aplausos.reproducciones, 1);
+      expect(victoria.reproducciones, 0);
+    });
+
+    testWidgets(
+      'Si esa zona termina la partida, suena la victoria y no aplausos',
+      (tester) async {
+        final (aplausos, victoria) = await partidaIndividual(
+          tester,
+          tableroCasiLleno(),
+        );
+
+        await jugarUltimaCelda(tester);
+
+        expect(victoria.reproducciones, 1);
+        expect(aplausos.reproducciones, 0);
+      },
+    );
 
     testWidgets('Los dados suenan al empezar a lanzarlos', (tester) async {
       final sonido = SonidoFalso();

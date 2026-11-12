@@ -12,12 +12,13 @@ void main() {
 
       expect(historial.lanzamientos, hasLength(2));
       expect(
-        historial.lanzamientos
-            .map((lanzamiento) => (
-                  lanzamiento.numeroLanzamiento,
-                  lanzamiento.resultadoDado1,
-                  lanzamiento.resultadoDado2,
-                )),
+        historial.lanzamientos.map(
+          (lanzamiento) => (
+            lanzamiento.numeroLanzamiento,
+            lanzamiento.resultadoDado1,
+            lanzamiento.resultadoDado2,
+          ),
+        ),
         [(1, 2, 6), (2, 4, 1)],
       );
     });
@@ -25,10 +26,7 @@ void main() {
     test('No permite modificar la lista de lanzamientos expuesta', () {
       final historial = HistorialDados()..registrarLanzamiento(3, 5);
 
-      expect(
-        () => historial.lanzamientos.clear(),
-        throwsUnsupportedError,
-      );
+      expect(() => historial.lanzamientos.clear(), throwsUnsupportedError);
     });
 
     test('Guarda una acción en el lanzamiento correspondiente', () {

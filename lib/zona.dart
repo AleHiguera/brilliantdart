@@ -47,12 +47,12 @@ class Zona extends Region {
 
   @override
   bool verificarCompletado() {
-  //
-  // Una zona está completa cuando todas sus
-  // coordenadas tienen un número.
-  //
-  // Además, se verifica la regla de su tipo.
-  // ==========================================
+    //
+    // Una zona está completa cuando todas sus
+    // coordenadas tienen un número.
+    //
+    // Además, se verifica la regla de su tipo.
+    // ==========================================
 
     // Si todavía existe una casilla vacía,
     // la zona no está completa.

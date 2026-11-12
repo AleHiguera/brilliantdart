@@ -7,11 +7,11 @@ import 'package:brilliantdart/tipoo.dart';
 
 void main() {
   Tipo crear(TipoZona tipo, {int puntuacion = 3}) => Tipo(
-        tipo: tipo,
-        color: tipo.name,
-        regla: 'Todos los numeros deben ser iguales',
-        puntuacion: puntuacion,
-      );
+    tipo: tipo,
+    color: tipo.name,
+    regla: 'Todos los numeros deben ser iguales',
+    puntuacion: puntuacion,
+  );
 
   group('Tipo gris', () {
     test('La fábrica crea un TipoGris', () {
@@ -40,8 +40,10 @@ void main() {
     });
 
     test('Un cuarto lugar no es válido', () {
-      expect(() => crear(TipoZona.gris).calcularPuntuacion(4),
-          throwsArgumentError);
+      expect(
+        () => crear(TipoZona.gris).calcularPuntuacion(4),
+        throwsArgumentError,
+      );
     });
 
     test('Acepta cualquier número si está vacío', () {
@@ -82,11 +84,15 @@ void main() {
       ];
 
       for (final valores in casos) {
-        expect(gris.validarMovimiento(valores),
-            azul.validarMovimiento(valores));
+        expect(
+          gris.validarMovimiento(valores),
+          azul.validarMovimiento(valores),
+        );
         for (var numero = 1; numero <= 6; numero++) {
-          expect(gris.esPosibleAgregar(valores, numero),
-              azul.esPosibleAgregar(valores, numero));
+          expect(
+            gris.esPosibleAgregar(valores, numero),
+            azul.esPosibleAgregar(valores, numero),
+          );
         }
       }
     });
@@ -105,22 +111,21 @@ void main() {
     const grises = [(0, 3), (3, 0), (6, 6)];
 
     Tablero construir() => ConstructorTablero(
-          tiposPorCelda: List.generate(
-            7,
-            (fila) => List.generate(
-              7,
-              (columna) => grises.contains((fila, columna))
-                  ? TipoZona.gris
-                  : TipoZona.verde,
-            ),
-          ),
-          crearTipo: (tipo) =>
-              crear(tipo, puntuacion: tipo == TipoZona.gris ? 3 : 4),
-          tiposUnidos: const {TipoZona.gris},
-        ).construir();
+      tiposPorCelda: List.generate(
+        7,
+        (fila) => List.generate(
+          7,
+          (columna) =>
+              grises.contains((fila, columna)) ? TipoZona.gris : TipoZona.verde,
+        ),
+      ),
+      crearTipo: (tipo) =>
+          crear(tipo, puntuacion: tipo == TipoZona.gris ? 3 : 4),
+      tiposUnidos: const {TipoZona.gris},
+    ).construir();
 
-    Region zonaGris(Tablero tablero) => tablero.regiones
-        .singleWhere((zona) => zona.tipo.tipo == TipoZona.gris);
+    Region zonaGris(Tablero tablero) =>
+        tablero.regiones.singleWhere((zona) => zona.tipo.tipo == TipoZona.gris);
 
     test('Todas las celdas grises forman una sola zona', () {
       final zona = zonaGris(construir());

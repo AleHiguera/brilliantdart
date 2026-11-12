@@ -214,10 +214,7 @@ void main() {
 
       zona.colocarNumero(0, 0, 5);
 
-      expect(
-        zona.obtenerValores(),
-        equals([5]),
-      );
+      expect(zona.obtenerValores(), equals([5]));
     });
 
     test('Zona pertenece al modelo abstracto Region', () {

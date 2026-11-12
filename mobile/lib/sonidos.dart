@@ -3,6 +3,8 @@ import 'package:audioplayers/audioplayers.dart';
 abstract class Sonido {
   static const String victoria = 'sonidos/victoria.wav';
   static const String dados = 'sonidos/dados.wav';
+  static const String aplausos = 'sonidos/aplausos.wav';
+  static const String tristeza = 'sonidos/tristeza.wav';
 
   Future<void> reproducir();
 

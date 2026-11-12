@@ -164,6 +164,7 @@ void main() {
           dados.historial.lanzamientos[0].accionRealizada,
           '1 ancla → coloca 6',
         );
+        await abrirHistorial(tester);
         comprobarFilaHistorial(tester, 1, (1, 6), accion: '1 ancla → coloca 6');
         expect(
           tester

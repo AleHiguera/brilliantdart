@@ -53,7 +53,6 @@ class HistorialDados {
       );
     }
 
-    _lanzamientos[indice] =
-        _lanzamientos[indice].conAccion(accionRealizada);
+    _lanzamientos[indice] = _lanzamientos[indice].conAccion(accionRealizada);
   }
 }

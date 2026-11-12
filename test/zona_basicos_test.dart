@@ -9,13 +9,13 @@ void main() {
       Tipo(tipo: color, color: color.name, regla: '', puntuacion: 5);
 
   Zona zona(TipoZona color, List<int?> valores, {int id = 1}) => Zona(
-        id: id,
-        tipo: tipo(color),
-        coordenadas: [
-          for (var i = 0; i < valores.length; i++)
-            Coordenada(fila: i ~/ 7, columna: i % 7, valor: valores[i]),
-        ],
-      );
+    id: id,
+    tipo: tipo(color),
+    coordenadas: [
+      for (var i = 0; i < valores.length; i++)
+        Coordenada(fila: i ~/ 7, columna: i % 7, valor: valores[i]),
+    ],
+  );
 
   group('Zona: datos básicos', () {
     test('Guarda su id', () {
@@ -109,13 +109,15 @@ void main() {
     ];
 
     for (final (color, valores, esperado) in casos) {
-      test('${color.name} con $valores ${esperado ? '' : 'no '}se completa',
-          () {
-        final z = zona(color, valores);
+      test(
+        '${color.name} con $valores ${esperado ? '' : 'no '}se completa',
+        () {
+          final z = zona(color, valores);
 
-        expect(z.verificarCompletado(), esperado);
-        expect(z.completado, esperado);
-      });
+          expect(z.verificarCompletado(), esperado);
+          expect(z.completado, esperado);
+        },
+      );
     }
 
     test('verificarCompletado se puede llamar muchas veces', () {

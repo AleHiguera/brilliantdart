@@ -16,8 +16,9 @@ void main() {
     });
 
     test('Todas las celdas tienen una posición diferente', () {
-      final posiciones =
-          Tablero().celdas.map((celda) => (celda.x, celda.y)).toSet();
+      final posiciones = Tablero().celdas
+          .map((celda) => (celda.x, celda.y))
+          .toSet();
 
       expect(posiciones, hasLength(49));
     });
@@ -60,7 +61,13 @@ void main() {
     test('Rechaza filas o columnas fuera del tablero', () {
       final tablero = Tablero();
 
-      for (final (fila, columna) in [(-1, 0), (0, -1), (7, 0), (0, 7), (9, 9)]) {
+      for (final (fila, columna) in [
+        (-1, 0),
+        (0, -1),
+        (7, 0),
+        (0, 7),
+        (9, 9),
+      ]) {
         expect(() => tablero.obtenerCelda(fila, columna), throwsRangeError);
         expect(() => tablero.colocarDato(fila, columna, 1), throwsRangeError);
         expect(
@@ -114,7 +121,10 @@ void main() {
       final tablero = Tablero();
 
       for (final (fila, columna) in [(0, 0), (0, 6), (6, 0), (6, 6)]) {
-        expect(tablero.obtenerPosicionesAdyacentes(fila, columna), hasLength(2));
+        expect(
+          tablero.obtenerPosicionesAdyacentes(fila, columna),
+          hasLength(2),
+        );
       }
     });
 
@@ -122,7 +132,10 @@ void main() {
       final tablero = Tablero();
 
       for (final (fila, columna) in [(0, 3), (3, 0), (6, 3), (3, 6)]) {
-        expect(tablero.obtenerPosicionesAdyacentes(fila, columna), hasLength(3));
+        expect(
+          tablero.obtenerPosicionesAdyacentes(fila, columna),
+          hasLength(3),
+        );
       }
     });
 
@@ -153,8 +166,10 @@ void main() {
       final tablero = Tablero();
 
       for (final celda in tablero.celdas) {
-        for (final vecina
-            in tablero.obtenerPosicionesAdyacentes(celda.x, celda.y)) {
+        for (final vecina in tablero.obtenerPosicionesAdyacentes(
+          celda.x,
+          celda.y,
+        )) {
           final distancia =
               (celda.x - vecina.x).abs() + (celda.y - vecina.y).abs();
           expect(distancia, 1);
@@ -166,8 +181,10 @@ void main() {
       final tablero = Tablero();
 
       for (final celda in tablero.celdas) {
-        for (final vecina
-            in tablero.obtenerPosicionesAdyacentes(celda.x, celda.y)) {
+        for (final vecina in tablero.obtenerPosicionesAdyacentes(
+          celda.x,
+          celda.y,
+        )) {
           expect(
             tablero.obtenerPosicionesAdyacentes(vecina.x, vecina.y),
             contains(celda),

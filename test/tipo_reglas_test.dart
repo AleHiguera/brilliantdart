@@ -4,11 +4,11 @@ import 'package:brilliantdart/tipoo.dart';
 
 void main() {
   Tipo crear(TipoZona tipo, {int puntuacion = 0}) => Tipo(
-        tipo: tipo,
-        color: tipo.name,
-        regla: 'Regla ${tipo.name}',
-        puntuacion: puntuacion,
-      );
+    tipo: tipo,
+    color: tipo.name,
+    regla: 'Regla ${tipo.name}',
+    puntuacion: puntuacion,
+  );
 
   group('Fábrica de tipos', () {
     test('Crea la subclase correcta para cada color', () {
@@ -84,7 +84,10 @@ void main() {
     });
 
     test('Rojo con los seis números distintos es válido', () {
-      expect(crear(TipoZona.rojo).validarMovimiento([1, 2, 3, 4, 5, 6]), isTrue);
+      expect(
+        crear(TipoZona.rojo).validarMovimiento([1, 2, 3, 4, 5, 6]),
+        isTrue,
+      );
     });
 
     test('Morado necesita exactamente dos números distintos', () {

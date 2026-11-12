@@ -2,20 +2,46 @@ import 'package:flutter/material.dart';
 import 'package:brilliantdart/historial_dados.dart';
 import 'package:brilliant_mobile/colores_zonas.dart';
 
-class HistorialDadosView extends StatelessWidget {
+/// Los lanzamientos de dados de la partida. Se despliega y se oculta tocando
+/// su título, para dejar lugar a lo demás cuando no se está mirando.
+class HistorialDadosView extends StatefulWidget {
   const HistorialDadosView({
     super.key,
     required this.historial,
     this.maxAlturaFilas = 84,
+    this.abiertoAlInicio = true,
   });
 
   final HistorialDados historial;
   final double maxAlturaFilas;
+  final bool abiertoAlInicio;
+
+  @override
+  State<HistorialDadosView> createState() => _HistorialDadosViewState();
+}
+
+class _HistorialDadosViewState extends State<HistorialDadosView> {
+  late bool _abierto = widget.abiertoAlInicio;
 
   @override
   Widget build(BuildContext context) {
     // El lanzamiento más reciente va primero.
-    final lanzamientos = historial.lanzamientos.reversed.toList();
+    final lanzamientos = widget.historial.lanzamientos.reversed.toList();
+    final cantidad = lanzamientos.isEmpty
+        ? null
+        : Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: colorBordeTarjeta),
+            ),
+            child: Text(
+              '${lanzamientos.length}',
+              key: const Key('dice-history-count'),
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+          );
 
     return Container(
       key: const Key('dice-history'),
@@ -26,35 +52,35 @@ class HistorialDadosView extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          EncabezadoTarjeta(
-            icono: Icons.history,
-            titulo: 'Historial',
-            extremo: lanzamientos.isEmpty
-                ? null
-                : Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 1,
+          Semantics(
+            button: true,
+            expanded: _abierto,
+            child: InkWell(
+              key: const Key('dice-history-toggle'),
+              borderRadius: BorderRadius.circular(6),
+              onTap: () => setState(() => _abierto = !_abierto),
+              child: EncabezadoTarjeta(
+                icono: Icons.history,
+                titulo: 'Historial',
+                extremo: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ?cantidad,
+                    Icon(
+                      _abierto ? Icons.expand_less : Icons.expand_more,
+                      key: const Key('dice-history-chevron'),
+                      size: 20,
                     ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: colorBordeTarjeta),
-                    ),
-                    child: Text(
-                      '${lanzamientos.length}',
-                      key: const Key('dice-history-count'),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                  ],
+                ),
+              ),
+            ),
           ),
-          const SizedBox(height: 6),
-          if (lanzamientos.isEmpty)
+          if (!_abierto)
+            const SizedBox.shrink()
+          else if (lanzamientos.isEmpty)
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 6),
+              padding: EdgeInsets.only(top: 12, bottom: 6),
               child: Row(
                 children: [
                   Icon(Icons.casino_outlined, size: 18, color: Colors.black38),
@@ -69,8 +95,9 @@ class HistorialDadosView extends StatelessWidget {
               ),
             )
           else
-            ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: maxAlturaFilas),
+            Container(
+              margin: const EdgeInsets.only(top: 6),
+              constraints: BoxConstraints(maxHeight: widget.maxAlturaFilas),
               child: ListView.separated(
                 key: const Key('dice-history-list'),
                 shrinkWrap: true,

@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:brilliant_mobile/guardado_partida.dart';
+import 'package:brilliant_mobile/novedades_zonas.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/servicio_partidas.dart';
 import 'package:brilliant_mobile/vigilante_sala.dart';
@@ -10,7 +13,11 @@ import 'package:brilliant_mobile/vigilante_sala.dart';
 class PartidaCompartida extends ChangeNotifier {
   PartidaCompartida({required this.partidas, required SalaPartida sala})
     : _sala = sala,
-      guardado = GuardadoPartida(partidas.auth.almacen, sala.codigo) {
+      guardado = GuardadoPartida(partidas.auth.almacen, sala.codigo),
+      _zonasConocidas = {
+        for (final MapEntry(key: zona, value: rondas) in sala.zonas.entries)
+          zona: {...rondas},
+      } {
     // Tras recargar la página se sabe qué turno ya se había jugado.
     if (guardado.leerTurno() case final turno?) {
       _rondaJugada = turno.ronda;
@@ -46,6 +53,19 @@ class PartidaCompartida extends ChangeNotifier {
   bool _tableroLleno = false;
   int? _zonaCompletada;
   bool _avisandoTurno = false;
+
+  /// Las zonas que ya se conocían, para avisar solo de las nuevas. Empieza con
+  /// las de la sala al abrir: al volver a una partida no se repite lo viejo.
+  final Map<int, Map<String, int>> _zonasConocidas;
+  final StreamController<List<ZonaAjena>> _zonasAjenas =
+      StreamController.broadcast();
+
+  /// Zonas ajenas que todavía no se pueden avisar.
+  final List<ZonaAjena> _avisosPendientes = [];
+
+  /// Las zonas que otros llenaron y que hay que avisarle a este jugador: solo
+  /// las que él no llenó antes ni empató, y una vez que jugó esa ronda.
+  Stream<List<ZonaAjena>> get zonasAjenas => _zonasAjenas.stream;
 
   SalaPartida get sala => _sala;
 
@@ -127,6 +147,9 @@ class PartidaCompartida extends ChangeNotifier {
       zona: zonaCompletada,
     ));
     _avisar();
+    // Ya movió: lo que hicieron los demás en esta ronda se le puede avisar,
+    // salvo que haya empatado esa misma zona.
+    _liberarAvisos();
     _avisarTurno();
   }
 
@@ -181,6 +204,7 @@ class PartidaCompartida extends ChangeNotifier {
     // nunca retroceden.
     if (_cerrada || sala.ronda < _sala.ronda) return;
     _sala = sala;
+    _revisarZonasAjenas(sala.zonas);
     // Terminada, ya no hay nada nuevo que consultar.
     if (sala.terminada) {
       _vigilante.detener();
@@ -194,6 +218,36 @@ class PartidaCompartida extends ChangeNotifier {
     }
   }
 
+  void _revisarZonasAjenas(Map<int, Map<String, int>> zonas) {
+    final nuevas = zonasNuevasDeOtros(
+      antes: _zonasConocidas,
+      ahora: zonas,
+      usuario: usuario,
+    );
+    for (final nueva in nuevas) {
+      (_zonasConocidas[nueva.zona] ??= {})[nueva.jugador] = nueva.ronda;
+    }
+    _avisosPendientes.addAll(nuevas);
+    _liberarAvisos();
+  }
+
+  /// Avisa las zonas ajenas que ya toca avisar; las de la ronda en juego
+  /// esperan a que este jugador haya movido (ver [repartirAvisos]).
+  void _liberarAvisos() {
+    if (_avisosPendientes.isEmpty || _cerrada) return;
+    final reparto = repartirAvisos(
+      pendientes: _avisosPendientes,
+      registro: rondasPorZona,
+      usuario: usuario,
+      rondaActual: _sala.ronda,
+      yaJugoEstaRonda: _rondaJugada == _sala.ronda || _sala.haJugado(usuario),
+    );
+    _avisosPendientes
+      ..clear()
+      ..addAll(reparto.esperar);
+    if (reparto.avisar.isNotEmpty) _zonasAjenas.add(reparto.avisar);
+  }
+
   void _avisar() {
     if (!_cerrada) notifyListeners();
   }
@@ -203,6 +257,7 @@ class PartidaCompartida extends ChangeNotifier {
     _cerrada = true;
     _vigilante.detener();
     _dejarDeJugar();
+    _zonasAjenas.close();
     super.dispose();
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:brilliantdart/bloc_valores_iniciales.dart';
@@ -8,7 +10,9 @@ import 'package:brilliantdart/mapa_cuatro.dart';
 import 'package:brilliantdart/mapa_dos.dart';
 import 'package:brilliantdart/mapa_tres.dart';
 import 'package:brilliantdart/mapa_uno.dart';
+import 'package:brilliantdart/nombres_zonas.dart';
 import 'package:brilliantdart/puntuacion_multijugador.dart';
+import 'package:brilliantdart/registro_zonas.dart';
 import 'package:brilliantdart/tablero.dart';
 import 'package:brilliantdart/tipoo.dart';
 import 'package:brilliantdart/validador_anclas.dart';
@@ -18,9 +22,11 @@ import 'package:brilliant_mobile/dados_compartidos.dart';
 import 'package:brilliant_mobile/historial_dados_view.dart';
 import 'package:brilliant_mobile/inicio_sesion.dart';
 import 'package:brilliant_mobile/latido_sesion.dart';
+import 'package:brilliant_mobile/novedades_zonas.dart';
 import 'package:brilliant_mobile/panel_fin_compartido.dart';
 import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
 import 'package:brilliant_mobile/panel_reglas.dart';
+import 'package:brilliant_mobile/panel_registro_zonas.dart';
 import 'package:brilliant_mobile/panel_tablero_compartido.dart';
 import 'package:brilliant_mobile/paneles_juego.dart';
 import 'package:brilliant_mobile/partida_compartida.dart';
@@ -514,6 +520,8 @@ class TableroPage extends StatefulWidget {
     this.tablero,
     this.sonidoVictoria,
     this.sonidoDados,
+    this.sonidoAplausos,
+    this.sonidoTristeza,
     this.mapa = mapaUno,
     this.compartida,
   });
@@ -529,6 +537,12 @@ class TableroPage extends StatefulWidget {
   final Tablero? tablero;
   final Sonido? sonidoVictoria;
   final Sonido? sonidoDados;
+
+  /// Suena cuando el jugador completa una zona.
+  final Sonido? sonidoAplausos;
+
+  /// Suena cuando otro jugador completa una zona antes que este.
+  final Sonido? sonidoTristeza;
 
   static const int tamano = 7;
 
@@ -553,6 +567,12 @@ class _TableroPageState extends State<TableroPage> {
       widget.sonidoVictoria ?? SonidoAsset(Sonido.victoria);
   late final Sonido _sonidoDados =
       widget.sonidoDados ?? SonidoAsset(Sonido.dados);
+  late final Sonido _sonidoAplausos =
+      widget.sonidoAplausos ?? SonidoAsset(Sonido.aplausos);
+  late final Sonido _sonidoTristeza =
+      widget.sonidoTristeza ?? SonidoAsset(Sonido.tristeza);
+  late final NombresZonas _nombresZonas = NombresZonas(widget.mapa);
+  StreamSubscription<List<ZonaAjena>>? _zonasAjenas;
   late final BlocValoresIniciales _bloc = BlocValoresIniciales(
     _tablero,
     celdasIniciales: widget.mapa.celdasIniciales,
@@ -606,10 +626,53 @@ class _TableroPageState extends State<TableroPage> {
       // Tras recargar la página vuelven los números que ya se habían puesto.
       if (widget.tablero == null) compartida.guardado.restaurarCeldas(_tablero);
       _sincronizarConCompartida();
+      _zonasAjenas = compartida.zonasAjenas.listen(_avisarZonasAjenas);
       compartida
         ..addListener(_alCambiarCompartida)
         ..iniciar();
     }
+  }
+
+  /// Otros llenaron zonas: se avisa a este jugador quién y cuál, y suena
+  /// triste. Quien la llenó solo oye su festejo. Con la partida ya terminada
+  /// manda la pantalla final.
+  void _avisarZonasAjenas(List<ZonaAjena> nuevas) {
+    final compartida = widget.compartida;
+    if (!mounted || compartida == null || compartida.terminada) return;
+    final mensajes = [
+      for (final nueva in nuevas)
+        '@${nueva.jugador} llenó ${_nombresZonas.de(nueva.zona)}',
+    ];
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          key: const Key('aviso-zona-ajena'),
+          duration: const Duration(seconds: 3),
+          content: Row(
+            children: [
+              const Icon(Icons.flag, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(child: Text(mensajes.join('\n'))),
+            ],
+          ),
+        ),
+      );
+    _sonidoTristeza.reproducir();
+  }
+
+  /// Solo en multijugador: quién llenó cada zona y qué lugar ganó.
+  Widget? _registroDeZonas({required double maxAltura}) {
+    final compartida = widget.compartida;
+    if (compartida == null) return null;
+    return PanelRegistroZonas(
+      entradas: RegistroZonas(
+        PuntuacionMultijugador(widget.mapa, compartida.rondasPorZona),
+      ).entradas,
+      nombres: _nombresZonas,
+      usuario: compartida.usuario,
+      maxAltura: maxAltura,
+    );
   }
 
   void _alCambiarCompartida() {
@@ -893,13 +956,14 @@ class _TableroPageState extends State<TableroPage> {
       _numeroLanzamientoPendiente = null;
       _rondaDados++;
     });
+    final zonaCompletada = _tablero.zonaCompletadaEn(
+      movimiento.destino.x,
+      movimiento.destino.y,
+    );
     widget.compartida?.guardado.guardarCeldas(_tablero);
     widget.compartida?.terminarTurno(
       tableroLleno: _tablero.estaLleno,
-      zonaCompletada: _tablero.zonaCompletadaEn(
-        movimiento.destino.x,
-        movimiento.destino.y,
-      ),
+      zonaCompletada: zonaCompletada,
     );
 
     // En multijugador llenar el tablero no termina la partida: el final lo
@@ -907,6 +971,10 @@ class _TableroPageState extends State<TableroPage> {
     if (_partidaFinalizada && widget.compartida == null) {
       _sonidoVictoria.reproducir();
       _mostrarFinDePartida();
+    } else if (zonaCompletada != null) {
+      // Al ganar la partida ya suena la victoria: los aplausos van en las
+      // demás zonas.
+      _sonidoAplausos.reproducir();
     }
   }
 
@@ -956,8 +1024,11 @@ class _TableroPageState extends State<TableroPage> {
     widget.compartida
       ?..removeListener(_alCambiarCompartida)
       ..dispose();
+    _zonasAjenas?.cancel();
     _sonidoVictoria.dispose();
     _sonidoDados.dispose();
+    _sonidoAplausos.dispose();
+    _sonidoTristeza.dispose();
     super.dispose();
   }
 
@@ -1129,10 +1200,16 @@ class _TableroPageState extends State<TableroPage> {
                           PanelReglas(reglas: _reglas),
                           const SizedBox(height: 10),
                           _tablaDePuntos(),
+                          if (_registroDeZonas(maxAltura: 260)
+                              case final registro?) ...[
+                            const SizedBox(height: 10),
+                            registro,
+                          ],
                           const SizedBox(height: 10),
                           HistorialDadosView(
                             historial: _dados.historial,
                             maxAlturaFilas: 300,
+                            abiertoAlInicio: false,
                           ),
                         ],
                       ),
@@ -1164,11 +1241,27 @@ class _TableroPageState extends State<TableroPage> {
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Las zonas completadas van bajo el historial:
+                              // a la vista, junto a los puntos, y ocupando el
+                              // lugar que deja el historial cerrado.
                               Expanded(
                                 flex: 5,
-                                child: HistorialDadosView(
-                                  historial: _dados.historial,
-                                  maxAlturaFilas: 120,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    HistorialDadosView(
+                                      historial: _dados.historial,
+                                      maxAlturaFilas: 120,
+                                      abiertoAlInicio: false,
+                                    ),
+                                    if (_registroDeZonas(maxAltura: 300)
+                                        case final registro?) ...[
+                                      const SizedBox(height: 10),
+                                      registro,
+                                    ],
+                                  ],
                                 ),
                               ),
                               const SizedBox(width: 8),

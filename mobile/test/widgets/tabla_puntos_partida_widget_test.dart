@@ -119,23 +119,69 @@ void main() {
   });
 
   group('Widgets: cuánto vale cada zona', () {
-    testWidgets('Sin nadie que la complete vale el primer lugar', (
+    const siguiente = EstadoLugar.siguiente;
+    const libre = EstadoLugar.libre;
+    const ganado = EstadoLugar.ganado;
+    const mio = EstadoLugar.mio;
+
+    List<EstadoLugar> estados(WidgetTester tester, int zona) => [
+      for (var lugar = 1; lugar <= 3; lugar++)
+        tester
+            .widget<CasillaLugar>(find.byKey(Key('zona-$zona-lugar-$lugar')))
+            .estado,
+    ];
+
+    List<String> valores(WidgetTester tester, int zona) => [
+      for (var lugar = 1; lugar <= 3; lugar++)
+        tester
+            .widget<Text>(
+              find.descendant(
+                of: find.byKey(Key('zona-$zona-lugar-$lugar')),
+                matching: find.byType(Text),
+              ),
+            )
+            .data!,
+    ];
+
+    testWidgets('Siempre se ven los puntos de los 3 lugares', (tester) async {
+      await dibujar(tester);
+
+      expect(enFila('zona-$amarilla', 'Amarilla'), findsOneWidget);
+      expect(valores(tester, amarilla), ['8', '6', '4']);
+      for (final zona in mapaUno.crearTablero().regiones) {
+        expect(valores(tester, zona.id), [
+          for (var lugar = 1; lugar <= 3; lugar++)
+            '${zona.tipo.puntosDeLugar(lugar)}',
+        ], reason: 'zona ${zona.id}');
+      }
+    });
+
+    testWidgets('Arriba dice qué lugar es cada columna', (tester) async {
+      await dibujar(tester);
+
+      for (final lugar in ['1.º', '2.º', '3.er']) {
+        expect(enFila('tabla-zonas-lugares', lugar), findsOneWidget);
+      }
+    });
+
+    testWidgets('Sin nadie que la llene, el 1.º es el siguiente', (
       tester,
     ) async {
       await dibujar(tester);
 
-      expect(enFila('zona-$amarilla', 'Amarilla'), findsOneWidget);
-      expect(enFila('zona-$amarilla', 'Vale 8'), findsOneWidget);
+      expect(estados(tester, amarilla), [siguiente, libre, libre]);
     });
 
-    testWidgets('Baja cuando otros ganan los lugares', (tester) async {
+    testWidgets('Los lugares ganados se marcan y avanza el siguiente', (
+      tester,
+    ) async {
       await dibujar(
         tester,
         rondas: {
           amarilla: {'luis': 1},
         },
       );
-      expect(enFila('zona-$amarilla', 'Vale 6'), findsOneWidget);
+      expect(estados(tester, amarilla), [ganado, siguiente, libre]);
 
       await dibujar(
         tester,
@@ -143,10 +189,14 @@ void main() {
           amarilla: {'luis': 1, 'eva': 2},
         },
       );
-      expect(enFila('zona-$amarilla', 'Vale 4'), findsOneWidget);
+      expect(estados(tester, amarilla), [ganado, ganado, siguiente]);
+      // Los puntos siguen a la vista aunque ya se hayan ganado.
+      expect(valores(tester, amarilla), ['8', '6', '4']);
     });
 
-    testWidgets('Agotados los lugares ya no da puntos', (tester) async {
+    testWidgets('Con los 3 lugares ganados, ya no queda ninguno', (
+      tester,
+    ) async {
       await dibujar(
         tester,
         rondas: {
@@ -154,10 +204,10 @@ void main() {
         },
       );
 
-      expect(enFila('zona-$amarilla', 'Sin puntos'), findsOneWidget);
+      expect(estados(tester, amarilla), [ganado, ganado, ganado]);
     });
 
-    testWidgets('Si otro la completó en esta ronda, aún se puede empatar', (
+    testWidgets('Si otro la llenó en esta ronda, aún se puede empatar', (
       tester,
     ) async {
       await dibujar(
@@ -168,10 +218,10 @@ void main() {
         },
       );
 
-      expect(enFila('zona-$amarilla', 'Vale 8'), findsOneWidget);
+      expect(estados(tester, amarilla), [siguiente, libre, libre]);
     });
 
-    testWidgets('Un empate anterior no gasta lugares', (tester) async {
+    testWidgets('Un empate anterior gana un solo lugar', (tester) async {
       await dibujar(
         tester,
         rondas: {
@@ -179,10 +229,12 @@ void main() {
         },
       );
 
-      expect(enFila('zona-$amarilla', 'Vale 6'), findsOneWidget);
+      expect(estados(tester, amarilla), [ganado, siguiente, libre]);
     });
 
-    testWidgets('La zona propia muestra el lugar ganado', (tester) async {
+    testWidgets('El lugar que ganó el jugador se marca como suyo', (
+      tester,
+    ) async {
       await dibujar(
         tester,
         rondas: {
@@ -190,10 +242,10 @@ void main() {
         },
       );
 
-      expect(enFila('zona-$amarilla', '2.º · 6 pts'), findsOneWidget);
+      expect(estados(tester, amarilla), [ganado, mio, libre]);
     });
 
-    testWidgets('El tercer lugar se escribe 3.er', (tester) async {
+    testWidgets('Ganar el 3.º también se marca', (tester) async {
       await dibujar(
         tester,
         rondas: {
@@ -201,10 +253,12 @@ void main() {
         },
       );
 
-      expect(enFila('zona-$amarilla', '3.er · 4 pts'), findsOneWidget);
+      expect(estados(tester, amarilla), [ganado, ganado, mio]);
     });
 
-    testWidgets('El cuarto lugar muestra que no ganó puntos', (tester) async {
+    testWidgets('Quien la llenó 4.º ve los 3 ganados por otros', (
+      tester,
+    ) async {
       await dibujar(
         tester,
         rondas: {
@@ -212,10 +266,62 @@ void main() {
         },
       );
 
-      expect(enFila('zona-$amarilla', '4.º · 0 pts'), findsOneWidget);
+      expect(estados(tester, amarilla), [ganado, ganado, ganado]);
     });
 
-    testWidgets('Dos zonas verdes se nombran y valen por separado', (
+    testWidgets('Lo ganado se tacha y lo propio va en negro', (tester) async {
+      await dibujar(
+        tester,
+        rondas: {
+          amarilla: {'luis': 1, 'ana': 2},
+        },
+      );
+
+      Text texto(int lugar) => tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(Key('zona-$amarilla-lugar-$lugar')),
+          matching: find.byType(Text),
+        ),
+      );
+      BoxDecoration caja(int lugar) =>
+          tester
+                  .widget<Container>(
+                    find
+                        .descendant(
+                          of: find.byKey(Key('zona-$amarilla-lugar-$lugar')),
+                          matching: find.byType(Container),
+                        )
+                        .first,
+                  )
+                  .decoration!
+              as BoxDecoration;
+
+      expect(texto(1).style!.decoration, TextDecoration.lineThrough);
+      expect(texto(2).style!.decoration, isNull);
+      expect(caja(2).color, Colors.black);
+      expect(texto(2).style!.color, Colors.white);
+      expect(texto(3).style!.decoration, isNull);
+    });
+
+    testWidgets('Al dejar el dedo encima explica cada lugar', (tester) async {
+      await dibujar(
+        tester,
+        rondas: {
+          amarilla: {'luis': 1},
+        },
+      );
+
+      expect(
+        find.byTooltip('1.º lugar: 8 puntos, ya lo ganó otro jugador'),
+        findsOneWidget,
+      );
+      expect(
+        find.byTooltip('2.º lugar: 6 puntos, es el siguiente disponible'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Dos zonas verdes se nombran y se marcan por separado', (
       tester,
     ) async {
       await dibujar(
@@ -226,9 +332,9 @@ void main() {
       );
 
       expect(enFila('zona-${verdes[0]}', 'Verde 1'), findsOneWidget);
-      expect(enFila('zona-${verdes[0]}', 'Sin puntos'), findsOneWidget);
+      expect(estados(tester, verdes[0]), [ganado, ganado, ganado]);
       expect(enFila('zona-${verdes[1]}', 'Verde 2'), findsOneWidget);
-      expect(enFila('zona-${verdes[1]}', 'Vale 4'), findsOneWidget);
+      expect(estados(tester, verdes[1]), [siguiente, libre, libre]);
     });
 
     testWidgets('Aparecen todas las zonas del mapa', (tester) async {

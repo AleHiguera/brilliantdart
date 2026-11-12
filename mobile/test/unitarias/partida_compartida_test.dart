@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'package:brilliant_mobile/dados_compartidos.dart';
 import 'package:brilliant_mobile/guardado_partida.dart';
+import 'package:brilliant_mobile/novedades_zonas.dart';
 import 'package:brilliant_mobile/partida_compartida.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/servicio_partidas.dart';
@@ -519,6 +520,162 @@ void main() {
       fase.dispose();
 
       expect(guardadoDe(fase).leerTurno(), isNull);
+    });
+  });
+
+  group('Unitarias: zonas que completan los demás', () {
+    http.Response conZonas(Map<String, Object> zonas) {
+      final datos =
+          jsonDecode(utf8.decode(respuesta().bodyBytes))
+              as Map<String, Object?>;
+      return http.Response.bytes(
+        utf8.encode(jsonEncode({...datos, 'zonas': zonas})),
+        200,
+      );
+    }
+
+    test('Avisa las zonas nuevas de otros jugadores', () async {
+      final fase = compartida(
+        (_) async => conZonas({
+          '3': {'luis': 1},
+        }),
+      );
+      addTearDown(fase.dispose);
+      final avisos = <List<ZonaAjena>>[];
+      fase.zonasAjenas.listen(avisos.add);
+
+      await fase.finalizar(numeros);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(avisos, [
+        [(jugador: 'luis', zona: 3, ronda: 1)],
+      ]);
+    });
+
+    test('Las zonas propias no se avisan', () async {
+      final fase = compartida(
+        (_) async => conZonas({
+          '3': {'ana': 1},
+        }),
+      );
+      addTearDown(fase.dispose);
+      final avisos = <List<ZonaAjena>>[];
+      fase.zonasAjenas.listen(avisos.add);
+
+      await fase.finalizar(numeros);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(avisos, isEmpty);
+    });
+
+    test('Sin zonas nuevas no avisa nada', () async {
+      final fase = compartida((_) async => respuesta());
+      addTearDown(fase.dispose);
+      final avisos = <List<ZonaAjena>>[];
+      fase.zonasAjenas.listen(avisos.add);
+
+      await fase.finalizar(numeros);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(avisos, isEmpty);
+    });
+  });
+
+  group('Unitarias: avisos de zonas a media ronda', () {
+    SalaPartida enRonda() => sala(
+      finalizados: ['ana', 'luis'],
+      configurada: true,
+      miTablero: numeros,
+      ronda: 1,
+      dados: [5, 2],
+    );
+
+    http.Response conZonas(Map<String, Object> zonas, {List<String>? jugaron}) {
+      final datos =
+          jsonDecode(
+                utf8.decode(
+                  respuesta(
+                    finalizados: ['ana', 'luis'],
+                    configurada: true,
+                    ronda: 1,
+                    dados: [5, 2],
+                    jugaron: jugaron ?? const [],
+                  ).bodyBytes,
+                ),
+              )
+              as Map<String, Object?>;
+      return http.Response.bytes(
+        utf8.encode(jsonEncode({...datos, 'zonas': zonas})),
+        200,
+      );
+    }
+
+    test('Lo de esta ronda no se avisa hasta que juegue', () async {
+      final fase = compartida((peticion) async {
+        return conZonas({
+          '3': {'luis': 1},
+        }, jugaron: peticion.url.path.endsWith('turno') ? ['ana'] : const []);
+      }, inicial: enRonda())..iniciar();
+      addTearDown(fase.dispose);
+      final avisos = <List<ZonaAjena>>[];
+      fase.zonasAjenas.listen(avisos.add);
+
+      // Llega la consulta con la zona de luis, pero ana aún no mueve.
+      await Future<void>.delayed(const Duration(milliseconds: 2300));
+      expect(fase.sala.zonas, {
+        3: {'luis': 1},
+      });
+      expect(avisos, isEmpty);
+
+      fase.terminarTurno(tableroLleno: false);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(avisos.expand((lista) => lista), [
+        (jugador: 'luis', zona: 3, ronda: 1),
+      ]);
+    });
+
+    test('Al jugar su turno, recibe el aviso que esperaba', () async {
+      var respuestas = 0;
+      final fase = compartida((peticion) async {
+        respuestas++;
+        return conZonas({
+          '3': {'luis': 1},
+        }, jugaron: peticion.url.path.endsWith('turno') ? ['ana'] : const []);
+      }, inicial: enRonda());
+      addTearDown(fase.dispose);
+      final avisos = <List<ZonaAjena>>[];
+      fase.zonasAjenas.listen(avisos.add);
+
+      fase.terminarTurno(tableroLleno: false);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(respuestas, greaterThan(0));
+      expect(avisos.expand((lista) => lista), [
+        (jugador: 'luis', zona: 3, ronda: 1),
+      ]);
+    });
+
+    test('Si empata esa zona en su turno, no recibe aviso', () async {
+      final fase = compartida(
+        (_) async => conZonas(
+          {
+            '3': {'luis': 1, 'ana': 1},
+          },
+          jugaron: ['ana'],
+        ),
+        inicial: enRonda(),
+      );
+      addTearDown(fase.dispose);
+      final avisos = <List<ZonaAjena>>[];
+      fase.zonasAjenas.listen(avisos.add);
+
+      fase.terminarTurno(tableroLleno: false, zonaCompletada: 3);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(avisos, isEmpty);
     });
   });
 }

@@ -53,12 +53,10 @@ abstract class Region {
     }
 
     final valoresDespuesDeColocar = [...valoresActuales, numero];
-    final espaciosRestantes = coordenadas
-        .where((coordenada) => coordenada.valor == null)
-        .length -
-      1;
+    final espaciosRestantes =
+        coordenadas.where((coordenada) => coordenada.valor == null).length - 1;
     return espaciosRestantes > 0 ||
-      tipo.validarMovimiento(valoresDespuesDeColocar);
+        tipo.validarMovimiento(valoresDespuesDeColocar);
   }
 
   bool verificarCompletado();
@@ -69,12 +67,9 @@ class Coordenada {
   final int y;
   int? valor;
 
-  Coordenada({
-    required int fila,
-    required int columna,
-    this.valor,
-  })  : x = fila,
-        y = columna;
+  Coordenada({required int fila, required int columna, this.valor})
+    : x = fila,
+      y = columna;
 
   Coordenada.xy(this.x, this.y, {this.valor});
 

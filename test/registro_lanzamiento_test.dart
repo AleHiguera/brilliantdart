@@ -64,10 +64,9 @@ void main() {
         historial.registrarLanzamiento(1, 2);
       }
 
-      expect(
-        historial.lanzamientos.map((l) => l.numeroLanzamiento).toList(),
-        [for (var n = 1; n <= 20; n++) n],
-      );
+      expect(historial.lanzamientos.map((l) => l.numeroLanzamiento).toList(), [
+        for (var n = 1; n <= 20; n++) n,
+      ]);
     });
 
     test('Guarda los resultados en el orden en que llegan', () {

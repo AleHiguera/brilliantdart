@@ -116,6 +116,22 @@ Tablero tableroCompleto() => tableroCasiLleno()..colocarDato(3, 6, 3);
 
 /// Comprueba una fila del historial: sus dos dados y su etiqueta de acción
 /// ("Pendiente" cuando todavía no se decidió el turno).
+/// El historial de dados empieza cerrado en el tablero: lo abre si hace falta
+/// para revisar sus filas. Si ya está abierto, no hace nada.
+Future<void> abrirHistorial(WidgetTester tester) async {
+  final boton = find.byKey(const Key('dice-history-toggle'));
+  if (boton.evaluate().isEmpty) return;
+  final flecha = tester.widget<Icon>(
+    find.byKey(const Key('dice-history-chevron')),
+  );
+  if (flecha.icon == Icons.expand_less) return;
+  await tester.ensureVisible(boton);
+  await tester.pump();
+  await tester.tap(boton);
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+}
+
 void comprobarFilaHistorial(
   WidgetTester tester,
   int numero,

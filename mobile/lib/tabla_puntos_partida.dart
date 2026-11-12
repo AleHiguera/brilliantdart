@@ -155,6 +155,41 @@ class _FilaJugador extends StatelessWidget {
   }
 }
 
+/// Cómo está un lugar de una zona para este jugador.
+enum EstadoLugar {
+  /// Lo ganó este jugador.
+  mio,
+
+  /// Ya lo ganó otro: esos puntos ya no están.
+  ganado,
+
+  /// El que le tocaría si la llena ahora.
+  siguiente,
+
+  /// Todavía libre, pero antes hay otro por ganar.
+  libre,
+}
+
+/// Los lugares que dan puntos en cada zona: 1.º, 2.º y 3.º.
+const int lugaresConPuntos = 3;
+
+/// El estado de [lugar] en [zona] para [usuario], si llenara la zona en
+/// [ronda]. Solo cuentan como ganados los lugares de rondas anteriores: si
+/// otro la llenó en esta misma, todavía se puede empatar con él.
+EstadoLugar estadoDeLugar(
+  LugaresDeZona zona,
+  int lugar, {
+  required int ronda,
+  required String? usuario,
+}) {
+  final mio = zona.lugares[usuario];
+  if (mio == lugar) return EstadoLugar.mio;
+  final siguiente = zona.lugarEnRonda(ronda);
+  if (lugar < siguiente) return EstadoLugar.ganado;
+  if (mio == null && lugar == siguiente) return EstadoLugar.siguiente;
+  return EstadoLugar.libre;
+}
+
 class _TarjetaZonas extends StatelessWidget {
   const _TarjetaZonas({
     required this.zonas,
@@ -183,12 +218,49 @@ class _TarjetaZonas extends StatelessWidget {
             titulo: 'Valor de las zonas',
           ),
           const SizedBox(height: 4),
+          // Qué lugar es cada columna de puntos.
+          Padding(
+            key: const Key('tabla-zonas-lugares'),
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Row(
+              children: [
+                const Spacer(),
+                for (var lugar = 1; lugar <= lugaresConPuntos; lugar++) ...[
+                  if (lugar > 1) const SizedBox(width: CasillaLugar.separacion),
+                  SizedBox(
+                    width: CasillaLugar.ancho,
+                    child: Text(
+                      ordinalDeLugar(lugar),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
           for (final MapEntry(key: id, value: zona) in zonas.entries)
             _FilaZona(
               key: Key('zona-$id'),
+              id: id,
               tipo: zona.tipo.tipo,
               nombre: _nombreDe(zona.tipo.tipo, vistos),
-              valor: _valorDe(zona),
+              casillas: [
+                for (var lugar = 1; lugar <= lugaresConPuntos; lugar++)
+                  (
+                    lugar: lugar,
+                    puntos: zona.tipo.puntosDeLugar(lugar),
+                    estado: estadoDeLugar(
+                      zona,
+                      lugar,
+                      ronda: ronda,
+                      usuario: usuario,
+                    ),
+                  ),
+              ],
               hecha: zona.rondaPorJugador.containsKey(usuario),
             ),
         ],
@@ -205,29 +277,22 @@ class _TarjetaZonas extends StatelessWidget {
     vistos[tipo] = (vistos[tipo] ?? 0) + 1;
     return '$nombre ${vistos[tipo]}';
   }
-
-  String _valorDe(LugaresDeZona zona) {
-    final lugar = zona.lugares[usuario];
-    if (lugar != null) {
-      return '${ordinalDeLugar(lugar)} · ${zona.puntos[usuario]} pts';
-    }
-    final puntos = zona.puntosEnRonda(ronda);
-    return puntos > 0 ? 'Vale $puntos' : 'Sin puntos';
-  }
 }
 
 class _FilaZona extends StatelessWidget {
   const _FilaZona({
     super.key,
+    required this.id,
     required this.tipo,
     required this.nombre,
-    required this.valor,
+    required this.casillas,
     required this.hecha,
   });
 
+  final int id;
   final TipoZona tipo;
   final String nombre;
-  final String valor;
+  final List<({int lugar, int puntos, EstadoLugar estado})> casillas;
   final bool hecha;
 
   @override
@@ -260,19 +325,86 @@ class _FilaZona extends StatelessWidget {
               style: const TextStyle(fontSize: 11),
             ),
           ),
-          const SizedBox(width: 6),
-          // En una columna angosta o con letra grande baja de línea sin salirse.
-          Flexible(
-            child: Text(
-              valor,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: hecha ? FontWeight.bold : FontWeight.normal,
-              ),
+          const SizedBox(width: 4),
+          for (final (indice, casilla) in casillas.indexed) ...[
+            if (indice > 0) const SizedBox(width: CasillaLugar.separacion),
+            CasillaLugar(
+              key: Key('zona-$id-lugar-${casilla.lugar}'),
+              lugar: casilla.lugar,
+              puntos: casilla.puntos,
+              estado: casilla.estado,
             ),
-          ),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+/// Los puntos de un lugar de una zona, marcados según si ya se ganaron.
+class CasillaLugar extends StatelessWidget {
+  const CasillaLugar({
+    super.key,
+    required this.lugar,
+    required this.puntos,
+    required this.estado,
+  });
+
+  static const double ancho = 22;
+  static const double separacion = 3;
+
+  final int lugar;
+  final int puntos;
+  final EstadoLugar estado;
+
+  String get _explicacion => switch (estado) {
+    EstadoLugar.mio => 'lo ganaste tú',
+    EstadoLugar.ganado => 'ya lo ganó otro jugador',
+    EstadoLugar.siguiente => 'es el siguiente disponible',
+    EstadoLugar.libre => 'todavía libre',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final (fondo, borde, texto) = switch (estado) {
+      EstadoLugar.mio => (Colors.black, Colors.black, Colors.white),
+      EstadoLugar.ganado => (
+        const Color(0xFFE6E6E2),
+        const Color(0xFFE6E6E2),
+        Colors.black38,
+      ),
+      EstadoLugar.siguiente => (Colors.white, Colors.black, Colors.black),
+      EstadoLugar.libre => (Colors.white, Colors.black12, Colors.black54),
+    };
+    final resaltado =
+        estado == EstadoLugar.siguiente || estado == EstadoLugar.mio;
+
+    return Tooltip(
+      message: '${ordinalDeLugar(lugar)} lugar: $puntos puntos, $_explicacion',
+      child: Container(
+        width: ancho,
+        height: 18,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: fondo,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: borde,
+            width: estado == EstadoLugar.siguiente ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          '$puntos',
+          style: TextStyle(
+            fontSize: 11,
+            color: texto,
+            fontWeight: resaltado ? FontWeight.bold : FontWeight.normal,
+            decoration: estado == EstadoLugar.ganado
+                ? TextDecoration.lineThrough
+                : null,
+            decorationColor: Colors.black54,
+          ),
+        ),
       ),
     );
   }

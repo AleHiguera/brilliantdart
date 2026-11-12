@@ -20,8 +20,10 @@ class ValidadorAnclas {
         .toList(growable: false);
 
     for (final ancla in posicionesAncla) {
-      for (final destino
-          in tablero.obtenerPosicionesAdyacentes(ancla.x, ancla.y)) {
+      for (final destino in tablero.obtenerPosicionesAdyacentes(
+        ancla.x,
+        ancla.y,
+      )) {
         if (destino.valor != null ||
             !tablero.puedeColocarDato(
               destino.x,

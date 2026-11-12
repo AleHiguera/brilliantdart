@@ -6,13 +6,16 @@ import 'package:brilliant_mobile/inicio_sesion.dart';
 import 'package:brilliant_mobile/latido_sesion.dart';
 import 'package:brilliant_mobile/main.dart';
 import 'package:brilliant_mobile/partida_compartida.dart';
+import 'package:brilliant_mobile/tabla_puntos_partida.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/servicio_partidas.dart';
 import 'package:brilliant_mobile/vigilante_sala.dart';
 import 'package:brilliantdart/mapa.dart';
 import 'package:brilliantdart/mapa_cuatro.dart';
 import 'package:brilliantdart/mapa_uno.dart';
+import 'package:brilliantdart/nombres_zonas.dart';
 import 'package:brilliantdart/tablero.dart';
+import 'package:brilliantdart/tipoo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -178,6 +181,8 @@ Future<void> abrirTablero(
   Tablero? tablero,
   SonidoFalso? sonidoDados,
   SonidoFalso? sonidoVictoria,
+  SonidoFalso? sonidoAplausos,
+  SonidoFalso? sonidoTristeza,
 }) async {
   await tester.pumpWidget(
     const MaterialApp(home: Scaffold(body: Text('Menú'))),
@@ -192,6 +197,8 @@ Future<void> abrirTablero(
             compartida: servidor.compartida(),
             sonidoDados: sonidoDados ?? SonidoFalso(),
             sonidoVictoria: sonidoVictoria ?? SonidoFalso(),
+            sonidoAplausos: sonidoAplausos ?? SonidoFalso(),
+            sonidoTristeza: sonidoTristeza ?? SonidoFalso(),
           ),
         ),
       );
@@ -578,6 +585,7 @@ void main() {
     testWidgets('Los dados quedan en el historial del jugador', (tester) async {
       await abrirTablero(tester, enRonda());
 
+      await abrirHistorial(tester);
       comprobarFilaHistorial(tester, 1, (2, 6));
     });
 
@@ -644,6 +652,7 @@ void main() {
       expect(find.text('Dado 1: 3'), findsOneWidget);
       expect(find.text('Dado 2: 4'), findsOneWidget);
       expect(find.byKey(const Key('ronda-esperando')), findsNothing);
+      await abrirHistorial(tester);
       comprobarFilaHistorial(tester, 2, (3, 4));
     });
 
@@ -728,6 +737,7 @@ void main() {
         '3',
       ]);
       expect(sonido.reproducciones, 3);
+      await abrirHistorial(tester);
       comprobarFilaHistorial(tester, 2, (3, 4), accion: 'Turno pasado');
     });
 
@@ -968,6 +978,7 @@ void main() {
         });
         expect(find.text('Turno completado'), findsOneWidget);
         expect(find.text('Falta por jugar: @luis'), findsOneWidget);
+        await abrirHistorial(tester);
         comprobarFilaHistorial(tester, 1, (2, 6), accion: 'Turno pasado');
       });
 
@@ -1750,6 +1761,429 @@ void main() {
 
       expect(find.byKey(const Key('reglas')), findsOneWidget);
       expect(dados(), findsOneWidget);
+    });
+  });
+
+  group('Widgets: sonidos y avisos de zonas', () {
+    /// Una zona del Mapa 1 y cómo se llama en los avisos.
+    final zona = mapaUno.crearTablero().regiones.firstWhere(
+      (region) => region.contieneCoordenada(3, 6),
+    );
+    final nombre = NombresZonas(mapaUno).de(zona.id);
+    final otra = mapaUno.crearTablero().regiones.firstWhere(
+      (region) => region.id != zona.id,
+    );
+
+    testWidgets('Quien llena la zona solo oye el festejo, no lo triste', (
+      tester,
+    ) async {
+      final aplausos = SonidoFalso();
+      final tristeza = SonidoFalso();
+      final servidor = enRonda()
+        ..proximosDados = [
+          [1, 3],
+        ];
+      servidor
+        ..ronda = 0
+        ..lanzar();
+      await abrirTablero(
+        tester,
+        servidor,
+        tablero: tableroCasiLleno(),
+        sonidoAplausos: aplausos,
+        sonidoTristeza: tristeza,
+      );
+
+      await mover(tester, 1);
+      // Su zona llega luego en el registro del servidor: tampoco suena triste.
+      await siguienteConsulta(tester);
+
+      expect(aplausos.reproducciones, 1);
+      expect(tristeza.reproducciones, 0);
+      expect(find.byKey(const Key('aviso-zona-ajena')), findsNothing);
+    });
+
+    testWidgets('Un movimiento que no completa zona no aplaude', (
+      tester,
+    ) async {
+      final aplausos = SonidoFalso();
+      await abrirTablero(tester, enRonda(), sonidoAplausos: aplausos);
+
+      await mover(tester, 2);
+
+      expect(aplausos.reproducciones, 0);
+    });
+
+    /// Ana ya jugó la ronda: lo que hicieron los demás ya se le puede avisar.
+    void anaYaJugo(ServidorFalso servidor) =>
+        servidor.jugaron = [...servidor.jugaron, 'ana'];
+
+    Finder aviso() => find.byKey(const Key('aviso-zona-ajena'));
+
+    testWidgets('Si otro llena una zona, avisa quién y cuál, y suena triste', (
+      tester,
+    ) async {
+      final tristeza = SonidoFalso();
+      final servidor = enRonda();
+      await abrirTablero(tester, servidor, sonidoTristeza: tristeza);
+
+      servidor.zonas = {
+        '${zona.id}': {'luis': 1},
+      };
+      anaYaJugo(servidor);
+      await siguienteConsulta(tester);
+
+      expect(
+        textoEn('aviso-zona-ajena', '@luis llenó $nombre'),
+        findsOneWidget,
+      );
+      expect(tristeza.reproducciones, 1);
+    });
+
+    testWidgets('A media ronda, el aviso espera a que haya jugado', (
+      tester,
+    ) async {
+      final tristeza = SonidoFalso();
+      final servidor = enRonda();
+      await abrirTablero(tester, servidor, sonidoTristeza: tristeza);
+
+      servidor.zonas = {
+        '${zona.id}': {'luis': 1},
+      };
+      await siguienteConsulta(tester);
+      expect(aviso(), findsNothing);
+      expect(tristeza.reproducciones, 0);
+
+      await mover(tester, 2);
+
+      expect(
+        textoEn('aviso-zona-ajena', '@luis llenó $nombre'),
+        findsOneWidget,
+      );
+      expect(tristeza.reproducciones, 1);
+    });
+
+    testWidgets('Si empata la misma zona en la misma ronda, no le llega nada', (
+      tester,
+    ) async {
+      final aplausos = SonidoFalso();
+      final tristeza = SonidoFalso();
+      final servidor = enRonda()
+        ..proximosDados = [
+          [1, 3],
+        ];
+      servidor
+        ..ronda = 0
+        ..lanzar();
+      await abrirTablero(
+        tester,
+        servidor,
+        tablero: tableroCasiLleno(),
+        sonidoAplausos: aplausos,
+        sonidoTristeza: tristeza,
+      );
+
+      // Luis la llena primero en la ronda; Ana, en la misma ronda, después.
+      servidor.zonas = {
+        '${zona.id}': {'luis': 1},
+      };
+      await siguienteConsulta(tester);
+      await mover(tester, 1);
+      await siguienteConsulta(tester);
+
+      expect(aplausos.reproducciones, 1);
+      expect(tristeza.reproducciones, 0);
+      expect(aviso(), findsNothing);
+    });
+
+    testWidgets('Si ya la había llenado antes, no le llega nada', (
+      tester,
+    ) async {
+      final tristeza = SonidoFalso();
+      final servidor = enRonda()
+        ..zonas = {
+          '${zona.id}': {'ana': 1},
+        };
+      servidor.ronda = 2;
+      await abrirTablero(tester, servidor, sonidoTristeza: tristeza);
+
+      servidor.zonas = {
+        '${zona.id}': {'ana': 1, 'luis': 2},
+      };
+      anaYaJugo(servidor);
+      await siguienteConsulta(tester);
+
+      expect(aviso(), findsNothing);
+      expect(tristeza.reproducciones, 0);
+    });
+
+    testWidgets('Ejemplo de 4: a quien nunca la llena le llegan los 3 avisos', (
+      tester,
+    ) async {
+      final tristeza = SonidoFalso();
+      final servidor = enRonda()..jugadores = ['luis', 'pepe', 'eva', 'ana'];
+      await abrirTablero(tester, servidor, sonidoTristeza: tristeza);
+
+      for (final (ronda, quien) in [(1, 'pepe'), (2, 'luis'), (3, 'eva')]) {
+        servidor
+          ..ronda = ronda
+          ..jugaron = ['ana']
+          ..zonas = {
+            '${zona.id}': {...?servidor.zonas['${zona.id}'], quien: ronda},
+          };
+        await siguienteConsulta(tester);
+        expect(
+          textoEn('aviso-zona-ajena', '@$quien llenó $nombre'),
+          findsOneWidget,
+          reason: 'ronda $ronda',
+        );
+      }
+
+      expect(tristeza.reproducciones, 3);
+    });
+
+    testWidgets('Las dos verdes son independientes: llenar una no quita el '
+        'aviso de la otra', (tester) async {
+      final verdes = [
+        for (final region in mapaUno.crearTablero().regiones)
+          if (region.tipo.tipo == TipoZona.verde) region.id,
+      ];
+      final tristeza = SonidoFalso();
+      final servidor = enRonda()
+        ..zonas = {
+          '${verdes[0]}': {'ana': 1},
+        };
+      servidor.ronda = 2;
+      await abrirTablero(tester, servidor, sonidoTristeza: tristeza);
+
+      servidor.zonas = {
+        '${verdes[0]}': {'ana': 1},
+        '${verdes[1]}': {'luis': 2},
+      };
+      anaYaJugo(servidor);
+      await siguienteConsulta(tester);
+
+      expect(
+        textoEn('aviso-zona-ajena', '@luis llenó la zona verde 2'),
+        findsOneWidget,
+      );
+      expect(tristeza.reproducciones, 1);
+    });
+
+    testWidgets('Pero si otro llena la misma verde que ya tenía, nada', (
+      tester,
+    ) async {
+      final verdes = [
+        for (final region in mapaUno.crearTablero().regiones)
+          if (region.tipo.tipo == TipoZona.verde) region.id,
+      ];
+      final tristeza = SonidoFalso();
+      final servidor = enRonda()
+        ..zonas = {
+          '${verdes[0]}': {'ana': 1},
+        };
+      servidor.ronda = 2;
+      await abrirTablero(tester, servidor, sonidoTristeza: tristeza);
+
+      servidor.zonas = {
+        '${verdes[0]}': {'ana': 1, 'luis': 2},
+      };
+      anaYaJugo(servidor);
+      await siguienteConsulta(tester);
+
+      expect(aviso(), findsNothing);
+      expect(tristeza.reproducciones, 0);
+    });
+
+    testWidgets('Lo que ya estaba al abrir no se vuelve a avisar', (
+      tester,
+    ) async {
+      final tristeza = SonidoFalso();
+      final servidor = enRonda()
+        ..zonas = {
+          '${zona.id}': {'luis': 1},
+        };
+      await abrirTablero(tester, servidor, sonidoTristeza: tristeza);
+
+      anaYaJugo(servidor);
+      await siguienteConsulta(tester);
+
+      expect(aviso(), findsNothing);
+      expect(tristeza.reproducciones, 0);
+    });
+
+    testWidgets('Cada zona se avisa una sola vez', (tester) async {
+      final tristeza = SonidoFalso();
+      final servidor = enRonda();
+      await abrirTablero(tester, servidor, sonidoTristeza: tristeza);
+
+      servidor.zonas = {
+        '${zona.id}': {'luis': 1},
+      };
+      anaYaJugo(servidor);
+      await siguienteConsulta(tester);
+      await siguienteConsulta(tester);
+      await siguienteConsulta(tester);
+
+      expect(tristeza.reproducciones, 1);
+    });
+
+    testWidgets('Varias a la vez: un solo aviso con todas y un solo sonido', (
+      tester,
+    ) async {
+      final tristeza = SonidoFalso();
+      final servidor = enRonda()..jugadores = ['ana', 'luis', 'eva'];
+      await abrirTablero(tester, servidor, sonidoTristeza: tristeza);
+
+      servidor.zonas = {
+        '${zona.id}': {'luis': 1},
+        '${otra.id}': {'eva': 1},
+      };
+      anaYaJugo(servidor);
+      await siguienteConsulta(tester);
+
+      expect(aviso(), findsOneWidget);
+      expect(
+        find.descendant(
+          of: aviso(),
+          matching: find.textContaining('@luis llenó'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: aviso(),
+          matching: find.textContaining('@eva llenó'),
+        ),
+        findsOneWidget,
+      );
+      expect(tristeza.reproducciones, 1);
+    });
+
+    testWidgets('Las zonas propias no se avisan como ajenas', (tester) async {
+      final tristeza = SonidoFalso();
+      final servidor = enRonda();
+      await abrirTablero(tester, servidor, sonidoTristeza: tristeza);
+
+      servidor.zonas = {
+        '${zona.id}': {'ana': 1},
+      };
+      anaYaJugo(servidor);
+      await siguienteConsulta(tester);
+
+      expect(aviso(), findsNothing);
+      expect(tristeza.reproducciones, 0);
+    });
+
+    testWidgets('Con la partida terminada ya no hay avisos', (tester) async {
+      final tristeza = SonidoFalso();
+      final servidor = enRonda();
+      await abrirTablero(tester, servidor, sonidoTristeza: tristeza);
+
+      servidor
+        ..zonas = {
+          '${zona.id}': {'luis': 1},
+        }
+        ..terminada = true
+        ..ganadores = ['luis'];
+      anaYaJugo(servidor);
+      await siguienteConsulta(tester);
+
+      expect(aviso(), findsNothing);
+      expect(tristeza.reproducciones, 0);
+    });
+  });
+
+  group('Widgets: zonas completadas en la partida', () {
+    final zona = mapaUno.crearTablero().regiones.firstWhere(
+      (region) => region.contieneCoordenada(3, 6),
+    );
+    final nombre = NombresZonas(mapaUno).de(zona.id);
+
+    testWidgets('En multijugador se ve el apartado de zonas completadas', (
+      tester,
+    ) async {
+      await abrirTablero(tester, enRonda());
+
+      expect(find.byKey(const Key('registro-zonas')), findsOneWidget);
+      expect(find.byKey(const Key('registro-zonas-vacio')), findsOneWidget);
+    });
+
+    testWidgets('Cuando otro llena una zona, queda anotada con su lugar', (
+      tester,
+    ) async {
+      final servidor = enRonda();
+      await abrirTablero(tester, servidor);
+
+      servidor.zonas = {
+        '${zona.id}': {'luis': 1},
+      };
+      await siguienteConsulta(tester);
+
+      expect(textoEn('registro-zonas', '@luis llenó $nombre'), findsOneWidget);
+      expect(find.byKey(Key('registro-lugar-${zona.id}-luis')), findsOneWidget);
+      expect(
+        tester
+            .widget<Text>(find.byKey(Key('registro-lugar-${zona.id}-luis')))
+            .data,
+        startsWith('1.º'),
+      );
+    });
+
+    testWidgets('La zona propia se anota en cuanto se llena', (tester) async {
+      final servidor = enRonda()
+        ..proximosDados = [
+          [1, 3],
+        ];
+      servidor
+        ..ronda = 0
+        ..lanzar()
+        ..fallaTurno = true;
+      await abrirTablero(tester, servidor, tablero: tableroCasiLleno());
+
+      await mover(tester, 1);
+
+      expect(
+        textoEn('registro-zonas', '@ana (tú) llenó $nombre'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('En el celular va bajo el historial, junto a los puntos', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final servidor = enRonda()
+        ..zonas = {
+          '${zona.id}': {'luis': 1},
+        };
+      servidor.ronda = 2;
+
+      await abrirTablero(tester, servidor);
+
+      final registro = tester.getRect(find.byKey(const Key('registro-zonas')));
+      final historial = tester.getRect(find.byKey(const Key('dice-history')));
+      final puntos = tester.getRect(find.byType(TablaPuntosPartida));
+      expect(registro.left, historial.left);
+      expect(registro.top, greaterThan(historial.bottom));
+      expect(registro.right, lessThan(puntos.left));
+      expect(registro.top, lessThan(puntos.bottom));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('En una partida individual no aparece', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: TableroPage(
+            sonidoDados: SonidoFalso(),
+            sonidoVictoria: SonidoFalso(),
+          ),
+        ),
+      );
+
+      expect(find.byKey(const Key('registro-zonas')), findsNothing);
     });
   });
 }

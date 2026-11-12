@@ -60,6 +60,7 @@ void main() {
       expect(find.byKey(const Key('movement-summary')), findsNothing);
       expect(find.byKey(const Key('candidate-cell-4-7')), findsNothing);
       expect(find.byKey(const Key('board-cell-4-7')), findsOneWidget);
+      await abrirHistorial(tester);
       comprobarFilaHistorial(tester, 1, (1, 3), accion: 'Turno pasado');
     });
 
@@ -101,6 +102,7 @@ void main() {
 
       expect(find.text('Turno 2'), findsOneWidget);
       expect(find.byKey(const Key('movement-summary')), findsOneWidget);
+      await abrirHistorial(tester);
       comprobarFilaHistorial(tester, 1, (4, 6), accion: 'Movimiento inválido');
       comprobarFilaHistorial(tester, 2, (1, 3));
 
@@ -112,11 +114,15 @@ void main() {
     testWidgets('Al salir del tablero se cierran los sonidos', (tester) async {
       final sonidoDados = SonidoFalso();
       final sonidoVictoria = SonidoFalso();
+      final sonidoAplausos = SonidoFalso();
+      final sonidoTristeza = SonidoFalso();
       await tester.pumpWidget(
         MaterialApp(
           home: TableroPage(
             sonidoDados: sonidoDados,
             sonidoVictoria: sonidoVictoria,
+            sonidoAplausos: sonidoAplausos,
+            sonidoTristeza: sonidoTristeza,
           ),
         ),
       );
@@ -125,6 +131,8 @@ void main() {
 
       expect(sonidoDados.cierres, 1);
       expect(sonidoVictoria.cierres, 1);
+      expect(sonidoAplausos.cierres, 1);
+      expect(sonidoTristeza.cierres, 1);
     });
 
     testWidgets('Atrás vuelve a los mapas y el tablero empieza de cero', (

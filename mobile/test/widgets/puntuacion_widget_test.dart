@@ -86,6 +86,7 @@ void main() {
       expect(find.text('54 pts'), findsOneWidget);
       expect(textoEn('score-row-verde', '2/2'), findsOneWidget);
       expect(textoEn('board-cell-4-7', '3'), findsOneWidget);
+      await abrirHistorial(tester);
       comprobarFilaHistorial(tester, 1, (1, 3), accion: '1 ancla → coloca 3');
     });
 
