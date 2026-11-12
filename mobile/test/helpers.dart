@@ -89,9 +89,13 @@ Future<void> jugarUltimaCelda(
 class SonidoFalso extends Sonido {
   int reproducciones = 0;
   int cierres = 0;
+  int cortes = 0;
 
   @override
   Future<void> reproducir() async => reproducciones++;
+
+  @override
+  Future<void> detener() async => cortes++;
 
   @override
   void dispose() => cierres++;

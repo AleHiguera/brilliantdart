@@ -8,6 +8,9 @@ abstract class Sonido {
 
   Future<void> reproducir();
 
+  /// Corta el sonido si está sonando.
+  Future<void> detener() async {}
+
   void dispose() {}
 }
 
@@ -26,6 +29,15 @@ class SonidoAsset extends Sonido {
     } catch (_) {
       // Si el navegador o el dispositivo no permiten el audio, el juego
       // sigue igual, solo que sin sonido.
+    }
+  }
+
+  @override
+  Future<void> detener() async {
+    try {
+      await _reproductor?.stop();
+    } catch (_) {
+      // Sin audio no hay nada que cortar.
     }
   }
 

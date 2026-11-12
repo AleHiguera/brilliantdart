@@ -18,6 +18,8 @@ import 'package:brilliantdart/tipoo.dart';
 import 'package:brilliantdart/validador_anclas.dart';
 import 'package:brilliant_mobile/almacen_pestana.dart';
 import 'package:brilliant_mobile/colores_zonas.dart' as estilo;
+import 'package:brilliant_mobile/boton_silencio.dart';
+import 'package:brilliant_mobile/control_sonido.dart';
 import 'package:brilliant_mobile/dados_compartidos.dart';
 import 'package:brilliant_mobile/historial_dados_view.dart';
 import 'package:brilliant_mobile/inicio_sesion.dart';
@@ -39,6 +41,7 @@ import 'package:brilliant_mobile/tabla_puntuacion.dart';
 import 'package:brilliant_mobile/vista_mapa.dart';
 
 void main() {
+  ControlSonido.global = ControlSonido(AlmacenPestana.duradero());
   runApp(
     BrilliantApp(auth: ServicioAuth(almacen: AlmacenPestana.deLaPestana())),
   );
@@ -522,6 +525,7 @@ class TableroPage extends StatefulWidget {
     this.sonidoDados,
     this.sonidoAplausos,
     this.sonidoTristeza,
+    this.controlSonido,
     this.mapa = mapaUno,
     this.compartida,
   });
@@ -544,6 +548,9 @@ class TableroPage extends StatefulWidget {
   /// Suena cuando otro jugador completa una zona antes que este.
   final Sonido? sonidoTristeza;
 
+  /// Si los sonidos están silenciados; el de toda la app si no se indica.
+  final ControlSonido? controlSonido;
+
   static const int tamano = 7;
 
   static const Map<TipoZona, Color> coloresZonas = estilo.coloresZonas;
@@ -563,14 +570,29 @@ class _TableroPageState extends State<TableroPage> {
         null => Dados(),
       };
   late final Tablero _tablero = widget.tablero ?? widget.mapa.crearTablero();
-  late final Sonido _sonidoVictoria =
-      widget.sonidoVictoria ?? SonidoAsset(Sonido.victoria);
-  late final Sonido _sonidoDados =
-      widget.sonidoDados ?? SonidoAsset(Sonido.dados);
-  late final Sonido _sonidoAplausos =
-      widget.sonidoAplausos ?? SonidoAsset(Sonido.aplausos);
-  late final Sonido _sonidoTristeza =
-      widget.sonidoTristeza ?? SonidoAsset(Sonido.tristeza);
+  late final ControlSonido _controlSonido =
+      widget.controlSonido ?? ControlSonido.global;
+
+  /// Todos los sonidos del tablero obedecen al botón de silencio.
+  Sonido _silenciable(Sonido? dado, String ruta) =>
+      SonidoSilenciable(dado ?? SonidoAsset(ruta), _controlSonido);
+
+  late final Sonido _sonidoVictoria = _silenciable(
+    widget.sonidoVictoria,
+    Sonido.victoria,
+  );
+  late final Sonido _sonidoDados = _silenciable(
+    widget.sonidoDados,
+    Sonido.dados,
+  );
+  late final Sonido _sonidoAplausos = _silenciable(
+    widget.sonidoAplausos,
+    Sonido.aplausos,
+  );
+  late final Sonido _sonidoTristeza = _silenciable(
+    widget.sonidoTristeza,
+    Sonido.tristeza,
+  );
   late final NombresZonas _nombresZonas = NombresZonas(widget.mapa);
   StreamSubscription<List<ZonaAjena>>? _zonasAjenas;
   late final BlocValoresIniciales _bloc = BlocValoresIniciales(
@@ -1169,6 +1191,7 @@ class _TableroPageState extends State<TableroPage> {
         elevation: 0,
         scrolledUnderElevation: 0,
         notificationPredicate: (_) => false,
+        actions: [BotonSilencio(control: _controlSonido)],
       ),
       body: SafeArea(
         child: LayoutBuilder(

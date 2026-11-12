@@ -8,6 +8,10 @@ abstract interface class AlmacenPestana {
   /// En el navegador, el almacén de la pestaña; fuera de él, solo memoria.
   factory AlmacenPestana.deLaPestana() => plataforma.crearAlmacen();
 
+  /// En el navegador, uno que dura aunque se cierre la pestaña y que comparten
+  /// todas: para preferencias como el silencio, no para la sesión.
+  factory AlmacenPestana.duradero() => plataforma.crearAlmacenDuradero();
+
   String? leer(String clave);
   void guardar(String clave, String valor);
   void borrar(String clave);
