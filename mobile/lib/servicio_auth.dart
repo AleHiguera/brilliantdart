@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:brilliant_mobile/almacen_pestana.dart';
+import 'package:brilliant_mobile/cliente_http.dart';
 import 'package:brilliant_mobile/control_conexion.dart';
+import 'package:brilliant_mobile/servidor_recordado.dart';
 import 'package:brilliant_mobile/sesion_guardada.dart';
 
 /// Servidor de cuentas (proyecto RegistroClientes). Se puede cambiar al
@@ -19,6 +22,18 @@ String servidorPorDefecto() {
   final host = Uri.base.host.isEmpty ? 'localhost' : Uri.base.host;
   return 'https://$host:$puertoServidorWeb';
 }
+
+/// Qué decir cuando no se pudo conectar sin haber entrado. En el navegador
+/// la causa suele ser el certificado sin aceptar; en el teléfono, que el
+/// servidor está apagado o la dirección ya no es la de la computadora.
+String mensajeSinConectar(String servidor, {bool enNavegador = kIsWeb}) =>
+    enNavegador
+    ? 'No se pudo conectar con $servidor. Comprueba que el servidor esté '
+          'encendido. Si es la primera vez, abre $servidor en el navegador y '
+          'acepta el certificado.'
+    : 'No se pudo conectar con $servidor. Comprueba que el servidor esté '
+          'encendido, que el teléfono esté en la misma red Wi-Fi y que la '
+          'dirección sea la de la computadora del servidor.';
 
 class Sesion {
   const Sesion({
@@ -62,16 +77,19 @@ class Desconexion {
 /// Inicia y cierra sesión contra la API HTTPS del servidor de cuentas.
 class ServicioAuth {
   /// Recupera lo que [almacen] guardó antes de recargar la página: la sesión,
-  /// la partida en juego y la sesión que quedó abandonada sin conexión.
+  /// la partida en juego y la sesión que quedó abandonada sin conexión. En
+  /// [preferencias] recuerda el servidor con el que se entró la última vez.
   ServicioAuth({
     String? servidor,
     http.Client? cliente,
     ControlConexion? conexion,
     AlmacenPestana? almacen,
-  }) : servidor = servidor ?? servidorPorDefecto(),
-       _cliente = cliente ?? http.Client(),
+    AlmacenPestana? preferencias,
+  }) : _recordado = ServidorRecordado(preferencias ?? AlmacenEnMemoria()),
+       _cliente = cliente ?? crearClienteHttp(),
        conexion = conexion ?? ControlConexion(),
        _guardada = SesionGuardada(almacen ?? AlmacenEnMemoria()) {
+    this.servidor = servidor ?? _recordado.leer() ?? servidorPorDefecto();
     if (_guardada.leerSesion() case final guardada?) {
       _sesion = Sesion(
         usuario: guardada.usuario,
@@ -89,7 +107,9 @@ class ServicioAuth {
   /// una conexión perdida, y hay que notarlo pronto.
   static const Duration _tiempoMaximoConSesion = Duration(seconds: 5);
 
-  String servidor;
+  /// El indicado, o el de la última vez que se entró, o el de la página.
+  late String servidor;
+  final ServidorRecordado _recordado;
   final http.Client _cliente;
   final SesionGuardada _guardada;
 
@@ -175,6 +195,7 @@ class ServicioAuth {
   }
 
   Sesion _abrirSesion(Map<String, dynamic> respuesta) {
+    _recordado.guardar(servidor);
     conexion.reiniciar();
     desconexion.value = null;
     return sesion = Sesion(
@@ -258,14 +279,8 @@ class ServicioAuth {
         'El servidor $servidor no respondió a tiempo.',
       );
     } on http.ClientException {
-      // En el navegador también llega aquí si aún no se aceptó el certificado
-      // autofirmado del servidor.
-      throw _sinConexion(
-        autorizacion,
-        'No se pudo conectar con $servidor. Comprueba que el servidor esté '
-        'encendido. Si es la primera vez, abre $servidor en el navegador y '
-        'acepta el certificado.',
-      );
+      // También llega aquí si el certificado no es el del servidor.
+      throw _sinConexion(autorizacion, mensajeSinConectar(servidor));
     }
     conexion.exito();
 

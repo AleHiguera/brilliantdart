@@ -14,6 +14,9 @@ extension type _Almacen(JSObject _) implements JSObject {
   external void removeItem(String clave);
 }
 
+/// En el navegador los almacenes ya están listos.
+Future<void> prepararAlmacen(String? carpeta) async {}
+
 AlmacenPestana crearAlmacen() => _AlmacenWeb(() => _sessionStorage);
 
 AlmacenPestana crearAlmacenDuradero() => _AlmacenWeb(() => _localStorage);

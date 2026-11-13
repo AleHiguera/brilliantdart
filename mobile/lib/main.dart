@@ -40,10 +40,18 @@ import 'package:brilliant_mobile/tabla_puntos_partida.dart';
 import 'package:brilliant_mobile/tabla_puntuacion.dart';
 import 'package:brilliant_mobile/vista_mapa.dart';
 
-void main() {
-  ControlSonido.global = ControlSonido(AlmacenPestana.duradero());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await AlmacenPestana.preparar();
+  final preferencias = AlmacenPestana.duradero();
+  ControlSonido.global = ControlSonido(preferencias);
   runApp(
-    BrilliantApp(auth: ServicioAuth(almacen: AlmacenPestana.deLaPestana())),
+    BrilliantApp(
+      auth: ServicioAuth(
+        almacen: AlmacenPestana.deLaPestana(),
+        preferencias: preferencias,
+      ),
+    ),
   );
 }
 

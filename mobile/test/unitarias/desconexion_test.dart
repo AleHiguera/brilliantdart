@@ -130,25 +130,23 @@ void main() {
       );
     });
 
-    test(
-      'Sin sesión, como al iniciarla, se explica lo del certificado',
-      () async {
-        final red = RedFalsa()
-          ..auth.sesion = null
-          ..sinRed = true;
+    test('Sin sesión, como al iniciarla, se explica qué revisar', () async {
+      final red = RedFalsa()
+        ..auth.sesion = null
+        ..sinRed = true;
 
-        await expectLater(
-          red.auth.iniciarSesion('ana', '1234'),
-          throwsA(
-            isA<ErrorAuth>().having(
-              (e) => e.mensaje,
-              'mensaje',
-              contains('acepta el certificado'),
-            ),
+      await expectLater(
+        red.auth.iniciarSesion('ana', '1234'),
+        throwsA(
+          isA<ErrorAuth>().having(
+            (e) => e.mensaje,
+            'mensaje',
+            // Las pruebas corren fuera del navegador, como el teléfono.
+            mensajeSinConectar(red.auth.servidor),
           ),
-        );
-      },
-    );
+        ),
+      );
+    });
 
     test('Los fallos sin sesión no cuentan para desconectar', () async {
       final red = RedFalsa()

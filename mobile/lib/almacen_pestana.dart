@@ -1,4 +1,4 @@
-import 'package:brilliant_mobile/almacen_pestana_memoria.dart'
+import 'package:brilliant_mobile/almacen_pestana_nativo.dart'
     if (dart.library.js_interop) 'package:brilliant_mobile/almacen_pestana_web.dart'
     as plataforma;
 
@@ -9,8 +9,14 @@ abstract interface class AlmacenPestana {
   factory AlmacenPestana.deLaPestana() => plataforma.crearAlmacen();
 
   /// En el navegador, uno que dura aunque se cierre la pestaña y que comparten
-  /// todas: para preferencias como el silencio, no para la sesión.
+  /// todas; en el teléfono, un archivo de la app. Para preferencias como el
+  /// silencio o el servidor, no para la sesión.
   factory AlmacenPestana.duradero() => plataforma.crearAlmacenDuradero();
+
+  /// Se llama una vez al abrir la app, antes de pedir el almacén duradero: en
+  /// el teléfono busca la carpeta donde guardarlo. [carpeta] es para pruebas.
+  static Future<void> preparar([String? carpeta]) =>
+      plataforma.prepararAlmacen(carpeta);
 
   String? leer(String clave);
   void guardar(String clave, String valor);

@@ -16,6 +16,8 @@ dependencies:
     path: ..
   audioplayers: ^6.8.1
   http: ^1.6.0
+  crypto: ^3.0.8
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:
