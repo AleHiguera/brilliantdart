@@ -56,6 +56,18 @@ class ValidadorAnclas {
     ]);
   }
 
+  /// Solo las opciones que de verdad se pueden jugar: el ancla está en el
+  /// tablero y tiene al lado alguna celda libre que acepta el otro número.
+  /// Las demás no se ofrecen, para no confundir con una opción imposible.
+  List<OpcionAncla> obtenerOpcionesJugables(int dado1, int dado2) {
+    return List.unmodifiable(
+      obtenerOpciones(
+        dado1,
+        dado2,
+      ).where((opcion) => obtenerMovimientosPosibles(opcion).isNotEmpty),
+    );
+  }
+
   List<int> obtenerAnclasPosibles(int dado1, int dado2) {
     return obtenerOpciones(dado1, dado2)
         .where((opcion) => opcion.puedeSeleccionarse)

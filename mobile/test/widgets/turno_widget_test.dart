@@ -9,7 +9,7 @@ import '../helpers.dart';
 
 void main() {
   group('Widgets: turno de juego', () {
-    testWidgets('Una opción cuyo número no está en el tablero sale bloqueada', (
+    testWidgets('Una opción cuyo número no está en el tablero no aparece', (
       tester,
     ) async {
       final tablero = mapaUno.crearTablero()..colocarDato(3, 3, 2);
@@ -34,12 +34,11 @@ void main() {
       await lanzarDados(tester);
       opcionesElegidas.clear();
 
-      expect(textoEn('anchor-option-5', 'No disponible'), findsOneWidget);
-      expect(textoEn('anchor-option-2', 'No disponible'), findsNothing);
-
-      await tester.tap(find.byKey(const Key('anchor-option-5')));
-      await tester.pump();
-      expect(opcionesElegidas, isEmpty);
+      // No hay ningún 5 en el tablero: esa opción no se ofrece.
+      expect(find.byKey(const Key('anchor-option-5')), findsNothing);
+      expect(find.text('No disponible'), findsNothing);
+      expect(find.byKey(const Key('anchor-option-2')), findsOneWidget);
+      expect(find.byKey(const Key('pass-turn-button')), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('anchor-option-2')));
       await tester.pump();
@@ -55,29 +54,39 @@ void main() {
       expect(find.text('Ancla: 1  ·  Colocar: 1'), findsOneWidget);
     });
 
-    testWidgets('Avisa cuando la opción elegida no tiene posiciones válidas', (
+    testWidgets('Una opción sin dónde colocar no aparece; la posible sí', (
       tester,
     ) async {
+      // Con (1, 4) el 4 no tiene celdas libres al lado para poner el 1.
       await abrirTableroCasiLleno(tester, [(1, 4)]);
       await lanzarDados(tester);
 
-      await tester.tap(find.byKey(const Key('anchor-option-4')));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text('No hay posiciones válidas para esta opción.'),
-        findsOneWidget,
-      );
-      expect(find.byKey(const Key('candidate-cell-4-7')), findsNothing);
+      expect(find.byKey(const Key('anchor-option-4')), findsNothing);
+      expect(find.byKey(const Key('anchor-option-1')), findsOneWidget);
+      expect(find.byKey(const Key('pass-turn-button')), findsOneWidget);
+      expect(find.byKey(const Key('no-moves-panel')), findsNothing);
 
       await tester.tap(find.byKey(const Key('anchor-option-1')));
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('No hay posiciones válidas para esta opción.'),
-        findsNothing,
-      );
       expect(find.byKey(const Key('candidate-cell-4-7')), findsOneWidget);
+      expect(
+        find.text('Toca una posición resaltada del tablero.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Si ninguna opción se puede jugar, solo queda pasar el turno', (
+      tester,
+    ) async {
+      // En el tablero casi lleno ni el 4 ni el 5 tienen celdas libres al lado.
+      await abrirTableroCasiLleno(tester, [(4, 5)]);
+      await lanzarDados(tester);
+
+      expect(find.byKey(const Key('anchor-option-4')), findsNothing);
+      expect(find.byKey(const Key('anchor-option-5')), findsNothing);
+      expect(find.byKey(const Key('no-moves-panel')), findsOneWidget);
+      expect(find.byKey(const Key('pass-turn-button')), findsOneWidget);
     });
 
     testWidgets('Pide tocar una celda resaltada y no acepta otras', (

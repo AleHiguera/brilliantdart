@@ -37,7 +37,9 @@ void main() {
     });
 
     testWidgets('Cambiar de opción borra la celda elegida', (tester) async {
-      await abrirTableroCasiLleno(tester, [(1, 3)]);
+      await abrirTableroCasiLleno(tester, [
+        (1, 3),
+      ], tablero: tableroConDosOpciones());
       await elegirCelda(tester);
       expect(find.byKey(const Key('movement-summary')), findsOneWidget);
 

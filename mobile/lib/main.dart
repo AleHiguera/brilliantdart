@@ -845,15 +845,10 @@ class _TableroPageState extends State<TableroPage> {
 
     final opcion = _opcionAnclaSeleccionada;
     final movimiento = _movimientoSeleccionado;
-    final Widget? aviso = opcion == null
+    // Solo se ofrecen opciones con algún movimiento, así que una opción
+    // elegida siempre tiene celdas resaltadas.
+    final Widget? aviso = opcion == null || movimientosDisponibles.isEmpty
         ? null
-        : movimientosDisponibles.isEmpty
-        ? const estilo.AvisoJuego(
-            key: ValueKey('aviso-sin-posiciones'),
-            icono: Icons.do_not_disturb_alt,
-            texto: 'No hay posiciones válidas para esta opción.',
-            advertencia: true,
-          )
         : movimiento == null
         ? const estilo.AvisoJuego(
             key: ValueKey('aviso-tocar-celda'),

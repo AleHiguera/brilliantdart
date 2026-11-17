@@ -129,7 +129,9 @@ void main() {
     });
 
     testWidgets('Cada opción de ancla muestra sus dos dados', (tester) async {
-      await abrirTableroCasiLleno(tester, [(1, 3)]);
+      await abrirTableroCasiLleno(tester, [
+        (1, 3),
+      ], tablero: tableroConDosOpciones());
       await lanzarDados(tester);
 
       for (final (ancla, numero) in [(1, 3), (3, 1)]) {

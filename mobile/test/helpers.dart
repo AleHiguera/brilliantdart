@@ -173,15 +173,22 @@ Future<void> lanzarDados(WidgetTester tester) async {
 }
 
 /// Abre el tablero casi lleno con dados fijos y pulsa Comenzar.
+/// El tablero casi lleno con una celda libre más (fila 3, columna 2): con los
+/// dados (1, 3) se pueden jugar las dos opciones, el 1 pone el 3 en la fila
+/// 4, columna 7, y el 3 pone el 1 en la fila 3, columna 2. En el casi lleno
+/// normal solo se puede la primera, y la otra no se ofrece.
+Tablero tableroConDosOpciones() => tableroCasiLleno()..colocarDato(2, 1, null);
+
 Future<void> abrirTableroCasiLleno(
   WidgetTester tester,
-  List<(int, int)> lanzamientos,
-) async {
+  List<(int, int)> lanzamientos, {
+  Tablero? tablero,
+}) async {
   await tester.pumpWidget(
     MaterialApp(
       home: TableroPage(
         dados: DadosFijos(lanzamientos),
-        tablero: tableroCasiLleno(),
+        tablero: tablero ?? tableroCasiLleno(),
         sonidoVictoria: SonidoFalso(),
         sonidoDados: SonidoFalso(),
       ),

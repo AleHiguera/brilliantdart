@@ -103,14 +103,12 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
     if (!mounted) return;
     final (resultadoDado1, resultadoDado2) = widget.dados.lanzar();
     widget.onHistorialActualizado();
-    final opcionesAncla = widget.validadorAnclas.obtenerOpciones(
+    // Solo se ofrecen las formas de usar los dados que se pueden jugar.
+    final opcionesAncla = widget.validadorAnclas.obtenerOpcionesJugables(
       resultadoDado1,
       resultadoDado2,
     );
-    final noHayMovimientos = !opcionesAncla.any(
-      (opcion) =>
-          widget.validadorAnclas.obtenerMovimientosPosibles(opcion).isNotEmpty,
-    );
+    final noHayMovimientos = opcionesAncla.isEmpty;
     _animacion.stop();
     _animacion.value = 0;
 
@@ -257,7 +255,6 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
               child: _OpcionAnclaTile(
                 opcion: opcion,
                 seleccionada: identical(_opcionSeleccionada, opcion),
-                habilitada: widget.validadorAnclas.puedeSerAncla(opcion.ancla),
                 onTap: () {
                   setState(() => _opcionSeleccionada = opcion);
                   widget.onOpcionAnclaChanged(opcion);
@@ -281,29 +278,24 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
   }
 }
 
+/// Una forma de usar los dados. Solo se muestran las que se pueden jugar.
 class _OpcionAnclaTile extends StatelessWidget {
   const _OpcionAnclaTile({
     required this.opcion,
     required this.seleccionada,
-    required this.habilitada,
     required this.onTap,
   });
 
   final OpcionAncla opcion;
   final bool seleccionada;
-  final bool habilitada;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final color = habilitada ? Colors.black : Colors.black45;
-
     return Semantics(
-      button: habilitada,
-      enabled: habilitada,
+      button: true,
       selected: seleccionada,
-      label:
-          'Ancla ${opcion.ancla}, colocar ${opcion.numeroAColocar}${habilitada ? '' : ', no disponible'}',
+      label: 'Ancla ${opcion.ancla}, colocar ${opcion.numeroAColocar}',
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
@@ -318,52 +310,39 @@ class _OpcionAnclaTile extends StatelessWidget {
           type: MaterialType.transparency,
           child: InkWell(
             key: Key('anchor-option-${opcion.ancla}'),
-            onTap: habilitada ? onTap : null,
+            onTap: onTap,
             borderRadius: BorderRadius.circular(6),
-            child: Opacity(
-              opacity: habilitada ? 1 : 0.55,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      seleccionada
-                          ? Icons.check_circle
-                          : habilitada
-                          ? Icons.radio_button_unchecked
-                          : Icons.lock_outline,
-                      color: color,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    DadoMini(valor: opcion.ancla),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 3),
-                      child: Icon(Icons.arrow_forward, size: 14),
-                    ),
-                    DadoMini(valor: opcion.numeroAColocar),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Ancla: ${opcion.ancla}  ·  Colocar: ${opcion.numeroAColocar}',
-                        style: TextStyle(
-                          color: color,
-                          fontWeight: seleccionada
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    seleccionada
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked,
+                    color: Colors.black,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  DadoMini(valor: opcion.ancla),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 3),
+                    child: Icon(Icons.arrow_forward, size: 14),
+                  ),
+                  DadoMini(valor: opcion.numeroAColocar),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Ancla: ${opcion.ancla}  ·  Colocar: ${opcion.numeroAColocar}',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: seleccionada
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
-                    if (!habilitada)
-                      const Text(
-                        'No disponible',
-                        style: TextStyle(fontSize: 12, color: Colors.black45),
-                      ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
