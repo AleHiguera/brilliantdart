@@ -196,6 +196,63 @@ void main() {
       expect(find.byKey(const Key('multijugador-unirse')), findsOneWidget);
     });
 
+    testWidgets('El menú habla de salas, no de partidas', (tester) async {
+      await entrar(tester, ServidorFalso(), 'ana');
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('multijugador-crear')),
+          matching: find.text('Crear sala'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('multijugador-unirse')),
+          matching: find.text('Unirse a una sala'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Crear partida'), findsNothing);
+      expect(find.text('Unirse a una partida'), findsNothing);
+    });
+
+    testWidgets('La pantalla de crear se llama Crear sala', (tester) async {
+      await entrar(tester, ServidorFalso(), 'ana');
+      await tocar(tester, 'multijugador-crear');
+
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('Crear sala'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('crear-enviar')),
+          matching: find.text('Crear sala'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Crear partida'), findsNothing);
+    });
+
+    testWidgets('Para unirse se pide el código de la sala', (tester) async {
+      await entrar(tester, ServidorFalso(), 'luis');
+      await tocar(tester, 'multijugador-unirse');
+
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('Unirse a una sala'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Código de la sala'), findsOneWidget);
+      expect(find.text('Código de la partida'), findsNothing);
+    });
+
     testWidgets('Solo se puede elegir de 2 a 6 jugadores', (tester) async {
       await entrar(tester, ServidorFalso(), 'ana');
       await tocar(tester, 'multijugador-crear');
@@ -286,9 +343,9 @@ void main() {
 
     // Los mismos mensajes con los que rechaza el servidor RegistroClientes.
     for (final rechazo in const [
-      'No existe ninguna partida con ese código.',
+      'No existe ninguna sala con ese código.',
       'La partida ya comenzó.',
-      'La partida ya está llena.',
+      'La sala ya está llena.',
     ]) {
       testWidgets('El rechazo "$rechazo" se muestra y no deja entrar', (
         tester,
@@ -309,7 +366,7 @@ void main() {
     ) async {
       final servidor = ServidorFalso()
         ..jugadores = ['ana', 'luis']
-        ..rechazoSala = 'No existe ninguna partida con ese código.';
+        ..rechazoSala = 'No existe ninguna sala con ese código.';
       await unirseCon(tester, servidor, 'ZZZ999');
 
       servidor.rechazoSala = null;

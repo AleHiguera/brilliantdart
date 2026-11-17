@@ -48,7 +48,7 @@ class _UnirsePartidaPageState extends State<UnirsePartidaPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: barraPartida('Unirse a una partida'),
+      appBar: barraPartida('Unirse a una sala'),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -71,7 +71,7 @@ class _UnirsePartidaPageState extends State<UnirsePartidaPage> {
                     autocorrect: false,
                     textCapitalization: TextCapitalization.characters,
                     decoration: const InputDecoration(
-                      labelText: 'Código de la partida',
+                      labelText: 'Código de la sala',
                       border: OutlineInputBorder(),
                     ),
                     validator: (valor) =>

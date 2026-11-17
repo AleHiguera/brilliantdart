@@ -227,7 +227,7 @@ void main() {
         [],
         respuesta: json({
           'ok': false,
-          'mensaje': 'La partida ya está llena.',
+          'mensaje': 'La sala ya está llena.',
         }, 409),
       );
 
@@ -235,7 +235,7 @@ void main() {
         partidas.unirse('ABC234'),
         throwsA(
           isA<ErrorAuth>()
-              .having((e) => e.mensaje, 'mensaje', 'La partida ya está llena.')
+              .having((e) => e.mensaje, 'mensaje', 'La sala ya está llena.')
               .having((e) => e.codigo, 'codigo', 409),
         ),
       );

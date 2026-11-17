@@ -40,7 +40,7 @@ class SeccionMultijugador extends StatelessWidget {
           FilledButton.icon(
             key: const Key('multijugador-crear'),
             icon: const Icon(Icons.add),
-            label: const Text('Crear partida'),
+            label: const Text('Crear sala'),
             onPressed: () =>
                 _abrir(context, CrearPartidaPage(partidas: partidas)),
           ),
@@ -48,7 +48,7 @@ class SeccionMultijugador extends StatelessWidget {
           OutlinedButton.icon(
             key: const Key('multijugador-unirse'),
             icon: const Icon(Icons.login),
-            label: const Text('Unirse a una partida'),
+            label: const Text('Unirse a una sala'),
             onPressed: () =>
                 _abrir(context, UnirsePartidaPage(partidas: partidas)),
           ),

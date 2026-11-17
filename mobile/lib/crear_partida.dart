@@ -54,7 +54,7 @@ class _CrearPartidaPageState extends State<CrearPartidaPage> {
     ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold);
 
     return Scaffold(
-      appBar: barraPartida('Crear partida'),
+      appBar: barraPartida('Crear sala'),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -107,7 +107,7 @@ class _CrearPartidaPageState extends State<CrearPartidaPage> {
                 const SizedBox(height: 24),
                 BotonEnviarPartida(
                   key: const Key('crear-enviar'),
-                  texto: 'Crear partida',
+                  texto: 'Crear sala',
                   enviando: _enviando,
                   onPressed: _crear,
                 ),
