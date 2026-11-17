@@ -39,7 +39,7 @@ void main() {
 
       expect(find.byKey(const Key('how-to-play')), findsOneWidget);
       expect(find.text('Cómo se juega'), findsOneWidget);
-      expect(find.text('Disponible'), findsNWidgets(4));
+      expect(find.text('Disponible'), findsNothing);
       expect(find.text('Muy pronto podrás jugarlo.'), findsNothing);
       final textosMapa1 = tester
           .widgetList<Text>(
@@ -50,7 +50,7 @@ void main() {
           )
           .map((texto) => texto.data)
           .toList();
-      expect(textosMapa1, ['Mapa 1', 'Disponible']);
+      expect(textosMapa1, ['Mapa 1']);
     });
 
     testWidgets('Los números usados se encienden en la preparación', (

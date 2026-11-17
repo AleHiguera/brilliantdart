@@ -17,7 +17,8 @@ void main() {
       expect(find.text('Mapa 3'), findsOneWidget);
       expect(find.text('Mapa 4'), findsOneWidget);
       expect(find.text('Próximamente'), findsNothing);
-      expect(find.text('Disponible'), findsNWidgets(4));
+      // Los mapas jugables ya no llevan la etiqueta «Disponible».
+      expect(find.text('Disponible'), findsNothing);
 
       await tester.tap(find.byKey(const Key('map-choice-1')));
       await tester.pumpAndSettle();

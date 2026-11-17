@@ -403,30 +403,28 @@ class _OpcionMapa extends StatelessWidget {
                                 fontWeight: FontWeight.bold,
                               ),
                         ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: disponible
-                                ? const Color(0xFFE2F4E3)
-                                : estilo.colorBordeTarjeta,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            disponible ? 'Disponible' : 'Próximamente',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: disponible
-                                  ? const Color(0xFF1E6B23)
-                                  : Colors.black54,
+                        // Un mapa jugable no lleva etiqueta: solo se marca
+                        // el que todavía no se puede jugar.
+                        if (!disponible) ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: estilo.colorBordeTarjeta,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              'Próximamente',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black54,
+                              ),
                             ),
                           ),
-                        ),
-                        if (!disponible) ...[
                           const SizedBox(height: 6),
                           Text(
                             'Muy pronto podrás jugarlo.',

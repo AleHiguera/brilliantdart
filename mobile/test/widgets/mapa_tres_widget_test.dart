@@ -42,7 +42,9 @@ Future<void> abrirMapaTres(WidgetTester tester) => tester.pumpWidget(
 
 void main() {
   group('Widgets: Mapa 3 en la selección', () {
-    testWidgets('El Mapa 3 aparece como disponible', (tester) async {
+    testWidgets('El Mapa 3 se puede jugar, sin etiqueta de disponible', (
+      tester,
+    ) async {
       await tester.pumpWidget(const BrilliantApp());
 
       expect(
@@ -50,7 +52,19 @@ void main() {
           of: find.byKey(const Key('map-choice-3')),
           matching: find.text('Disponible'),
         ),
-        findsOneWidget,
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('map-choice-3')),
+          matching: find.text('Próximamente'),
+        ),
+        findsNothing,
+      );
+      // Sigue abierto para jugar, aunque ya no lo diga en pantalla.
+      expect(
+        tester.widget<InkWell>(find.byKey(const Key('map-choice-3'))).onTap,
+        isNotNull,
       );
     });
 

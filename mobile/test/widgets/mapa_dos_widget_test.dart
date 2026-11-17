@@ -32,7 +32,9 @@ Future<void> abrirMapaDos(WidgetTester tester) => tester.pumpWidget(
 
 void main() {
   group('Widgets: Mapa 2 en la selección', () {
-    testWidgets('El Mapa 2 aparece como disponible', (tester) async {
+    testWidgets('El Mapa 2 se puede jugar, sin etiqueta de disponible', (
+      tester,
+    ) async {
       await tester.pumpWidget(const BrilliantApp());
 
       expect(
@@ -40,7 +42,19 @@ void main() {
           of: find.byKey(const Key('map-choice-2')),
           matching: find.text('Disponible'),
         ),
-        findsOneWidget,
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('map-choice-2')),
+          matching: find.text('Próximamente'),
+        ),
+        findsNothing,
+      );
+      // Sigue abierto para jugar, aunque ya no lo diga en pantalla.
+      expect(
+        tester.widget<InkWell>(find.byKey(const Key('map-choice-2'))).onTap,
+        isNotNull,
       );
       expect(
         find.descendant(

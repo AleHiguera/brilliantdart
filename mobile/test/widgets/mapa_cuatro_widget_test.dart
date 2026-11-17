@@ -55,7 +55,9 @@ bool sePuedeElegir(WidgetTester tester, int numero) =>
 
 void main() {
   group('Widgets: Mapa 4 en la selección', () {
-    testWidgets('El Mapa 4 aparece como disponible', (tester) async {
+    testWidgets('El Mapa 4 se puede jugar, sin etiqueta de disponible', (
+      tester,
+    ) async {
       await verTarjetaMapaCuatro(tester);
 
       expect(
@@ -63,7 +65,19 @@ void main() {
           of: find.byKey(const Key('map-choice-4')),
           matching: find.text('Disponible'),
         ),
-        findsOneWidget,
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('map-choice-4')),
+          matching: find.text('Próximamente'),
+        ),
+        findsNothing,
+      );
+      // Sigue abierto para jugar, aunque ya no lo diga en pantalla.
+      expect(
+        tester.widget<InkWell>(find.byKey(const Key('map-choice-4'))).onTap,
+        isNotNull,
       );
     });
 
