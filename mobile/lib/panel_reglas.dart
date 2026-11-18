@@ -1,13 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:brilliantdart/leyenda_reglas.dart';
+import 'package:brilliantdart/marcas_zonas.dart';
 import 'package:brilliant_mobile/colores_zonas.dart';
+import 'package:brilliant_mobile/marca_zona_chip.dart';
 
 /// Las reglas del mapa junto al tablero: un cuadro del color de cada zona con
 /// el signo de su regla adentro. Al dejar el dedo encima se lee la regla.
+///
+/// Debajo explica las marcas del tablero: qué pedazos cuentan como una sola
+/// zona y qué zonas del mismo color puntúan aparte.
 class PanelReglas extends StatelessWidget {
-  const PanelReglas({super.key, required this.reglas});
+  const PanelReglas({
+    super.key,
+    required this.reglas,
+    this.explicaciones = const [],
+  });
 
   final List<ReglaVisible> reglas;
+  final List<ExplicacionColor> explicaciones;
+
+  static const String ayudaResaltar =
+      'Mantén presionado un cuadro del tablero para ver toda su zona.';
 
   /// Lo que se lee al dejar el dedo encima; dice de qué zona es si la flecha
   /// la distingue.
@@ -53,6 +66,117 @@ class PanelReglas extends StatelessWidget {
                 ],
               );
             },
+          ),
+          if (explicaciones.isNotEmpty)
+            _ZonasDelMapa(explicaciones: explicaciones),
+        ],
+      ),
+    );
+  }
+}
+
+/// «Zonas del mapa»: plegable como el historial, para no ocupar espacio en
+/// el celular. Un toque la abre y otro la cierra.
+class _ZonasDelMapa extends StatefulWidget {
+  const _ZonasDelMapa({required this.explicaciones});
+
+  final List<ExplicacionColor> explicaciones;
+
+  @override
+  State<_ZonasDelMapa> createState() => _ZonasDelMapaState();
+}
+
+class _ZonasDelMapaState extends State<_ZonasDelMapa> {
+  bool _abierta = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 4),
+        InkWell(
+          key: const Key('zonas-toggle'),
+          onTap: () => setState(() => _abierta = !_abierta),
+          borderRadius: BorderRadius.circular(6),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                const Text(
+                  'Zonas del mapa',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 6),
+                // Las marcas a la vista aunque esté cerrada.
+                Expanded(
+                  child: Wrap(
+                    spacing: 3,
+                    runSpacing: 3,
+                    children: [
+                      for (final explicacion in widget.explicaciones)
+                        for (final marca in explicacion.marcas)
+                          MarcaZonaChip(
+                            texto: marca,
+                            color: coloresZonas[explicacion.tipo],
+                          ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  _abierta ? Icons.expand_less : Icons.expand_more,
+                  key: const Key('zonas-chevron'),
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_abierta) ...[
+          const SizedBox(height: 4),
+          for (final explicacion in widget.explicaciones)
+            _LineaZonas(explicacion: explicacion),
+          const SizedBox(height: 2),
+          const Text(
+            PanelReglas.ayudaResaltar,
+            key: Key('reglas-ayuda-resaltar'),
+            style: TextStyle(fontSize: 11, color: Colors.black54),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Una línea de la lista: las marcas de un color y qué significan.
+class _LineaZonas extends StatelessWidget {
+  const _LineaZonas({required this.explicacion});
+
+  final ExplicacionColor explicacion;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      key: Key('zonas-${explicacion.tipo.name}'),
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final marca in explicacion.marcas)
+            Padding(
+              padding: const EdgeInsets.only(right: 3),
+              child: MarcaZonaChip(
+                texto: marca,
+                color: coloresZonas[explicacion.tipo],
+                tamanoLetra: 11,
+              ),
+            ),
+          const SizedBox(width: 3),
+          Expanded(
+            child: Text(
+              explicacion.texto,
+              style: const TextStyle(fontSize: 12, height: 1.25),
+            ),
           ),
         ],
       ),

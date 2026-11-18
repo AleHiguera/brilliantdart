@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:brilliantdart/bloc_valores_iniciales.dart';
 import 'package:brilliantdart/dados.dart';
 import 'package:brilliantdart/leyenda_reglas.dart';
+import 'package:brilliantdart/marcas_zonas.dart';
 import 'package:brilliantdart/mapa.dart';
 import 'package:brilliantdart/mapa_cuatro.dart';
 import 'package:brilliantdart/mapa_dos.dart';
@@ -24,6 +25,7 @@ import 'package:brilliant_mobile/dados_compartidos.dart';
 import 'package:brilliant_mobile/historial_dados_view.dart';
 import 'package:brilliant_mobile/inicio_sesion.dart';
 import 'package:brilliant_mobile/latido_sesion.dart';
+import 'package:brilliant_mobile/marca_zona_chip.dart';
 import 'package:brilliant_mobile/novedades_zonas.dart';
 import 'package:brilliant_mobile/panel_fin_compartido.dart';
 import 'package:brilliant_mobile/panel_lanzamiento_dados.dart';
@@ -609,6 +611,13 @@ class _TableroPageState extends State<TableroPage> {
 
   /// Las reglas del mapa no cambian durante la partida: se calculan una vez.
   late final List<ReglaVisible> _reglas = LeyendaReglas(widget.mapa).reglas;
+
+  /// Qué pedazos de color son la misma zona: marcas en el tablero y su
+  /// explicación en la lista de reglas.
+  late final MarcasZonas _marcasZonas = MarcasZonas(widget.mapa);
+
+  /// La zona que se ve resaltada mientras se mantiene presionada una celda.
+  int? _zonaResaltada;
   OpcionAncla? _opcionAnclaSeleccionada;
   MovimientoAncla? _movimientoSeleccionado;
   int? _numeroLanzamientoPendiente;
@@ -1056,6 +1065,16 @@ class _TableroPageState extends State<TableroPage> {
   }
 
   Widget _construirTablero(List<MovimientoAncla> movimientosDisponibles) {
+    final resaltada = _zonaResaltada;
+    return Stack(
+      children: [
+        _cuadricula(movimientosDisponibles),
+        if (resaltada != null) _avisoZonaResaltada(resaltada),
+      ],
+    );
+  }
+
+  Widget _cuadricula(List<MovimientoAncla> movimientosDisponibles) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -1096,8 +1115,13 @@ class _TableroPageState extends State<TableroPage> {
                 columnaIndice,
                 mapa: widget.mapa,
               );
+              final zona = _marcasZonas.zonaEn(filaIndice, columnaIndice);
+              final resaltada = _zonaResaltada;
+              final enZonaResaltada = resaltada != null && zona == resaltada;
+              final apagada = resaltada != null && !enZonaResaltada;
+              final marca = _marcasZonas.marcaEn(filaIndice, columnaIndice);
 
-              return Material(
+              final celdaVista = Material(
                 color: color,
                 child: InkWell(
                   key: esInicial
@@ -1111,15 +1135,19 @@ class _TableroPageState extends State<TableroPage> {
                       ? () => _seleccionarDestino(movimientoDestino!)
                       : null,
                   child: Container(
+                    // Mientras se ve una zona, lo demás queda apagado.
+                    foregroundDecoration: apagada
+                        ? const BoxDecoration(color: Color(0x99000000))
+                        : null,
                     decoration: BoxDecoration(
                       border: Border.fromBorderSide(
                         BorderSide(
-                          color: esDestinoSeleccionado
+                          color: esDestinoSeleccionado || enZonaResaltada
                               ? Colors.black
                               : esDestinoPosible || esInicial
                               ? Colors.white
                               : Colors.black,
-                          width: esDestinoSeleccionado
+                          width: esDestinoSeleccionado || enZonaResaltada
                               ? 3
                               : esDestinoPosible || esInicial
                               ? 2
@@ -1127,52 +1155,119 @@ class _TableroPageState extends State<TableroPage> {
                         ),
                       ),
                     ),
-                    child: valor != null
-                        ? Center(
-                            child: Text(
-                              valor.toString(),
-                              style: TextStyle(
-                                color: color.computeLuminance() > 0.5
-                                    ? Colors.black
-                                    : Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
+                    child: _conMarca(
+                      marca,
+                      fila: fila,
+                      columna: columna,
+                      child: valor != null
+                          ? Center(
+                              child: Text(
+                                valor.toString(),
+                                style: TextStyle(
+                                  color: color.computeLuminance() > 0.5
+                                      ? Colors.black
+                                      : Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                          )
-                        : esDestinoPosible
-                        ? Center(
-                            child: esDestinoSeleccionado
-                                ? Text(
-                                    _opcionAnclaSeleccionada!.numeroAColocar
-                                        .toString(),
-                                    style: const TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
+                            )
+                          : esDestinoPosible
+                          ? Center(
+                              child: esDestinoSeleccionado
+                                  ? Text(
+                                      _opcionAnclaSeleccionada!.numeroAColocar
+                                          .toString(),
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.add_circle_outline,
+                                      color: Colors.white,
                                     ),
-                                  )
-                                : const Icon(
-                                    Icons.add_circle_outline,
-                                    color: Colors.white,
-                                  ),
-                          )
-                        : esInicial
-                        ? const Center(
-                            child: Text(
-                              '+',
-                              style: TextStyle(
-                                color: Colors.black87,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                            )
+                          : esInicial
+                          ? const Center(
+                              child: Text(
+                                '+',
+                                style: TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                          )
-                        : null,
+                            )
+                          : null,
+                    ),
                   ),
                 ),
               );
+
+              // Mantener presionado muestra toda la zona de la celda.
+              return GestureDetector(
+                key: Key('zona-celda-$fila-$columna'),
+                onLongPressStart: zona == null
+                    ? null
+                    : (_) => setState(() => _zonaResaltada = zona),
+                onLongPressEnd: (_) => setState(() => _zonaResaltada = null),
+                onLongPressCancel: () => setState(() => _zonaResaltada = null),
+                child: celdaVista,
+              );
             },
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Pone la marca de la zona (R1, V2…) en la esquina de la celda, si lleva.
+  Widget? _conMarca(
+    String? marca, {
+    required int fila,
+    required int columna,
+    required Widget? child,
+  }) {
+    if (marca == null) return child;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ?child,
+        Positioned(
+          top: 2,
+          left: 2,
+          child: IgnorePointer(
+            child: MarcaZonaChip(
+              key: Key('marca-zona-$fila-$columna'),
+              texto: marca,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// La frase sobre el tablero mientras se ve una zona resaltada.
+  Widget _avisoZonaResaltada(int zona) {
+    return Positioned(
+      left: 12,
+      right: 12,
+      bottom: 12,
+      child: IgnorePointer(
+        child: Container(
+          key: const Key('aviso-zona-resaltada'),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 6)],
+          ),
+          child: Text(
+            _marcasZonas.descripcionDe(zona),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
         ),
       ),
@@ -1221,7 +1316,10 @@ class _TableroPageState extends State<TableroPage> {
                         children: [
                           fase,
                           const SizedBox(height: 10),
-                          PanelReglas(reglas: _reglas),
+                          PanelReglas(
+                            reglas: _reglas,
+                            explicaciones: _marcasZonas.explicaciones,
+                          ),
                           const SizedBox(height: 10),
                           _tablaDePuntos(),
                           if (_registroDeZonas(maxAltura: 260)
@@ -1259,7 +1357,10 @@ class _TableroPageState extends State<TableroPage> {
                         fase,
                         // Desde que se ponen los números iniciales.
                         const SizedBox(height: 10),
-                        PanelReglas(reglas: _reglas),
+                        PanelReglas(
+                          reglas: _reglas,
+                          explicaciones: _marcasZonas.explicaciones,
+                        ),
                         if (_bloc.jugando) ...[
                           const SizedBox(height: 10),
                           Row(
