@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:brilliantdart/bloc_valores_iniciales.dart';
@@ -99,6 +100,39 @@ class SonidoFalso extends Sonido {
 
   @override
   void dispose() => cierres++;
+}
+
+/// Un sonido que no termina hasta llamar a [acabar], como uno de verdad que
+/// dura unos segundos. Anota en [bitacora] cuándo empieza y cuándo acaba.
+class SonidoLento extends Sonido {
+  SonidoLento(this.nombre, this.bitacora);
+
+  final String nombre;
+  final List<String> bitacora;
+  Completer<void>? _fin;
+
+  bool get sonando => _fin != null && !_fin!.isCompleted;
+
+  @override
+  Future<void> reproducir() {
+    bitacora.add('empieza $nombre');
+    final fin = _fin = Completer<void>();
+    return fin.future;
+  }
+
+  /// El sonido llega a su final.
+  void acabar() {
+    if (!sonando) return;
+    bitacora.add('acaba $nombre');
+    _fin!.complete();
+  }
+
+  @override
+  Future<void> detener() async {
+    if (!sonando) return;
+    bitacora.add('corta $nombre');
+    _fin!.complete();
+  }
 }
 
 class DadosFijos extends Dados {

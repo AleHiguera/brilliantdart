@@ -65,6 +65,8 @@ void main() {
             tablero: tablero,
             sonidoVictoria: sonido,
             sonidoDados: SonidoFalso(),
+            sonidoAplausos: SonidoFalso(),
+            sonidoTristeza: SonidoFalso(),
           ),
         ),
       );

@@ -21,6 +21,7 @@ import 'package:brilliantdart/validador_anclas.dart';
 import 'package:brilliant_mobile/almacen_pestana.dart';
 import 'package:brilliant_mobile/colores_zonas.dart' as estilo;
 import 'package:brilliant_mobile/boton_silencio.dart';
+import 'package:brilliant_mobile/cola_sonidos.dart';
 import 'package:brilliant_mobile/control_sonido.dart';
 import 'package:brilliant_mobile/dados_compartidos.dart';
 import 'package:brilliant_mobile/historial_dados_view.dart';
@@ -598,6 +599,10 @@ class _TableroPageState extends State<TableroPage> {
     widget.sonidoAplausos,
     Sonido.aplausos,
   );
+
+  /// Festejo, tristeza y victoria suenan de uno en uno, sin encimarse.
+  final ColaSonidos _colaSonidos = ColaSonidos();
+
   late final Sonido _sonidoTristeza = _silenciable(
     widget.sonidoTristeza,
     Sonido.tristeza,
@@ -698,7 +703,7 @@ class _TableroPageState extends State<TableroPage> {
           ),
         ),
       );
-    _sonidoTristeza.reproducir();
+    _colaSonidos.tocar(_sonidoTristeza);
   }
 
   /// Solo en multijugador: quién llenó cada zona y qué lugar ganó.
@@ -729,7 +734,7 @@ class _TableroPageState extends State<TableroPage> {
     }
     if (compartida.terminada && !_finAnunciado) {
       _finAnunciado = true;
-      if (compartida.gane) _sonidoVictoria.reproducir();
+      if (compartida.gane) _colaSonidos.tocar(_sonidoVictoria);
     }
     if (_bloc.jugando) return;
     final guardados = compartida.sala.miTablero;
@@ -1002,23 +1007,24 @@ class _TableroPageState extends State<TableroPage> {
       movimiento.destino.x,
       movimiento.destino.y,
     );
+    // En multijugador llenar el tablero no termina la partida: el final lo
+    // anuncia el servidor para todos a la vez.
+    final ganoSolo = _partidaFinalizada && widget.compartida == null;
+    if (ganoSolo) {
+      _colaSonidos.tocar(_sonidoVictoria);
+    } else if (zonaCompletada != null) {
+      // Al ganar la partida ya suena la victoria: los aplausos van en las
+      // demás zonas. Se piden antes de avisar el turno, para que suenen antes
+      // que la tristeza por las zonas que otros llenaron en esta ronda.
+      _colaSonidos.tocar(_sonidoAplausos);
+    }
     widget.compartida?.guardado.guardarCeldas(_tablero);
     widget.compartida?.terminarTurno(
       tableroLleno: _tablero.estaLleno,
       zonaCompletada: zonaCompletada,
       tablero: TableroTexto.escribir(_tablero),
     );
-
-    // En multijugador llenar el tablero no termina la partida: el final lo
-    // anuncia el servidor para todos a la vez.
-    if (_partidaFinalizada && widget.compartida == null) {
-      _sonidoVictoria.reproducir();
-      _mostrarFinDePartida();
-    } else if (zonaCompletada != null) {
-      // Al ganar la partida ya suena la victoria: los aplausos van en las
-      // demás zonas.
-      _sonidoAplausos.reproducir();
-    }
+    if (ganoSolo) _mostrarFinDePartida();
   }
 
   Future<void> _mostrarFinDePartida() {
@@ -1068,6 +1074,7 @@ class _TableroPageState extends State<TableroPage> {
       ?..removeListener(_alCambiarCompartida)
       ..dispose();
     _zonasAjenas?.cancel();
+    _colaSonidos.cerrar();
     _sonidoVictoria.dispose();
     _sonidoDados.dispose();
     _sonidoAplausos.dispose();

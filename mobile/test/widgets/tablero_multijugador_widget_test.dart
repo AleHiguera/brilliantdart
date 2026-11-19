@@ -4,7 +4,9 @@ import 'package:brilliant_mobile/almacen_pestana.dart';
 import 'package:brilliant_mobile/guardado_partida.dart';
 import 'package:brilliant_mobile/inicio_sesion.dart';
 import 'package:brilliant_mobile/latido_sesion.dart';
+import 'package:brilliant_mobile/control_sonido.dart';
 import 'package:brilliant_mobile/main.dart';
+import 'package:brilliant_mobile/sonidos.dart';
 import 'package:brilliant_mobile/partida_compartida.dart';
 import 'package:brilliant_mobile/tabla_puntos_partida.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
@@ -188,10 +190,10 @@ Future<void> abrirTablero(
   ServidorFalso servidor, {
   Mapa mapa = mapaUno,
   Tablero? tablero,
-  SonidoFalso? sonidoDados,
-  SonidoFalso? sonidoVictoria,
-  SonidoFalso? sonidoAplausos,
-  SonidoFalso? sonidoTristeza,
+  Sonido? sonidoDados,
+  Sonido? sonidoVictoria,
+  Sonido? sonidoAplausos,
+  Sonido? sonidoTristeza,
 }) async {
   await tester.pumpWidget(
     const MaterialApp(home: Scaffold(body: Text('Menú'))),
@@ -1911,6 +1913,139 @@ void main() {
     final otra = mapaUno.crearTablero().regiones.firstWhere(
       (region) => region.id != zona.id,
     );
+
+    group('Sonidos que coinciden', () {
+      late List<String> bitacora;
+      late SonidoLento aplausos;
+      late SonidoLento tristeza;
+      late SonidoLento victoria;
+
+      setUp(() {
+        bitacora = [];
+        aplausos = SonidoLento('aplausos', bitacora);
+        tristeza = SonidoLento('tristeza', bitacora);
+        victoria = SonidoLento('victoria', bitacora);
+      });
+
+      /// Ana llena [zona] en la ronda 1; Luis ya llenó [otra] en esa ronda.
+      Future<ServidorFalso> llenanLosDos(WidgetTester tester) async {
+        final servidor = enRonda()
+          ..proximosDados = [
+            [1, 3],
+          ];
+        servidor
+          ..ronda = 0
+          ..lanzar();
+        await abrirTablero(
+          tester,
+          servidor,
+          tablero: tableroCasiLleno(),
+          sonidoAplausos: aplausos,
+          sonidoTristeza: tristeza,
+          sonidoVictoria: victoria,
+        );
+        servidor.zonas = {
+          '${otra.id}': {'luis': 1},
+        };
+        await siguienteConsulta(tester);
+        await mover(tester, 1);
+        return servidor;
+      }
+
+      /// Deja que la fila de sonidos pase al siguiente.
+      Future<void> acaba(WidgetTester tester, SonidoLento sonido) async {
+        sonido.acabar();
+        await tester.pump();
+      }
+
+      testWidgets('Primero suena mi festejo y la tristeza espera', (
+        tester,
+      ) async {
+        await llenanLosDos(tester);
+
+        // El aviso de la zona de Luis se ve ya; su sonido espera su turno.
+        expect(find.byKey(const Key('aviso-zona-ajena')), findsOneWidget);
+        expect(bitacora, ['empieza aplausos']);
+        expect(tristeza.sonando, isFalse);
+
+        await acaba(tester, aplausos);
+
+        expect(bitacora, [
+          'empieza aplausos',
+          'acaba aplausos',
+          'empieza tristeza',
+        ]);
+        await acaba(tester, tristeza);
+        expect(bitacora.last, 'acaba tristeza');
+      });
+
+      testWidgets('Nunca suenan dos a la vez', (tester) async {
+        await llenanLosDos(tester);
+        await acaba(tester, aplausos);
+        await acaba(tester, tristeza);
+
+        var sonando = 0;
+        for (final paso in bitacora) {
+          sonando += paso.startsWith('empieza') ? 1 : -1;
+          expect(sonando, lessThanOrEqualTo(1), reason: '$bitacora');
+        }
+      });
+
+      testWidgets('La victoria espera a que terminen los demás', (
+        tester,
+      ) async {
+        final servidor = await llenanLosDos(tester);
+        servidor
+          ..terminada = true
+          ..ganadores = ['ana'];
+        await siguienteConsulta(tester);
+
+        expect(bitacora, ['empieza aplausos']);
+
+        await acaba(tester, aplausos);
+        expect(bitacora.last, 'empieza tristeza');
+        expect(victoria.sonando, isFalse);
+
+        await acaba(tester, tristeza);
+        expect(bitacora, [
+          'empieza aplausos',
+          'acaba aplausos',
+          'empieza tristeza',
+          'acaba tristeza',
+          'empieza victoria',
+        ]);
+        await acaba(tester, victoria);
+      });
+
+      testWidgets('En silencio no suena ninguno y no se atoran', (
+        tester,
+      ) async {
+        final control = ControlSonido.global;
+        addTearDown(() => ControlSonido.global = control);
+        ControlSonido.global = ControlSonido()..silenciar(true);
+
+        await llenanLosDos(tester);
+
+        expect(bitacora, isEmpty);
+        expect(find.byKey(const Key('aviso-zona-ajena')), findsOneWidget);
+      });
+
+      testWidgets('Silenciar a la mitad corta lo que suena y lo que espera', (
+        tester,
+      ) async {
+        final control = ControlSonido.global;
+        addTearDown(() => ControlSonido.global = control);
+        ControlSonido.global = ControlSonido();
+        await llenanLosDos(tester);
+        expect(bitacora, ['empieza aplausos']);
+
+        await tester.tap(find.byKey(const Key('sonido-boton')));
+        await tester.pump();
+
+        expect(bitacora, ['empieza aplausos', 'corta aplausos']);
+        expect(tristeza.sonando, isFalse);
+      });
+    });
 
     testWidgets('Quien llena la zona solo oye el festejo, no lo triste', (
       tester,
