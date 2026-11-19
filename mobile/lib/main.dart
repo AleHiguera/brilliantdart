@@ -6,6 +6,7 @@ import 'package:brilliantdart/bloc_valores_iniciales.dart';
 import 'package:brilliantdart/dados.dart';
 import 'package:brilliantdart/leyenda_reglas.dart';
 import 'package:brilliantdart/marcas_zonas.dart';
+import 'package:brilliantdart/tablero_texto.dart';
 import 'package:brilliantdart/mapa.dart';
 import 'package:brilliantdart/mapa_cuatro.dart';
 import 'package:brilliantdart/mapa_dos.dart';
@@ -662,6 +663,8 @@ class _TableroPageState extends State<TableroPage> {
     if (compartida != null) {
       // Tras recargar la página vuelven los números que ya se habían puesto.
       if (widget.tablero == null) compartida.guardado.restaurarCeldas(_tablero);
+      // Si había un aviso de turno pendiente, se reintenta con este tablero.
+      compartida.tablero = TableroTexto.escribir(_tablero);
       _sincronizarConCompartida();
       _zonasAjenas = compartida.zonasAjenas.listen(_avisarZonasAjenas);
       compartida
@@ -793,6 +796,8 @@ class _TableroPageState extends State<TableroPage> {
           jugadores: enComun.sala.jugadores,
           meta: enComun.sala.meta,
           porAbandono: enComun.sala.porAbandono,
+          mapa: widget.mapa,
+          tablerosFinales: enComun.sala.tablerosFinales,
           onVolver: _salirDePartida,
         ),
       );
@@ -838,8 +843,10 @@ class _TableroPageState extends State<TableroPage> {
                 compartida: compartida,
                 valoresColocados: _valoresIniciales,
                 tableroCompleto: _bloc.puedeIniciar,
-                onFinalizar: () =>
-                    compartida.finalizar(_bloc.obtenerValoresIniciales()),
+                onFinalizar: () => compartida.finalizar(
+                  _bloc.obtenerValoresIniciales(),
+                  tablero: TableroTexto.escribir(_tablero),
+                ),
                 onVolver: _salirDePartida,
               ),
       );
@@ -942,7 +949,10 @@ class _TableroPageState extends State<TableroPage> {
       _numeroLanzamientoPendiente = null;
       _rondaDados++;
     });
-    widget.compartida?.terminarTurno(tableroLleno: false);
+    widget.compartida?.terminarTurno(
+      tableroLleno: false,
+      tablero: TableroTexto.escribir(_tablero),
+    );
   }
 
   void _actualizarHistorial() {
@@ -996,6 +1006,7 @@ class _TableroPageState extends State<TableroPage> {
     widget.compartida?.terminarTurno(
       tableroLleno: _tablero.estaLleno,
       zonaCompletada: zonaCompletada,
+      tablero: TableroTexto.escribir(_tablero),
     );
 
     // En multijugador llenar el tablero no termina la partida: el final lo

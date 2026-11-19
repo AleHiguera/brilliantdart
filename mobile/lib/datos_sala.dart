@@ -1,4 +1,5 @@
 import 'package:brilliantdart/catalogo_mapas.dart';
+import 'package:brilliantdart/tablero_texto.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/servicio_partidas.dart';
 
@@ -23,6 +24,7 @@ class SalaPartida {
     this.terminada = false,
     this.ganadores = const [],
     this.porAbandono = false,
+    this.tablerosFinales = const {},
   });
 
   /// Lee la sala del servidor. Lo que no se pueda mostrar llega como [ErrorAuth],
@@ -86,10 +88,20 @@ class SalaPartida {
         terminada: terminada,
         ganadores: ganadores.cast<String>(),
         porAbandono: datos['porAbandono'] as bool? ?? false,
+        tablerosFinales: _leerTableros(datos['tablerosFinales']),
       );
     }
     throw const ErrorAuth('Respuesta inesperada del servidor.');
   }
+
+  /// Los tableros del final, en el orden en que llegan. Un servidor anterior
+  /// no los envía, y uno que no se pueda leer se deja fuera: perderlo no debe
+  /// impedir ver quién ganó.
+  static Map<String, String> _leerTableros(Object? tableros) => {
+    if (tableros is Map<String, dynamic>)
+      for (final MapEntry(key: jugador, :value) in tableros.entries)
+        if (value is String && TableroTexto.leer(value) != null) jugador: value,
+  };
 
   static bool _sonTextos(List<dynamic> lista) =>
       lista.every((elemento) => elemento is String);
@@ -168,6 +180,10 @@ class SalaPartida {
   /// Terminó porque los demás salieron: gana quien quedó, con los puntos que
   /// tenga.
   final bool porAbandono;
+
+  /// Con la partida terminada, cómo quedó el tablero de cada uno de los que
+  /// empezaron, también de quien abandonó (ver `TableroTexto`).
+  final Map<String, String> tablerosFinales;
 
   bool estaListo(String? usuario) => listos.contains(usuario);
 

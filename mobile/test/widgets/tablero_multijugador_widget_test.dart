@@ -54,6 +54,12 @@ class ServidorFalso {
   bool porAbandono = false;
   String? rechazoUnirse;
 
+  /// Lo que manda el servidor al terminar: el tablero final de cada uno.
+  Map<String, String> tablerosFinales = {};
+
+  /// Los tableros que mandó ana, en orden (al finalizar y en cada turno).
+  final List<String?> tablerosRecibidos = [];
+
   /// Lo que el servidor sacará en cada lanzamiento.
   List<List<int>> proximosDados = [
     [2, 6],
@@ -90,6 +96,7 @@ class ServidorFalso {
     'terminada': terminada,
     'ganadores': ganadores,
     'porAbandono': porAbandono,
+    'tablerosFinales': tablerosFinales,
   };
 
   Iterable<http.Request> de(String accion) =>
@@ -99,6 +106,7 @@ class ServidorFalso {
   http.Response _finalizar(http.Request peticion) {
     final rechazo = rechazoFinalizar;
     if (rechazo != null) return _json({'ok': false, 'mensaje': rechazo}, 409);
+    tablerosRecibidos.add(peticion.bodyFields['tablero']);
     if (!finalizados.contains('ana')) {
       miTablero = peticion.bodyFields['numeros']!
           .split(',')
@@ -112,6 +120,7 @@ class ServidorFalso {
 
   http.Response _terminarTurno(http.Request peticion) {
     if (fallaTurno) return _json({'ok': false, 'mensaje': 'Fallo.'}, 500);
+    tablerosRecibidos.add(peticion.bodyFields['tablero']);
     final zona = peticion.bodyFields['zona'];
     if (zona != null) {
       (zonas[zona] ??= {}).putIfAbsent('ana', () => ronda);
@@ -379,6 +388,7 @@ void main() {
       expect(servidor.de('finalizar').single.bodyFields, {
         'codigo': 'ABC234',
         'numeros': '1,2,3,4,5,6',
+        'tablero': servidor.tablerosRecibidos.single,
       });
     });
 
@@ -614,6 +624,7 @@ void main() {
         'codigo': 'ABC234',
         'ronda': '1',
         'lleno': 'false',
+        'tablero': servidor.tablerosRecibidos.last,
       });
     });
 
@@ -975,6 +986,7 @@ void main() {
           'codigo': 'ABC234',
           'ronda': '1',
           'lleno': 'false',
+          'tablero': servidor.tablerosRecibidos.last,
         });
         expect(find.text('Turno completado'), findsOneWidget);
         expect(find.text('Falta por jugar: @luis'), findsOneWidget);
@@ -1213,15 +1225,19 @@ void main() {
         required Map<String, int> amarillos,
         int meta = 26,
         SonidoFalso? sonido,
+        Map<String, String> tableros = const {},
+        List<String>? jugadores,
       }) async {
         final servidor = enRonda()..meta = meta;
+        if (jugadores != null) servidor.jugadores = jugadores;
         await abrirTablero(tester, servidor, sonidoVictoria: sonido);
         await mover(tester, 2);
 
         servidor
           ..zonas = {'$amarilla': amarillos}
           ..terminada = true
-          ..ganadores = ganadores;
+          ..ganadores = ganadores
+          ..tablerosFinales = tableros;
         await siguienteConsulta(tester);
         return servidor;
       }
@@ -1441,6 +1457,128 @@ void main() {
 
         expect(tester.takeException(), isNull);
         expect(find.byKey(const Key('fin-compartido')), findsOneWidget);
+      });
+
+      testWidgets('Al terminar se ven los tableros de todos, el mío incluido', (
+        tester,
+      ) async {
+        final deAna = '1${'0' * 48}';
+        final deLuis = '6${'0' * 48}';
+        await terminar(
+          tester,
+          ganadores: ['luis'],
+          amarillos: {'luis': 1},
+          tableros: {'ana': deAna, 'luis': deLuis},
+        );
+
+        await tester.ensureVisible(find.byKey(const Key('tableros-finales')));
+        await tester.pumpAndSettle();
+        final luis = find.byKey(const Key('tablero-final-luis'));
+        final ana = find.byKey(const Key('tablero-final-ana'));
+        expect(luis, findsOneWidget);
+        expect(ana, findsOneWidget);
+        expect(
+          find.descendant(of: ana, matching: find.text('@ana (tú)')),
+          findsOneWidget,
+        );
+        // Primero quien ganó, como en la clasificación.
+        expect(
+          tester.getTopLeft(luis).dx < tester.getTopLeft(ana).dx ||
+              tester.getTopLeft(luis).dy < tester.getTopLeft(ana).dy,
+          isTrue,
+        );
+        // Cada tablero con sus números.
+        expect(
+          find.descendant(of: luis, matching: find.text('6')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: ana, matching: find.text('1')),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('Los tableros van debajo de Volver al menú', (tester) async {
+        await terminar(
+          tester,
+          ganadores: ['luis'],
+          amarillos: {'luis': 1},
+          tableros: {'ana': '0' * 49, 'luis': '0' * 49},
+        );
+
+        expect(
+          tester.getTopLeft(find.byKey(const Key('tableros-finales'))).dy,
+          greaterThan(
+            tester.getTopLeft(find.byKey(const Key('fin-volver'))).dy,
+          ),
+        );
+      });
+
+      testWidgets('Sin tableros del servidor solo se ve la clasificación', (
+        tester,
+      ) async {
+        await terminar(tester, ganadores: ['luis'], amarillos: {'luis': 1});
+
+        expect(find.byKey(const Key('fin-compartido')), findsOneWidget);
+        expect(find.byKey(const Key('tableros-finales')), findsNothing);
+      });
+
+      testWidgets('Con seis tableros la pantalla final cabe en un celular', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final jugadores = [
+          'ana',
+          'luis',
+          'eva',
+          'sol',
+          'leo',
+          'un_nombre_largo',
+        ];
+
+        await terminar(
+          tester,
+          ganadores: ['luis'],
+          amarillos: {'luis': 1},
+          jugadores: jugadores,
+          tableros: {for (final j in jugadores) j: '123456${'0' * 43}'},
+        );
+        await tester.ensureVisible(find.byKey(const Key('tableros-finales')));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        for (final jugador in jugadores) {
+          expect(find.byKey(Key('tablero-final-$jugador')), findsOneWidget);
+        }
+      });
+
+      testWidgets('Cada turno manda al servidor cómo quedó el tablero', (
+        tester,
+      ) async {
+        final servidor = enRonda();
+        await abrirTablero(tester, servidor);
+        await mover(tester, 2);
+
+        final tablero = servidor.tablerosRecibidos.last!;
+        expect(tablero, hasLength(49));
+        // Los seis iniciales más el número que se acaba de poner.
+        expect(tablero.replaceAll('0', ''), hasLength(7));
+        for (final (i, (fila, columna)) in mapaUno.celdasIniciales.indexed) {
+          expect(tablero[(fila - 1) * 7 + columna - 1], '${orden[i]}');
+        }
+      });
+
+      testWidgets('Pasar el turno también manda el tablero', (tester) async {
+        final servidor = enRonda();
+        await abrirTablero(tester, servidor);
+        await pasar(tester);
+
+        // Sin mover, solo están los seis números iniciales.
+        final tablero = servidor.tablerosRecibidos.last!;
+        expect(tablero, hasLength(49));
+        expect(tablero.replaceAll('0', ''), hasLength(6));
       });
     });
 

@@ -56,29 +56,36 @@ class ServicioPartidas {
 
   /// Envía los números iniciales del propio tablero, en el orden de las celdas
   /// iniciales del mapa. El servidor sabe de quién es por la sesión.
+  /// [tablero] (ver `TableroTexto`) es cómo empieza, para mostrarlo al final
+  /// si el jugador no llega a jugar ningún turno.
   Future<SalaPartida> finalizarTablero(
     String codigo,
-    List<int> numeros,
-  ) async => SalaPartida.desdeJson(
+    List<int> numeros, {
+    String? tablero,
+  }) async => SalaPartida.desdeJson(
     await auth.enviarConSesion('partida/finalizar', {
       'codigo': codigo,
       'numeros': numeros.join(','),
+      'tablero': ?tablero,
     }),
   );
 
   /// Avisa que el jugador ya movió o pasó en [ronda]; con [tableroLleno] ya no
   /// jugará más. Si era el último, la sala llega con la ronda siguiente.
+  /// [tablero] es cómo quedó tras el turno, para enseñarlo al final.
   Future<SalaPartida> terminarTurno(
     String codigo,
     int ronda, {
     required bool tableroLleno,
     int? zonaCompletada,
+    String? tablero,
   }) async => SalaPartida.desdeJson(
     await auth.enviarConSesion('partida/turno', {
       'codigo': codigo,
       'ronda': '$ronda',
       'lleno': '$tableroLleno',
       'zona': ?zonaCompletada?.toString(),
+      'tablero': ?tablero,
     }),
   );
 

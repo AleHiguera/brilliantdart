@@ -54,6 +54,11 @@ class PartidaCompartida extends ChangeNotifier {
   int? _zonaCompletada;
   bool _avisandoTurno = false;
 
+  /// Cómo va el tablero de este jugador (ver `TableroTexto`). Viaja con cada
+  /// aviso, también con los reintentos, para que el servidor lo enseñe al
+  /// final de la partida.
+  String? tablero;
+
   /// Las zonas que ya se conocían, para avisar solo de las nuevas. Empieza con
   /// las de la sala al abrir: al volver a una partida no se repite lo viejo.
   final Map<int, Map<String, int>> _zonasConocidas;
@@ -137,7 +142,12 @@ class PartidaCompartida extends ChangeNotifier {
 
   /// El jugador ya movió o pasó. Si el aviso no llega se repite en la siguiente
   /// consulta: perderlo dejaría a todos esperando la próxima ronda.
-  void terminarTurno({required bool tableroLleno, int? zonaCompletada}) {
+  void terminarTurno({
+    required bool tableroLleno,
+    int? zonaCompletada,
+    String? tablero,
+  }) {
+    if (tablero != null) this.tablero = tablero;
     _rondaJugada = _sala.ronda;
     _tableroLleno = tableroLleno;
     _zonaCompletada = zonaCompletada;
@@ -162,6 +172,7 @@ class PartidaCompartida extends ChangeNotifier {
         _rondaJugada,
         tableroLleno: _tableroLleno,
         zonaCompletada: _zonaCompletada,
+        tablero: tablero,
       );
       _avisandoTurno = false;
       _actualizar(sala);
@@ -172,13 +183,20 @@ class PartidaCompartida extends ChangeNotifier {
     }
   }
 
-  Future<void> finalizar(List<int> numeros) async {
+  Future<void> finalizar(List<int> numeros, {String? tablero}) async {
     if (!puedeEditar) return;
+    if (tablero != null) this.tablero = tablero;
     _enviando = true;
     _error = null;
     _avisar();
     try {
-      _actualizar(await partidas.finalizarTablero(_sala.codigo, numeros));
+      _actualizar(
+        await partidas.finalizarTablero(
+          _sala.codigo,
+          numeros,
+          tablero: this.tablero,
+        ),
+      );
     } on ErrorAuth catch (e) {
       _error = e.mensaje;
     } finally {

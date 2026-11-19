@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:brilliantdart/clasificacion.dart';
+import 'package:brilliantdart/mapa.dart';
 import 'package:brilliant_mobile/colores_zonas.dart';
 import 'package:brilliant_mobile/tabla_puntos_partida.dart';
+import 'package:brilliant_mobile/tableros_finales.dart';
 
-/// La pantalla final, igual para todos: quién ganó, por qué terminó y la
-/// clasificación de todos los jugadores.
+/// La pantalla final, igual para todos: quién ganó, por qué terminó, la
+/// clasificación de todos los jugadores y cómo quedó el tablero de cada uno.
 class PanelFinCompartido extends StatelessWidget {
   const PanelFinCompartido({
     super.key,
@@ -15,6 +17,8 @@ class PanelFinCompartido extends StatelessWidget {
     required this.meta,
     required this.onVolver,
     this.porAbandono = false,
+    this.mapa,
+    this.tablerosFinales = const {},
   });
 
   /// Quienes ganaron según el servidor; varios si empataron en puntos.
@@ -29,6 +33,13 @@ class PanelFinCompartido extends StatelessWidget {
 
   /// Terminó porque los demás salieron, no por la meta ni por llenar tableros.
   final bool porAbandono;
+
+  /// El mapa jugado, para dibujar los tableros finales con sus colores.
+  final Mapa? mapa;
+
+  /// Jugador → cómo quedó su tablero. Sin ellos (un servidor anterior) solo
+  /// se muestra la clasificación.
+  final Map<String, String> tablerosFinales;
 
   bool get _gane => ganadores.contains(usuario);
 
@@ -134,6 +145,15 @@ class PanelFinCompartido extends StatelessWidget {
             onPressed: onVolver,
             child: const Text('Volver al menú'),
           ),
+          if (mapa case final mapa? when tablerosFinales.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            TablerosFinales(
+              mapa: mapa,
+              tableros: tablerosFinales,
+              puestos: clasificacion.puestos,
+              usuario: usuario,
+            ),
+          ],
         ],
       ),
     );
