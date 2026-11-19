@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:brilliant_mobile/colores_zonas.dart' as estilo;
+import 'package:brilliant_mobile/cuadro_error.dart';
+import 'package:brilliant_mobile/errores_formulario.dart';
 import 'package:brilliant_mobile/registro.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 
@@ -31,7 +33,12 @@ class _InicioSesionPageState extends State<InicioSesionPage> {
   late final _servidor = TextEditingController(text: widget.auth.servidor);
   bool _enviando = false;
   late String? _aviso = widget.aviso;
-  String? _error;
+
+  /// Por qué no se pudo entrar; se ve en el cuadro de error de abajo.
+  List<String> _errores = const [];
+
+  /// Los campos que hay que corregir: se marcan en rojo.
+  Set<String> _camposConError = const {};
 
   @override
   void dispose() {
@@ -42,10 +49,24 @@ class _InicioSesionPageState extends State<InicioSesionPage> {
   }
 
   Future<void> _entrar() async {
-    if (_enviando || !_formulario.currentState!.validate()) return;
+    if (_enviando) return;
+    final errores = erroresInicioSesion(
+      usuario: _usuario.text,
+      pin: _pin.text,
+      servidor: _servidor.text,
+    );
+    if (errores.isNotEmpty) {
+      setState(() {
+        _errores = errores.values.toList();
+        _camposConError = errores.keys.toSet();
+        _aviso = null;
+      });
+      return;
+    }
     setState(() {
       _enviando = true;
-      _error = null;
+      _errores = const [];
+      _camposConError = const {};
       _aviso = null;
     });
 
@@ -59,7 +80,7 @@ class _InicioSesionPageState extends State<InicioSesionPage> {
     } on ErrorAuth catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.mensaje;
+        _errores = [e.mensaje];
         _enviando = false;
         _pin.clear();
       });
@@ -68,7 +89,10 @@ class _InicioSesionPageState extends State<InicioSesionPage> {
 
   void _abrirRegistro() {
     widget.auth.servidor = _servidor.text.trim();
-    setState(() => _error = null);
+    setState(() {
+      _errores = const [];
+      _camposConError = const {};
+    });
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) =>
@@ -135,13 +159,10 @@ class _InicioSesionPageState extends State<InicioSesionPage> {
                       enabled: !_enviando,
                       autofillHints: const [AutofillHints.username],
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Usuario',
-                        border: OutlineInputBorder(),
+                      decoration: decoracionCampo(
+                        'Usuario',
+                        conError: _camposConError.contains('usuario'),
                       ),
-                      validator: (valor) => (valor ?? '').trim().isEmpty
-                          ? 'Escribe tu usuario.'
-                          : null,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
@@ -153,11 +174,10 @@ class _InicioSesionPageState extends State<InicioSesionPage> {
                       maxLength: 4,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       autofillHints: const [AutofillHints.password],
-                      decoration: const InputDecoration(
-                        labelText: 'PIN (4 números)',
-                        border: OutlineInputBorder(),
+                      decoration: decoracionCampo(
+                        'PIN (4 números)',
+                        conError: _camposConError.contains('pin'),
                       ),
-                      validator: validarPin,
                       onFieldSubmitted: (_) => _entrar(),
                     ),
                     ExpansionTile(
@@ -173,16 +193,12 @@ class _InicioSesionPageState extends State<InicioSesionPage> {
                           controller: _servidor,
                           enabled: !_enviando,
                           keyboardType: TextInputType.url,
-                          decoration: const InputDecoration(
-                            labelText: 'Dirección del servidor',
-                            hintText: 'https://192.168.1.5:$puertoServidorWeb',
-                            border: OutlineInputBorder(),
+                          decoration: decoracionCampo(
+                            'Dirección del servidor',
+                            pista: 'https://192.168.1.5:$puertoServidorWeb',
+                            conError: _camposConError.contains('servidor'),
                           ),
                           onChanged: (_) => setState(() {}),
-                          validator: (valor) =>
-                              (valor ?? '').trim().startsWith('https://')
-                              ? null
-                              : 'Debe empezar por https://',
                         ),
                         const SizedBox(height: 8),
                       ],
@@ -191,14 +207,11 @@ class _InicioSesionPageState extends State<InicioSesionPage> {
                       const SizedBox(height: 8),
                       AvisoSesion(aviso),
                     ],
-                    if (_error != null) ...[
+                    if (_errores.isNotEmpty) ...[
                       const SizedBox(height: 8),
-                      SelectableText(
-                        _error!,
+                      CuadroError(
                         key: const Key('login-error'),
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
+                        mensajes: _errores,
                       ),
                     ],
                     const SizedBox(height: 16),

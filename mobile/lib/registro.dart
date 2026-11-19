@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:brilliant_mobile/cuadro_error.dart';
+import 'package:brilliant_mobile/errores_formulario.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 
 // Mismas reglas que comun/Validador.java del servidor. El servidor las vuelve
@@ -11,7 +13,7 @@ final _letra = RegExp(r'\p{L}', unicode: true);
 String? validarUsuario(String? valor) =>
     _usuarioValido.hasMatch((valor ?? '').trim())
     ? null
-    : 'Debe empezar por una letra y tener de 3 a 30 caracteres '
+    : 'El usuario debe empezar con una letra y tener de 3 a 30 caracteres '
           '(letras, números, punto, guion o guion bajo).';
 
 String? validarNombre(String? valor) {
@@ -20,9 +22,11 @@ String? validarNombre(String? valor) {
     return 'El nombre es obligatorio (máximo 80 caracteres).';
   }
   if (nombre.contains('  ') || nombre.contains(RegExp(r'[^\S ]'))) {
-    return 'Solo puede llevar un espacio entre palabras.';
+    return 'El nombre solo puede llevar un espacio entre palabras.';
   }
-  if (!_letra.hasMatch(nombre)) return 'El nombre debe contener letras.';
+  if (!_letra.hasMatch(nombre)) {
+    return 'El nombre debe tener letras, no solo números o signos.';
+  }
   return null;
 }
 
@@ -35,7 +39,7 @@ String? validarCorreo(String? valor) {
 
 String? validarPin(String? valor) => RegExp(r'^[0-9]{4}$').hasMatch(valor ?? '')
     ? null
-    : 'El PIN tiene exactamente 4 números.';
+    : 'El PIN debe tener exactamente 4 números.';
 
 /// Crea una cuenta nueva en el servidor y entra directamente al juego.
 class RegistroPage extends StatefulWidget {
@@ -56,7 +60,12 @@ class _RegistroPageState extends State<RegistroPage> {
   final _pin = TextEditingController();
   final _confirmacion = TextEditingController();
   bool _enviando = false;
-  String? _error;
+
+  /// Por qué no se pudo crear la cuenta; se ve en el cuadro de error.
+  List<String> _errores = const [];
+
+  /// Los campos que hay que corregir: se marcan en rojo.
+  Set<String> _camposConError = const {};
 
   @override
   void dispose() {
@@ -69,10 +78,25 @@ class _RegistroPageState extends State<RegistroPage> {
   }
 
   Future<void> _crearCuenta() async {
-    if (_enviando || !_formulario.currentState!.validate()) return;
+    if (_enviando) return;
+    final errores = erroresRegistro(
+      usuario: _usuario.text,
+      nombre: _nombre.text,
+      correo: _correo.text,
+      pin: _pin.text,
+      confirmacion: _confirmacion.text,
+    );
+    if (errores.isNotEmpty) {
+      setState(() {
+        _errores = errores.values.toList();
+        _camposConError = errores.keys.toSet();
+      });
+      return;
+    }
     setState(() {
       _enviando = true;
-      _error = null;
+      _errores = const [];
+      _camposConError = const {};
     });
 
     try {
@@ -90,7 +114,7 @@ class _RegistroPageState extends State<RegistroPage> {
     } on ErrorAuth catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.mensaje;
+        _errores = [e.mensaje];
         _enviando = false;
       });
     }
@@ -98,9 +122,9 @@ class _RegistroPageState extends State<RegistroPage> {
 
   Widget _campo({
     required String clave,
+    required String campo,
     required TextEditingController controlador,
     required String etiqueta,
-    required FormFieldValidator<String> validador,
     bool pin = false,
     TextInputType? teclado,
     Iterable<String>? autocompletar,
@@ -117,11 +141,10 @@ class _RegistroPageState extends State<RegistroPage> {
         inputFormatters: pin ? [FilteringTextInputFormatter.digitsOnly] : null,
         autofillHints: autocompletar,
         textInputAction: TextInputAction.next,
-        decoration: InputDecoration(
-          labelText: etiqueta,
-          border: const OutlineInputBorder(),
+        decoration: decoracionCampo(
+          etiqueta,
+          conError: _camposConError.contains(campo),
         ),
-        validator: validador,
       ),
     );
   }
@@ -155,50 +178,46 @@ class _RegistroPageState extends State<RegistroPage> {
                     const SizedBox(height: 20),
                     _campo(
                       clave: 'registro-usuario',
+                      campo: 'usuario',
                       controlador: _usuario,
                       etiqueta: 'Usuario',
-                      validador: validarUsuario,
                       autocompletar: const [AutofillHints.newUsername],
                     ),
                     _campo(
                       clave: 'registro-nombre',
+                      campo: 'nombre',
                       controlador: _nombre,
                       etiqueta: 'Nombre',
-                      validador: validarNombre,
                       teclado: TextInputType.name,
                       autocompletar: const [AutofillHints.name],
                     ),
                     _campo(
                       clave: 'registro-correo',
+                      campo: 'correo',
                       controlador: _correo,
                       etiqueta: 'Correo electrónico',
-                      validador: validarCorreo,
                       teclado: TextInputType.emailAddress,
                       autocompletar: const [AutofillHints.email],
                     ),
                     _campo(
                       clave: 'registro-pin',
+                      campo: 'pin',
                       controlador: _pin,
                       etiqueta: 'PIN (4 números)',
-                      validador: validarPin,
                       pin: true,
                       autocompletar: const [AutofillHints.newPassword],
                     ),
                     _campo(
                       clave: 'registro-confirmacion',
+                      campo: 'confirmacion',
                       controlador: _confirmacion,
                       etiqueta: 'Repite el PIN',
-                      validador: (valor) =>
-                          valor == _pin.text ? null : 'Los PIN no coinciden.',
                       pin: true,
                     ),
-                    if (_error != null) ...[
-                      SelectableText(
-                        _error!,
+                    if (_errores.isNotEmpty) ...[
+                      CuadroError(
                         key: const Key('registro-error'),
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
+                        mensajes: _errores,
                       ),
                       const SizedBox(height: 12),
                     ],

@@ -61,13 +61,48 @@ ServicioAuth authFalso({
           'token': 'abc',
         }, 200);
       }
+      if (datos['usuario'] == 'ocupado' && datos['password'] == '1234') {
+        return respuesta({'ok': false, 'mensaje': mensajeOcupado}, 409);
+      }
       return respuesta({
         'ok': false,
-        'mensaje': 'Usuario o contraseña incorrectos.',
+        'mensaje': datos['usuario'] == 'ana' || datos['usuario'] == 'ocupado'
+            ? mensajePinIncorrecto
+            : 'El usuario "${datos['usuario']}" no existe. Revisa cómo lo '
+                  'escribiste o crea una cuenta.',
       }, 401);
     }),
   );
 }
+
+const String mensajePinIncorrecto =
+    'El PIN es incorrecto. Revisa los 4 números e inténtalo de nuevo.';
+const String mensajeOcupado =
+    'El usuario "ocupado" ya está conectado en otro dispositivo. Cierra esa '
+    'sesión para entrar aquí.';
+
+/// El cuadro rojo de abajo de la pantalla (inicio de sesión o registro).
+Finder cuadroError({String clave = 'login-error'}) => find.byKey(Key(clave));
+
+/// Un texto dentro del cuadro de error.
+Finder enCuadro(String texto, {String clave = 'login-error'}) =>
+    find.descendant(
+      of: cuadroError(clave: clave),
+      matching: find.textContaining(texto),
+    );
+
+/// Si el campo tiene el borde rojo de error.
+bool marcado(WidgetTester tester, String clave) =>
+    tester
+        .widget<TextField>(
+          find.descendant(
+            of: find.byKey(Key(clave)),
+            matching: find.byType(TextField),
+          ),
+        )
+        .decoration
+        ?.errorText !=
+    null;
 
 /// JSON en UTF-8, como lo envía el servidor real (http.Response con texto
 /// usaría latin1 y estropearía las tildes).
@@ -118,8 +153,85 @@ void main() {
 
       await entrar(tester, 'ana', '9999');
 
-      expect(find.text('Usuario o contraseña incorrectos.'), findsOneWidget);
+      expect(enCuadro('Error'), findsOneWidget);
+      expect(enCuadro(mensajePinIncorrecto), findsOneWidget);
       expect(find.text('Elige tu mapa'), findsNothing);
+    });
+
+    testWidgets('Si el usuario no existe se dice cuál', (tester) async {
+      await tester.pumpWidget(BrilliantApp(auth: authFalso()));
+
+      await entrar(tester, 'lucia', '1234');
+
+      expect(
+        enCuadro('El usuario "lucia" no existe. Revisa cómo lo escribiste'),
+        findsOneWidget,
+      );
+      expect(find.text('Elige tu mapa'), findsNothing);
+    });
+
+    testWidgets('Si ya está conectado en otro lado se explica', (tester) async {
+      await tester.pumpWidget(BrilliantApp(auth: authFalso()));
+
+      await entrar(tester, 'ocupado', '1234');
+
+      expect(enCuadro(mensajeOcupado), findsOneWidget);
+    });
+
+    testWidgets('El cuadro de error va abajo, justo antes de Entrar', (
+      tester,
+    ) async {
+      await tester.pumpWidget(BrilliantApp(auth: authFalso()));
+
+      await entrar(tester, 'ana', '9999');
+
+      final cuadro = tester.getRect(cuadroError());
+      expect(
+        cuadro.top,
+        greaterThan(tester.getRect(find.byKey(const Key('login-pin'))).bottom),
+      );
+      expect(
+        cuadro.bottom,
+        lessThanOrEqualTo(
+          tester.getRect(find.byKey(const Key('login-entrar'))).top,
+        ),
+      );
+    });
+
+    testWidgets('Sin usuario ni PIN se avisan los dos, abajo y sin enviar', (
+      tester,
+    ) async {
+      final peticiones = <String>[];
+      await tester.pumpWidget(
+        BrilliantApp(auth: authFalso(peticiones: peticiones)),
+      );
+
+      await entrar(tester, '', '');
+
+      expect(enCuadro('Escribe tu usuario.'), findsOneWidget);
+      expect(
+        enCuadro('El PIN debe tener exactamente 4 números.'),
+        findsOneWidget,
+      );
+      // Debajo de los campos ya no sale texto: solo se marcan en rojo.
+      expect(find.text('Escribe tu usuario.'), findsNothing);
+      expect(marcado(tester, 'login-usuario'), isTrue);
+      expect(marcado(tester, 'login-pin'), isTrue);
+      expect(peticiones, isEmpty);
+    });
+
+    testWidgets('Al corregir y volver a intentar se quita la marca', (
+      tester,
+    ) async {
+      await tester.pumpWidget(BrilliantApp(auth: authFalso()));
+      await entrar(tester, '', '1234');
+      expect(marcado(tester, 'login-usuario'), isTrue);
+
+      await entrar(tester, 'ana', '9999');
+
+      expect(marcado(tester, 'login-usuario'), isFalse);
+      expect(enCuadro('Escribe tu usuario.'), findsNothing);
+      expect(enCuadro(mensajePinIncorrecto), findsOneWidget);
     });
 
     testWidgets('El PIN debe tener 4 números antes de enviarse', (
@@ -132,7 +244,12 @@ void main() {
 
       await entrar(tester, 'ana', '12');
 
-      expect(find.text('El PIN tiene exactamente 4 números.'), findsOneWidget);
+      expect(
+        enCuadro('El PIN debe tener exactamente 4 números.'),
+        findsOneWidget,
+      );
+      expect(marcado(tester, 'login-pin'), isTrue);
+      expect(marcado(tester, 'login-usuario'), isFalse);
       expect(peticiones, isEmpty);
     });
 
@@ -487,10 +604,39 @@ void main() {
         confirmacion: '0000',
       );
 
-      expect(find.textContaining('Debe empezar por una letra'), findsOneWidget);
-      expect(find.text('El correo electrónico no es válido.'), findsOneWidget);
-      expect(find.text('Los PIN no coinciden.'), findsOneWidget);
+      const clave = 'registro-error';
+      expect(enCuadro('Error', clave: clave), findsOneWidget);
+      expect(
+        enCuadro('El usuario debe empezar con una letra', clave: clave),
+        findsOneWidget,
+      );
+      expect(
+        enCuadro('El correo electrónico no es válido.', clave: clave),
+        findsOneWidget,
+      );
+      expect(enCuadro('Los PIN no coinciden', clave: clave), findsOneWidget);
+      // Solo se marcan los campos con problema.
+      expect(marcado(tester, 'registro-usuario'), isTrue);
+      expect(marcado(tester, 'registro-correo'), isTrue);
+      expect(marcado(tester, 'registro-confirmacion'), isTrue);
+      expect(marcado(tester, 'registro-nombre'), isFalse);
       expect(peticiones, isEmpty);
+    });
+
+    testWidgets('Un nombre sin letras se explica en el cuadro', (tester) async {
+      await tester.pumpWidget(BrilliantApp(auth: authFalso()));
+      await abrirRegistro(tester);
+
+      await rellenar(tester, nombre: '1234');
+
+      expect(
+        enCuadro(
+          'El nombre debe tener letras, no solo números o signos.',
+          clave: 'registro-error',
+        ),
+        findsOneWidget,
+      );
+      expect(marcado(tester, 'registro-nombre'), isTrue);
     });
   });
 }
