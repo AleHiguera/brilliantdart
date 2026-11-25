@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:brilliantdart/clasificacion.dart';
 import 'package:brilliantdart/mapa.dart';
 import 'package:brilliant_mobile/colores_zonas.dart';
+import 'package:brilliant_mobile/datos_sala.dart';
+import 'package:brilliant_mobile/panel_resultados_elo.dart';
 import 'package:brilliant_mobile/tabla_puntos_partida.dart';
 import 'package:brilliant_mobile/tableros_finales.dart';
 
@@ -19,6 +21,7 @@ class PanelFinCompartido extends StatelessWidget {
     this.porAbandono = false,
     this.mapa,
     this.tablerosFinales = const {},
+    this.resultadosElo = const {},
   });
 
   /// Quienes ganaron según el servidor; varios si empataron en puntos.
@@ -40,6 +43,10 @@ class PanelFinCompartido extends StatelessWidget {
   /// Jugador → cómo quedó su tablero. Sin ellos (un servidor anterior) solo
   /// se muestra la clasificación.
   final Map<String, String> tablerosFinales;
+
+  /// Cómo le cambió el ELO a cada uno. Sin ellos (un servidor anterior) no se
+  /// enseña ese apartado.
+  final Map<String, ResultadoEloJugador> resultadosElo;
 
   bool get _gane => ganadores.contains(usuario);
 
@@ -138,6 +145,10 @@ class PanelFinCompartido extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _TablaClasificacion(puestos: clasificacion.puestos, usuario: usuario),
+          if (resultadosElo.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            PanelResultadosElo(resultados: resultadosElo, usuario: usuario),
+          ],
           const SizedBox(height: 12),
           FilledButton(
             key: const Key('fin-volver'),

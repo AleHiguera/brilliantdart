@@ -3,6 +3,10 @@ import 'package:brilliantdart/tablero_texto.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/servicio_partidas.dart';
 
+/// Cómo le fue a un jugador en el ELO al terminar la partida: su lugar para el
+/// ELO, cuánto tenía antes, cuánto ganó o perdió y cuánto le quedó.
+typedef ResultadoEloJugador = ({int lugar, int antes, int cambio, int despues});
+
 /// Sala de espera de una partida multijugador, tal como la describe el servidor.
 class SalaPartida {
   const SalaPartida({
@@ -25,6 +29,8 @@ class SalaPartida {
     this.ganadores = const [],
     this.porAbandono = false,
     this.tablerosFinales = const {},
+    this.elos = const {},
+    this.resultadosElo = const {},
   });
 
   /// Lee la sala del servidor. Lo que no se pueda mostrar llega como [ErrorAuth],
@@ -89,6 +95,8 @@ class SalaPartida {
         ganadores: ganadores.cast<String>(),
         porAbandono: datos['porAbandono'] as bool? ?? false,
         tablerosFinales: _leerTableros(datos['tablerosFinales']),
+        elos: _leerElos(datos['elos']),
+        resultadosElo: _leerResultadosElo(datos['resultadosElo']),
       );
     }
     throw const ErrorAuth('Respuesta inesperada del servidor.');
@@ -101,6 +109,35 @@ class SalaPartida {
     if (tableros is Map<String, dynamic>)
       for (final MapEntry(key: jugador, :value) in tableros.entries)
         if (value is String && TableroTexto.leer(value) != null) jugador: value,
+  };
+
+  /// El ELO de cada jugador. Un servidor anterior no lo envía; lo que no sea
+  /// un número se deja fuera.
+  static Map<String, int> _leerElos(Object? elos) => {
+    if (elos is Map<String, dynamic>)
+      for (final MapEntry(key: jugador, :value) in elos.entries)
+        if (value is int) jugador: value,
+  };
+
+  /// Cómo cambió el ELO de cada uno al terminar. Uno incompleto, o cuyo antes
+  /// más cambio no dé el después, se deja fuera.
+  static Map<String, ResultadoEloJugador> _leerResultadosElo(
+    Object? resultados,
+  ) => {
+    if (resultados is Map<String, dynamic>)
+      for (final MapEntry(key: jugador, :value) in resultados.entries)
+        if (value case {
+          'lugar': final int lugar,
+          'antes': final int antes,
+          'cambio': final int cambio,
+          'despues': final int despues,
+        } when lugar >= 1 && antes + cambio == despues)
+          jugador: (
+            lugar: lugar,
+            antes: antes,
+            cambio: cambio,
+            despues: despues,
+          ),
   };
 
   static bool _sonTextos(List<dynamic> lista) =>
@@ -184,6 +221,13 @@ class SalaPartida {
   /// Con la partida terminada, cómo quedó el tablero de cada uno de los que
   /// empezaron, también de quien abandonó (ver `TableroTexto`).
   final Map<String, String> tablerosFinales;
+
+  /// El ELO de cada jugador: en la sala de espera y durante la partida, el que
+  /// tenía antes de jugar (también el de quien abandonó).
+  final Map<String, int> elos;
+
+  /// Con la partida terminada, cómo le cambió el ELO a cada uno.
+  final Map<String, ResultadoEloJugador> resultadosElo;
 
   bool estaListo(String? usuario) => listos.contains(usuario);
 

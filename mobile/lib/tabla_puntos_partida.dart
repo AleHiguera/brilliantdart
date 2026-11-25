@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:brilliant_mobile/etiqueta_elo.dart';
 import 'package:brilliantdart/lugares_de_zona.dart';
 import 'package:brilliantdart/puntuacion_multijugador.dart';
 import 'package:brilliantdart/tipoo.dart';
@@ -18,9 +19,13 @@ class TablaPuntosPartida extends StatelessWidget {
     required this.usuario,
     required this.ronda,
     this.meta = 0,
+    this.elos = const {},
   });
 
   final PuntuacionMultijugador puntuacion;
+
+  /// El ELO de cada jugador, para verlo junto a su nombre.
+  final Map<String, int> elos;
 
   /// Puntos para ganar; 0 si aún no se conoce.
   final int meta;
@@ -43,6 +48,7 @@ class TablaPuntosPartida extends StatelessWidget {
           jugadores: jugadores,
           usuario: usuario,
           meta: meta,
+          elos: elos,
         ),
         const SizedBox(height: 8),
         _TarjetaZonas(zonas: puntuacion.zonas, usuario: usuario, ronda: ronda),
@@ -57,12 +63,14 @@ class _TarjetaJugadores extends StatelessWidget {
     required this.jugadores,
     required this.usuario,
     required this.meta,
+    required this.elos,
   });
 
   final Map<String, int> puntos;
   final List<String> jugadores;
   final String? usuario;
   final int meta;
+  final Map<String, int> elos;
 
   @override
   Widget build(BuildContext context) {
@@ -109,6 +117,8 @@ class _TarjetaJugadores extends StatelessWidget {
               nombre: _nombreDe(jugador),
               puntos: puntosDe(jugador),
               soyYo: jugador == usuario,
+              elo: elos[jugador],
+              jugador: jugador,
             ),
         ],
       ),
@@ -127,11 +137,15 @@ class _FilaJugador extends StatelessWidget {
     required this.nombre,
     required this.puntos,
     required this.soyYo,
+    required this.jugador,
+    this.elo,
   });
 
   final String nombre;
   final int puntos;
   final bool soyYo;
+  final String jugador;
+  final int? elo;
 
   @override
   Widget build(BuildContext context) {
@@ -147,6 +161,14 @@ class _FilaJugador extends StatelessWidget {
               style: TextStyle(fontSize: 12, fontWeight: peso),
             ),
           ),
+          if (elo case final elo?) ...[
+            const SizedBox(width: 4),
+            EtiquetaElo(
+              key: Key('puntos-elo-$jugador'),
+              elo: elo,
+              tamanoLetra: 10,
+            ),
+          ],
           const SizedBox(width: 6),
           Text('$puntos pts', style: TextStyle(fontSize: 12, fontWeight: peso)),
         ],

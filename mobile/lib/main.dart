@@ -24,6 +24,7 @@ import 'package:brilliant_mobile/boton_silencio.dart';
 import 'package:brilliant_mobile/cola_sonidos.dart';
 import 'package:brilliant_mobile/control_sonido.dart';
 import 'package:brilliant_mobile/dados_compartidos.dart';
+import 'package:brilliant_mobile/mi_elo.dart';
 import 'package:brilliant_mobile/historial_dados_view.dart';
 import 'package:brilliant_mobile/inicio_sesion.dart';
 import 'package:brilliant_mobile/latido_sesion.dart';
@@ -189,10 +190,20 @@ class SeleccionMapaPage extends StatelessWidget {
                 preferredSize: const Size.fromHeight(28),
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    'Jugando como ${sesion.nombre} (@${sesion.usuario})',
-                    key: const Key('sesion-actual'),
-                    style: const TextStyle(color: Colors.black54),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'Jugando como ${sesion.nombre} (@${sesion.usuario})',
+                          key: const Key('sesion-actual'),
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Colors.black54),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      MiElo(auth: auth),
+                    ],
                   ),
                 ),
               )
@@ -655,6 +666,7 @@ class _TableroPageState extends State<TableroPage> {
       usuario: compartida.usuario,
       ronda: compartida.rondaDeMiSiguienteJugada,
       meta: compartida.sala.meta,
+      elos: compartida.sala.elos,
     );
   }
 
@@ -803,6 +815,7 @@ class _TableroPageState extends State<TableroPage> {
           porAbandono: enComun.sala.porAbandono,
           mapa: widget.mapa,
           tablerosFinales: enComun.sala.tablerosFinales,
+          resultadosElo: enComun.sala.resultadosElo,
           onVolver: _salirDePartida,
         ),
       );

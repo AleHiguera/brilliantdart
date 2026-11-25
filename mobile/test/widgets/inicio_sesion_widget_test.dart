@@ -26,6 +26,10 @@ ServicioAuth authFalso({
     almacen: almacen,
     cliente: MockClient((peticion) async {
       if (red?.apagada ?? false) throw http.ClientException('Sin red');
+      // El menú pide el ELO al abrirse; se prueba aparte.
+      if (peticion.url.path == '/api/elo') {
+        return respuesta({'ok': true, 'mensaje': 'ELO.', 'elo': 1000}, 200);
+      }
       peticiones?.add(peticion.url.path);
       if (peticion.url.path == '/api/logout') {
         return respuesta({'ok': true, 'mensaje': 'Sesión cerrada.'}, 200);

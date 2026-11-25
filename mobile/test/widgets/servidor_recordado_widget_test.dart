@@ -25,7 +25,10 @@ void main() {
     ServicioAuth auth() => ServicioAuth(
       preferencias: preferencias,
       cliente: MockClient((peticion) async {
-        servidores.add(peticion.url.origin);
+        // El menú también pide el ELO; aquí solo cuenta el inicio de sesión.
+        if (peticion.url.path == '/api/login') {
+          servidores.add(peticion.url.origin);
+        }
         return http.Response.bytes(
           utf8.encode(
             jsonEncode({

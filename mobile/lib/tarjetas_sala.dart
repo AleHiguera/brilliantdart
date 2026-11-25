@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:brilliant_mobile/etiqueta_elo.dart';
 import 'package:flutter/services.dart';
 import 'package:brilliantdart/mapa.dart';
 import 'package:brilliant_mobile/colores_zonas.dart' as estilo;
@@ -125,6 +126,7 @@ class TarjetaJugadores extends StatelessWidget {
               esAnfitrion: jugador == sala.anfitrion,
               soyYo: jugador == usuario,
               listo: sala.estaListo(jugador),
+              elo: sala.elos[jugador],
             ),
           for (var i = ocupados; i < sala.capacidad; i++)
             const Padding(
@@ -153,12 +155,16 @@ class _FilaJugador extends StatelessWidget {
     required this.esAnfitrion,
     required this.soyYo,
     required this.listo,
+    this.elo,
   });
 
   final String usuario;
   final bool esAnfitrion;
   final bool soyYo;
   final bool listo;
+
+  /// Su ELO; null si el servidor no lo envía (una versión anterior).
+  final int? elo;
 
   @override
   Widget build(BuildContext context) {
@@ -172,11 +178,23 @@ class _FilaJugador extends StatelessWidget {
             color: listo ? const Color(0xFF1E6B23) : null,
           ),
           const SizedBox(width: 10),
+          // El ELO va debajo del nombre: junto a las etiquetas no cabe en un
+          // celular angosto.
           Expanded(
-            child: Text(
-              soyYo ? '@$usuario (tú)' : '@$usuario',
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  soyYo ? '@$usuario (tú)' : '@$usuario',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                if (elo case final elo?)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: EtiquetaElo(key: Key('sala-elo-$usuario'), elo: elo),
+                  ),
+              ],
             ),
           ),
           if (esAnfitrion) ...[

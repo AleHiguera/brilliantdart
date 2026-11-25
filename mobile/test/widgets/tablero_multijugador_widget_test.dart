@@ -59,6 +59,10 @@ class ServidorFalso {
   /// Lo que manda el servidor al terminar: el tablero final de cada uno.
   Map<String, String> tablerosFinales = {};
 
+  /// El ELO de cada jugador y, al terminar, cómo le cambió a cada uno.
+  Map<String, int> elos = {};
+  Map<String, Object> resultadosElo = {};
+
   /// Los tableros que mandó ana, en orden (al finalizar y en cada turno).
   final List<String?> tablerosRecibidos = [];
 
@@ -99,6 +103,8 @@ class ServidorFalso {
     'ganadores': ganadores,
     'porAbandono': porAbandono,
     'tablerosFinales': tablerosFinales,
+    'elos': elos,
+    'resultadosElo': resultadosElo,
   };
 
   Iterable<http.Request> de(String accion) =>
@@ -1514,6 +1520,77 @@ void main() {
             tester.getTopLeft(find.byKey(const Key('fin-volver'))).dy,
           ),
         );
+      });
+
+      testWidgets('Durante la partida se ve el ELO de cada jugador', (
+        tester,
+      ) async {
+        final servidor = enRonda()..elos = {'ana': 1000, 'luis': 1032};
+        await abrirTablero(tester, servidor);
+
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('puntos-ana')),
+            matching: find.text('ELO 1000'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('puntos-luis')),
+            matching: find.text('ELO 1032'),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('Al terminar se ve el ELO de antes, el cambio y el nuevo', (
+        tester,
+      ) async {
+        final servidor = enRonda()
+          ..terminada = true
+          ..ganadores = ['ana']
+          ..zonas = {
+            '$amarilla': {'ana': 1},
+          }
+          ..resultadosElo = {
+            'ana': {'lugar': 1, 'antes': 1000, 'cambio': 17, 'despues': 1017},
+            'luis': {'lugar': 2, 'antes': 1032, 'cambio': -17, 'despues': 1015},
+          };
+        await abrirTablero(tester, servidor);
+
+        await tester.ensureVisible(find.byKey(const Key('resultados-elo')));
+        await tester.pumpAndSettle();
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('elo-ana')),
+            matching: find.text('1000 → 1017'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('elo-luis')),
+            matching: find.text('−17'),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('Al terminar, mi ELO de la sesión pasa a ser el nuevo', (
+        tester,
+      ) async {
+        final servidor = enRonda()
+          ..terminada = true
+          ..ganadores = ['ana']
+          ..resultadosElo = {
+            'ana': {'lugar': 1, 'antes': 1000, 'cambio': 16, 'despues': 1016},
+            'luis': {'lugar': 2, 'antes': 1000, 'cambio': -16, 'despues': 984},
+          };
+        await abrirTablero(tester, servidor);
+        await siguienteConsulta(tester);
+
+        expect(servidor.auth.elo.value, 1016);
       });
 
       testWidgets('Sin tableros del servidor solo se ve la clasificación', (

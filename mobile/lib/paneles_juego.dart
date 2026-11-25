@@ -59,7 +59,7 @@ class PanelPreparacion extends StatelessWidget {
                       child: Text(
                         puedeIniciar
                             ? textoListo
-                            :'Toca las celdas con + y usa cada número una vez.',
+                            : 'Toca las celdas con + y usa cada número una vez.',
                         key: ValueKey(puedeIniciar),
                         style: TextStyle(
                           fontSize: 12,
@@ -327,10 +327,7 @@ class _OpcionNumero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: permitido ? 1 : 0.35,
-      child: _boton(context),
-    );
+    return Opacity(opacity: permitido ? 1 : 0.35, child: _boton(context));
   }
 
   Widget _boton(BuildContext context) {

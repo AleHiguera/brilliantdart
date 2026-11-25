@@ -119,6 +119,7 @@ class ServicioAuth {
   Sesion? _sesion;
   Sesion? get sesion => _sesion;
   set sesion(Sesion? nueva) {
+    if (nueva?.usuario != _sesion?.usuario) elo.value = null;
     _sesion = nueva;
     _guardada.guardarSesion(
       nueva == null
@@ -127,6 +128,10 @@ class ServicioAuth {
     );
     if (nueva == null) partidaEnCurso = null;
   }
+
+  /// El ELO de quien tiene la sesión, para enseñarlo en el menú; null mientras
+  /// no se sepa. Cambia al terminar cada partida.
+  final ValueNotifier<int?> elo = ValueNotifier(null);
 
   /// Cuenta las peticiones de la sesión que no llegaron al servidor.
   final ControlConexion conexion;

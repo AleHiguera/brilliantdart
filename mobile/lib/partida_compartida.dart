@@ -227,9 +227,16 @@ class PartidaCompartida extends ChangeNotifier {
     if (sala.terminada) {
       _vigilante.detener();
       _dejarDeJugar();
+      // El menú enseña el ELO nuevo sin tener que preguntarlo.
+      if (sala.resultadosElo[usuario] case final resultado?) {
+        partidas.auth.elo.value = resultado.despues;
+      }
     }
     _avisar();
-    if (_rondaJugada == sala.ronda &&
+    // Con la partida terminada el servidor ya no cuenta turnos: reintentar el
+    // aviso lo repetiría sin fin.
+    if (!sala.terminada &&
+        _rondaJugada == sala.ronda &&
         _rondaJugada > 0 &&
         !sala.haJugado(usuario)) {
       _avisarTurno();

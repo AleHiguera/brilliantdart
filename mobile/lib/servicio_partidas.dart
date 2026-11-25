@@ -89,6 +89,17 @@ class ServicioPartidas {
     }),
   );
 
+  /// Pide al servidor el ELO de quien tiene la sesión y lo deja en la sesión.
+  /// Sin conexión se queda el que se conocía.
+  Future<void> actualizarMiElo() async {
+    try {
+      final datos = await auth.enviarConSesion('elo', {});
+      if (datos['elo'] case final int elo) auth.elo.value = elo;
+    } on ErrorAuth {
+      // Se vuelve a pedir la próxima vez que se abra el menú.
+    }
+  }
+
   Future<void> salir(String codigo) async {
     await auth.enviarConSesion('partida/salir', {'codigo': codigo});
   }

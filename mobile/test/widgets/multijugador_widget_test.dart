@@ -25,6 +25,9 @@ class ServidorFalso {
   String? rechazoListo;
   int codigoEstado = 200;
 
+  /// El ELO de cada jugador, como lo manda el servidor.
+  Map<String, int> elos = {};
+
   /// Quien inició sesión; el servidor falso atiende a un solo jugador.
   String? usuario;
 
@@ -48,6 +51,7 @@ class ServidorFalso {
     'meta': 0,
     'terminada': false,
     'ganadores': <String>[],
+    'elos': elos,
   };
 
   /// Igual que el servidor real: empieza sola cuando todos (al menos 2) confirmaron.
@@ -285,6 +289,39 @@ void main() {
       expect(find.text('Anfitrión'), findsOneWidget);
       expect(find.text('1 de 4 espacios ocupados'), findsOneWidget);
       expect(find.text('Espacio libre'), findsNWidgets(3));
+    });
+
+    testWidgets('En la sala de espera se ve el ELO de cada jugador', (
+      tester,
+    ) async {
+      final servidor = ServidorFalso()..elos = {'ana': 1016};
+      await crearSala(tester, servidor);
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('sala-jugador-ana')),
+          matching: find.text('ELO 1016'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Quien llega a la sala trae su ELO', (tester) async {
+      final servidor = ServidorFalso()..elos = {'ana': 1000};
+      await crearSala(tester, servidor);
+
+      servidor
+        ..jugadores = ['ana', 'luis']
+        ..elos = {'ana': 1000, 'luis': 1032};
+      await siguienteConsulta(tester);
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('sala-jugador-luis')),
+          matching: find.text('ELO 1032'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('Los jugadores que llegan aparecen en la sala', (tester) async {
