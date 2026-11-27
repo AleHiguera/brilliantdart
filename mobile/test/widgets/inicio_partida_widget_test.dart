@@ -12,6 +12,7 @@ void main() {
       await tester.pumpWidget(const BrilliantApp());
 
       expect(find.text('Elige tu mapa'), findsOneWidget);
+      expect(find.text('Reino Helado'), findsOneWidget);
       expect(find.text('Mapa 1'), findsOneWidget);
       expect(find.text('Mapa 2'), findsOneWidget);
       expect(find.text('Mapa 3'), findsOneWidget);
@@ -23,7 +24,7 @@ void main() {
       await tester.tap(find.byKey(const Key('map-choice-1')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Tablero'), findsOneWidget);
+      expect(find.text('Reino Helado'), findsOneWidget);
       expect(find.byType(GridView), findsOneWidget);
       expect(
         find.text('Coloca los 6 números iniciales para comenzar'),

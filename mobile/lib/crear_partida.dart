@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:brilliant_mobile/tema_mapa.dart';
 import 'package:brilliantdart/catalogo_mapas.dart';
 import 'package:brilliantdart/mapa.dart';
 import 'package:brilliantdart/mapa_uno.dart';
@@ -136,7 +137,7 @@ class _EleccionMapa extends StatelessWidget {
     return Semantics(
       button: true,
       selected: elegido,
-      label: 'Mapa ${mapa.numero}',
+      label: TemaMapa.de(mapa.numero).nombre,
       child: InkWell(
         key: Key('crear-mapa-${mapa.numero}'),
         onTap: onTap,
@@ -158,7 +159,10 @@ class _EleccionMapa extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Mapa ${mapa.numero}',
+                TemaMapa.de(mapa.numero).nombre,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: elegido ? FontWeight.bold : FontWeight.normal,

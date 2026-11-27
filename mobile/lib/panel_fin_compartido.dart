@@ -152,7 +152,7 @@ class PanelFinCompartido extends StatelessWidget {
           const SizedBox(height: 12),
           FilledButton(
             key: const Key('fin-volver'),
-            style: estiloBotonPrincipal(),
+            style: estiloBotonPrincipal(context),
             onPressed: onVolver,
             child: const Text('Volver al menú'),
           ),
@@ -220,7 +220,7 @@ class _TablaClasificacion extends StatelessWidget {
     return Container(
       key: const Key('clasificacion'),
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-      decoration: decoracionTarjeta(),
+      decoration: decoracionTarjeta(context),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -348,7 +348,7 @@ class PanelTableroLleno extends StatelessWidget {
       key: const Key('tablero-lleno'),
       width: double.infinity,
       padding: const EdgeInsets.all(12),
-      decoration: decoracionTarjeta(),
+      decoration: decoracionTarjeta(context),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

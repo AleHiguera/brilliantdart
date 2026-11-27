@@ -26,7 +26,7 @@ class PanelRegistroZonas extends StatelessWidget {
       key: const Key('registro-zonas'),
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-      decoration: decoracionTarjeta(),
+      decoration: decoracionTarjeta(context),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

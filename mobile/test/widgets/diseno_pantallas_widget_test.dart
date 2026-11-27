@@ -50,7 +50,7 @@ void main() {
           )
           .map((texto) => texto.data)
           .toList();
-      expect(textosMapa1, ['Mapa 1']);
+      expect(textosMapa1, ['Reino Helado', 'Mapa 1']);
     });
 
     testWidgets('Los números usados se encienden en la preparación', (

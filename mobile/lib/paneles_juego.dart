@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:brilliant_mobile/copo_progreso.dart';
+import 'package:brilliant_mobile/tema_mapa.dart';
 import 'package:brilliantdart/validador_anclas.dart';
 import 'package:brilliant_mobile/colores_zonas.dart';
 import 'package:brilliant_mobile/historial_dados_view.dart';
@@ -32,14 +34,17 @@ class PanelPreparacion extends StatelessWidget {
       key: const Key('setup-panel'),
       width: double.infinity,
       padding: const EdgeInsets.all(12),
-      decoration: decoracionTarjeta(),
+      decoration: decoracionTarjeta(context),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              RuedaProgresoIniciales(cantidad: cantidad),
+              if (TemaMapa.maybeOf(context)?.copoDeNieve ?? false)
+                CopoProgresoIniciales(cantidad: cantidad)
+              else
+                RuedaProgresoIniciales(cantidad: cantidad),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -92,7 +97,7 @@ class PanelPreparacion extends StatelessWidget {
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeOutBack,
             child: ElevatedButton(
-              style: estiloBotonElevadoPrincipal(),
+              style: estiloBotonElevadoPrincipal(context),
               onPressed: puedeIniciar ? onComenzar : null,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -471,7 +476,7 @@ class ResumenMovimiento extends StatelessWidget {
             const SizedBox(height: 4),
             FilledButton.icon(
               key: const Key('confirm-move-button'),
-              style: estiloBotonPrincipal(),
+              style: estiloBotonPrincipal(context),
               onPressed: onConfirmar,
               icon: const Icon(Icons.check),
               label: const Text('Confirmar movimiento'),
@@ -564,7 +569,7 @@ class PanelFinPartida extends StatelessWidget {
             const SizedBox(height: 12),
             FilledButton.icon(
               key: const Key('new-game-button'),
-              style: estiloBotonPrincipal(),
+              style: estiloBotonPrincipal(context),
               onPressed: onNuevaPartida,
               icon: const Icon(Icons.replay),
               label: const Text('Jugar nueva partida'),

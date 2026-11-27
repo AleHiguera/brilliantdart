@@ -41,6 +41,8 @@ import 'package:brilliant_mobile/reanudar_partida.dart';
 import 'package:brilliant_mobile/seccion_multijugador.dart';
 import 'package:brilliant_mobile/seccion_salon_fama.dart';
 import 'package:brilliant_mobile/fondo_app.dart';
+import 'package:brilliant_mobile/pantalla_con_tema.dart';
+import 'package:brilliant_mobile/tema_mapa.dart';
 import 'package:brilliant_mobile/npcs_menu.dart';
 import 'package:brilliant_mobile/paleta_atardecer.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
@@ -390,6 +392,8 @@ class _OpcionMapa extends StatelessWidget {
 
   bool get disponible => mapa != null;
 
+  TemaMapa get _tema => TemaMapa.de(numero);
+
   @override
   Widget build(BuildContext context) {
     final foreground = disponible ? Colors.black : Colors.black45;
@@ -398,15 +402,15 @@ class _OpcionMapa extends StatelessWidget {
       button: disponible,
       enabled: disponible,
       label: disponible
-          ? 'Mapa $numero, disponible'
-          : 'Mapa $numero, bloqueado',
+          ? '${_tema.nombre}, disponible'
+          : '${_tema.nombre}, bloqueado',
       child: Container(
         key: Key('map-card-$numero'),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          gradient: disponible ? PaletaAtardecer.tarjetaDestacada : null,
+          gradient: disponible ? _tema.tarjetaDestacada : null,
           color: disponible ? null : estilo.colorTarjeta,
-          border: Border.all(color: PaletaAtardecer.borde, width: 1.2),
+          border: Border.all(color: _tema.bordeTarjeta, width: 1.2),
           boxShadow: disponible
               ? const [
                   BoxShadow(
@@ -451,13 +455,38 @@ class _OpcionMapa extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Mapa $numero',
+                          _tema.nombre,
+                          key: Key('map-name-$numero'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(
                                 color: foreground,
                                 fontWeight: FontWeight.bold,
                               ),
                         ),
+                        // Con nombre propio, abajo sigue diciendo qué mapa es.
+                        if (_tema.tieneNombrePropio)
+                          Row(
+                            children: [
+                              if (_tema.nieve) ...[
+                                const Icon(
+                                  Icons.ac_unit,
+                                  size: 14,
+                                  color: ColoresHielo.azul,
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+                              Text(
+                                'Mapa $numero',
+                                key: Key('map-number-$numero'),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
+                          ),
                         // Un mapa jugable no lleva etiqueta: solo se marca
                         // el que todavía no se puede jugar.
                         if (!disponible) ...[
@@ -495,9 +524,7 @@ class _OpcionMapa extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      gradient: disponible
-                          ? PaletaAtardecer.botonRedondo
-                          : null,
+                      gradient: disponible ? _tema.botonRedondo : null,
                       shape: BoxShape.circle,
                       boxShadow: disponible
                           ? const [
@@ -545,7 +572,7 @@ class _ComoSeJuega extends StatelessWidget {
     return Container(
       key: const Key('how-to-play'),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: estilo.decoracionTarjeta(),
+      decoration: estilo.decoracionTarjeta(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -949,7 +976,7 @@ class _TableroPageState extends State<TableroPage> {
         key: const Key('turn-panel'),
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-        decoration: estilo.decoracionTarjeta(),
+        decoration: estilo.decoracionTarjeta(context),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1361,9 +1388,10 @@ class _TableroPageState extends State<TableroPage> {
   Widget build(BuildContext context) {
     final movimientosDisponibles = _movimientosDisponibles;
     final mostrarHistorialLateral = MediaQuery.sizeOf(context).width >= 700;
+    final tema = TemaMapa.de(widget.mapa.numero);
     final pantalla = Scaffold(
       appBar: AppBar(
-        title: const Text('Tablero'),
+        title: Text(tema.tieneNombrePropio ? tema.nombre : 'Tablero'),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         flexibleSpace: const FondoBarra(),
@@ -1489,13 +1517,14 @@ class _TableroPageState extends State<TableroPage> {
       ),
     );
 
-    if (widget.compartida == null) return pantalla;
+    final conTema = PantallaConTema(tema: tema, child: pantalla);
+    if (widget.compartida == null) return conTema;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _salirDePartida();
       },
-      child: pantalla,
+      child: conTema,
     );
   }
 }

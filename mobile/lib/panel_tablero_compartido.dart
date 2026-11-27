@@ -101,7 +101,7 @@ class PanelEsperaRonda extends StatelessWidget {
       key: const Key('ronda-esperando'),
       width: double.infinity,
       padding: const EdgeInsets.all(12),
-      decoration: decoracionTarjeta(),
+      decoration: decoracionTarjeta(context),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,7 +143,7 @@ class _EsperaDeTableros extends StatelessWidget {
       key: const Key('tablero-esperando'),
       width: double.infinity,
       padding: const EdgeInsets.all(12),
-      decoration: decoracionTarjeta(),
+      decoration: decoracionTarjeta(context),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

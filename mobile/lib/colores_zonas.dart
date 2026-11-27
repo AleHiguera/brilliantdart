@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:brilliant_mobile/paleta_atardecer.dart';
+import 'package:brilliant_mobile/tema_mapa.dart';
 import 'package:brilliantdart/tipoo.dart';
 
 const Map<TipoZona, Color> coloresZonas = {
@@ -17,18 +18,23 @@ const Map<TipoZona, Color> coloresZonas = {
 const Color colorTarjeta = PaletaAtardecer.tarjeta;
 const Color colorBordeTarjeta = PaletaAtardecer.borde;
 
-BoxDecoration decoracionTarjeta() => BoxDecoration(
-  color: colorTarjeta,
-  borderRadius: BorderRadius.circular(12),
-  border: Border.all(color: colorBordeTarjeta),
-  boxShadow: const [
-    BoxShadow(
-      color: PaletaAtardecer.sombra,
-      blurRadius: 12,
-      offset: Offset(0, 4),
-    ),
-  ],
-);
+/// La tarjeta de siempre; dentro de un mapa con temática (por ejemplo, el
+/// Reino Helado) toma sus colores.
+BoxDecoration decoracionTarjeta([BuildContext? context]) {
+  final tema = context == null ? null : TemaMapa.maybeOf(context);
+  return BoxDecoration(
+    color: tema?.tarjeta ?? colorTarjeta,
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: tema?.bordeTarjeta ?? colorBordeTarjeta),
+    boxShadow: [
+      BoxShadow(
+        color: tema?.sombraTarjeta ?? PaletaAtardecer.sombra,
+        blurRadius: 12,
+        offset: const Offset(0, 4),
+      ),
+    ],
+  );
+}
 
 /// Encabezado común de las tarjetas: icono, título y algo a la derecha.
 class EncabezadoTarjeta extends StatelessWidget {
@@ -62,27 +68,34 @@ class EncabezadoTarjeta extends StatelessWidget {
   }
 }
 
-/// Botón negro principal (Comenzar, Lanzar dados, Confirmar...).
-ButtonStyle estiloBotonPrincipal() => FilledButton.styleFrom(
-  backgroundColor: Colors.black,
-  foregroundColor: Colors.white,
-  disabledBackgroundColor: colorBordeTarjeta,
-  disabledForegroundColor: Colors.black38,
-  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-  textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-);
+/// El borde de las tarjetas del mapa en que se está (o el de siempre).
+Color _bordeDelTema(BuildContext? context) =>
+    (context == null ? null : TemaMapa.maybeOf(context))?.bordeTarjeta ??
+    colorBordeTarjeta;
 
-ButtonStyle estiloBotonElevadoPrincipal() => ElevatedButton.styleFrom(
-  backgroundColor: Colors.black,
-  foregroundColor: Colors.white,
-  disabledBackgroundColor: colorBordeTarjeta,
-  disabledForegroundColor: Colors.black38,
-  elevation: 2,
-  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-  textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-);
+/// Botón negro principal (Comenzar, Lanzar dados, Confirmar...).
+ButtonStyle estiloBotonPrincipal([BuildContext? context]) =>
+    FilledButton.styleFrom(
+      backgroundColor: Colors.black,
+      foregroundColor: Colors.white,
+      disabledBackgroundColor: _bordeDelTema(context),
+      disabledForegroundColor: Colors.black38,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+    );
+
+ButtonStyle estiloBotonElevadoPrincipal([BuildContext? context]) =>
+    ElevatedButton.styleFrom(
+      backgroundColor: Colors.black,
+      foregroundColor: Colors.white,
+      disabledBackgroundColor: _bordeDelTema(context),
+      disabledForegroundColor: Colors.black38,
+      elevation: 2,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+    );
 
 /// Aviso corto con icono, para pistas y advertencias durante el turno.
 class AvisoJuego extends StatelessWidget {

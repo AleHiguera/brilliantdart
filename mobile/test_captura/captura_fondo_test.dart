@@ -89,12 +89,17 @@ Future<GlobalKey> mostrar(WidgetTester tester, Widget app) async {
   addTearDown(tester.view.reset);
   final clave = GlobalKey();
   await tester.pumpWidget(RepaintBoundary(key: clave, child: app));
-  await tester.runAsync(
-    () => precacheImage(
-      const AssetImage(imagenFondo),
-      tester.element(find.byType(RepaintBoundary).first),
-    ),
-  );
+  for (final imagen in [
+    imagenFondo,
+    'assets/imagenes/fondo_reino_helado.jpg',
+  ]) {
+    await tester.runAsync(
+      () => precacheImage(
+        AssetImage(imagen),
+        tester.element(find.byType(RepaintBoundary).first),
+      ),
+    );
+  }
   await esperar(tester);
   return clave;
 }

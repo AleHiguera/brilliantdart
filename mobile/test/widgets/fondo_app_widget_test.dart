@@ -149,7 +149,7 @@ void main() {
     ) async {
       await tester.pumpWidget(const BrilliantApp());
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('map-option-1')));
+      await tester.tap(find.byKey(const Key('map-option-2')));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('fondo-imagen')), findsOneWidget);

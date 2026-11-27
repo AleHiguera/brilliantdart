@@ -181,7 +181,7 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
           const SizedBox(height: 10),
           FilledButton.icon(
             key: const Key('roll-dice-button'),
-            style: estiloBotonPrincipal(),
+            style: estiloBotonPrincipal(context),
             onPressed: puedeLanzar ? _lanzarDados : null,
             icon: RotationTransition(
               turns: _animacion,
@@ -229,7 +229,7 @@ class _PanelLanzamientoDadosState extends State<PanelLanzamientoDados>
                     alignment: Alignment.centerRight,
                     child: FilledButton(
                       key: const Key('pass-turn-button'),
-                      style: estiloBotonPrincipal(),
+                      style: estiloBotonPrincipal(context),
                       onPressed: _pasarTurno,
                       child: Text(widget.textoPasarTurno),
                     ),

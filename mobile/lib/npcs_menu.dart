@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:brilliant_mobile/decoraciones.dart';
 import 'package:brilliant_mobile/paseo_npc.dart';
 import 'package:brilliant_mobile/pintores_npc.dart';
 
@@ -14,10 +15,6 @@ class NpcsMenu extends StatefulWidget {
 
   /// Cuánto se agrandan los dibujos respecto a sus medidas base.
   static const double escala = 0.85;
-
-  /// Las pruebas de otras pantallas los apagan: al moverse sin parar no
-  /// dejarían que la pantalla «termine» de animarse.
-  static bool habilitados = true;
 
   @override
   State<NpcsMenu> createState() => _NpcsMenuState();
@@ -44,7 +41,7 @@ class _NpcsMenuState extends State<NpcsMenu>
     super.didChangeDependencies();
     // Con «reducir movimiento» se quedan quietos.
     final quietos =
-        !NpcsMenu.habilitados ||
+        !Decoraciones.animadas ||
         (MediaQuery.maybeDisableAnimationsOf(context) ?? false);
     if (quietos && _reloj.isActive) {
       _reloj.stop();
@@ -82,7 +79,7 @@ class _NpcsMenuState extends State<NpcsMenu>
 
   @override
   Widget build(BuildContext context) {
-    if (!NpcsMenu.habilitados) return const SizedBox.shrink();
+    if (!Decoraciones.animadas) return const SizedBox.shrink();
     return IgnorePointer(
       child: SizedBox(
         key: const Key('npcs-menu'),

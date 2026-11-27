@@ -26,7 +26,7 @@ class SeccionSalonFama extends StatelessWidget {
     return Container(
       key: const Key('salon-fama'),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-      decoration: estilo.decoracionTarjeta(),
+      decoration: estilo.decoracionTarjeta(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

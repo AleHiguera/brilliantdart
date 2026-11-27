@@ -91,7 +91,7 @@ class _TarjetaJugadores extends StatelessWidget {
     return Container(
       key: const Key('tabla-jugadores'),
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-      decoration: decoracionTarjeta(),
+      decoration: decoracionTarjeta(context),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -230,7 +230,7 @@ class _TarjetaZonas extends StatelessWidget {
     return Container(
       key: const Key('tabla-zonas'),
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-      decoration: decoracionTarjeta(),
+      decoration: decoracionTarjeta(context),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

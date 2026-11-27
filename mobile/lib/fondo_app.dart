@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:brilliant_mobile/paleta_atardecer.dart';
+import 'package:brilliant_mobile/tema_mapa.dart';
 
 /// La imagen de fondo de toda la app: la casa del árbol al atardecer.
 const String imagenFondo = 'assets/imagenes/fondo_casa_arbol.jpg';
@@ -11,11 +12,16 @@ class FondoBarra extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const DecoratedBox(
-      key: Key('fondo-barra'),
+    final tema = TemaMapa.maybeOf(context);
+    return DecoratedBox(
+      key: const Key('fondo-barra'),
       decoration: BoxDecoration(
-        gradient: PaletaAtardecer.barra,
-        border: Border(bottom: BorderSide(color: PaletaAtardecer.lineaBarra)),
+        gradient: tema?.barra ?? PaletaAtardecer.barra,
+        border: Border(
+          bottom: BorderSide(
+            color: tema?.lineaBarra ?? PaletaAtardecer.lineaBarra,
+          ),
+        ),
       ),
     );
   }
@@ -43,38 +49,49 @@ const LinearGradient veloFondo = LinearGradient(
 /// desplace, cubriendo todo sin deformarse. Las pantallas encima deben tener
 /// el fondo transparente para que se vea.
 class FondoApp extends StatelessWidget {
-  const FondoApp({super.key, required this.child});
+  const FondoApp({
+    super.key,
+    required this.child,
+    this.imagen = imagenFondo,
+    this.velo = veloFondo,
+    this.alineacion = const Alignment(0.35, 0),
+    this.colorMientrasCarga = const Color(0xFFF7B98A),
+  });
+
+  /// Lo que se ve mientras carga la imagen (el color de su cielo).
+  final Color colorMientrasCarga;
 
   final Widget child;
+
+  /// La imagen; la casa del árbol si no se indica otra.
+  final String imagen;
+  final LinearGradient velo;
+
+  /// Qué parte de la imagen queda a la vista en un celular vertical.
+  final Alignment alineacion;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       fit: StackFit.expand,
       children: [
-        const Image(
-          key: Key('fondo-imagen'),
-          image: AssetImage(imagenFondo),
+        Image(
+          key: const Key('fondo-imagen'),
+          image: AssetImage(imagen),
           fit: BoxFit.cover,
           // La casa está a la derecha: en un celular vertical se centra en
           // ella en vez de cortarla.
-          alignment: Alignment(0.35, 0),
+          alignment: alineacion,
           // Mientras carga, el color del cielo en lugar de blanco.
-          frameBuilder: _conColorMientrasCarga,
+          frameBuilder: (context, imagen, cuadro, yaEstaba) =>
+              ColoredBox(color: colorMientrasCarga, child: imagen),
         ),
-        const DecoratedBox(
-          key: Key('fondo-velo'),
-          decoration: BoxDecoration(gradient: veloFondo),
+        DecoratedBox(
+          key: const Key('fondo-velo'),
+          decoration: BoxDecoration(gradient: velo),
         ),
         child,
       ],
     );
   }
-
-  static Widget _conColorMientrasCarga(
-    BuildContext context,
-    Widget imagen,
-    int? cuadro,
-    bool yaEstaba,
-  ) => ColoredBox(color: const Color(0xFFF7B98A), child: imagen);
 }

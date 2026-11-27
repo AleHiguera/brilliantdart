@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:brilliant_mobile/tema_mapa.dart';
 import 'package:brilliant_mobile/etiqueta_elo.dart';
 import 'package:flutter/services.dart';
 import 'package:brilliantdart/mapa.dart';
@@ -21,7 +22,7 @@ class TarjetaCodigo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: estilo.decoracionTarjeta(),
+      decoration: estilo.decoracionTarjeta(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -69,13 +70,13 @@ class TarjetaMapa extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: estilo.decoracionTarjeta(),
+      decoration: estilo.decoracionTarjeta(context),
       child: Row(
         children: [
           SizedBox(width: 56, height: 56, child: VistaPreviaMapa(mapa: mapa)),
           const SizedBox(width: 12),
           Text(
-            'Mapa ${mapa.numero}',
+            TemaMapa.de(mapa.numero).nombre,
             key: const Key('sala-mapa'),
             style: Theme.of(
               context,
@@ -104,7 +105,7 @@ class TarjetaJugadores extends StatelessWidget {
     return Container(
       key: const Key('sala-jugadores'),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: estilo.decoracionTarjeta(),
+      decoration: estilo.decoracionTarjeta(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

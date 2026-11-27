@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:brilliant_mobile/main.dart';
+import 'package:brilliant_mobile/decoraciones.dart';
 import 'package:brilliant_mobile/npcs_menu.dart';
 import 'package:brilliant_mobile/paseo_npc.dart';
 import 'package:brilliant_mobile/pintores_npc.dart';
@@ -70,8 +71,8 @@ bool mirandoIzquierda(WidgetTester tester, String quien) => tester
     .isNegative;
 
 void main() {
-  setUp(() => NpcsMenu.habilitados = true);
-  tearDown(() => NpcsMenu.habilitados = false);
+  setUp(() => Decoraciones.animadas = true);
+  tearDown(() => Decoraciones.animadas = false);
 
   group('Widgets: personajitos, cómo se ven', () {
     testWidgets('Hay un niño y un perrito', (tester) async {
@@ -264,7 +265,7 @@ void main() {
     });
 
     testWidgets('Apagados no se dibujan', (tester) async {
-      NpcsMenu.habilitados = false;
+      Decoraciones.animadas = false;
       await franja(tester);
 
       expect(find.byKey(const Key('npcs-menu')), findsNothing);
@@ -316,7 +317,7 @@ void main() {
       await pasar(tester, 1);
 
       expect(find.byType(NpcsMenu, skipOffstage: true), findsNothing);
-      expect(find.text('Tablero'), findsOneWidget);
+      expect(find.text('Reino Helado'), findsOneWidget);
     });
 
     testWidgets('No tapan lo último del menú: la lista deja espacio abajo', (
