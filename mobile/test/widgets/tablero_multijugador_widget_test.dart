@@ -200,6 +200,7 @@ Future<void> abrirTablero(
   Sonido? sonidoVictoria,
   Sonido? sonidoAplausos,
   Sonido? sonidoTristeza,
+  Sonido? sonidoMonedas,
 }) async {
   await tester.pumpWidget(
     const MaterialApp(home: Scaffold(body: Text('Menú'))),
@@ -216,6 +217,7 @@ Future<void> abrirTablero(
             sonidoVictoria: sonidoVictoria ?? SonidoFalso(),
             sonidoAplausos: sonidoAplausos ?? SonidoFalso(),
             sonidoTristeza: sonidoTristeza ?? SonidoFalso(),
+            sonidoMonedas: sonidoMonedas ?? SonidoFalso(),
           ),
         ),
       );
@@ -258,6 +260,7 @@ Future<void> abrirTableroConSesion(
             compartida: compartida,
             sonidoDados: SonidoFalso(),
             sonidoVictoria: SonidoFalso(),
+            sonidoMonedas: SonidoFalso(),
           ),
         ),
       );
@@ -1593,6 +1596,121 @@ void main() {
         expect(servidor.auth.elo.value, 1016);
       });
 
+      group('Monedas al ganar ELO', () {
+        ServidorFalso terminadaCon(int miCambio) => enRonda()
+          ..terminada = true
+          ..ganadores = [miCambio >= 0 ? 'ana' : 'luis']
+          ..resultadosElo = {
+            'ana': {
+              'lugar': miCambio >= 0 ? 1 : 2,
+              'antes': 1000,
+              'cambio': miCambio,
+              'despues': 1000 + miCambio,
+            },
+            'luis': {
+              'lugar': miCambio >= 0 ? 2 : 1,
+              'antes': 1000,
+              'cambio': -miCambio,
+              'despues': 1000 - miCambio,
+            },
+          };
+
+        testWidgets('Si gané ELO suenan las monedas', (tester) async {
+          final monedas = SonidoFalso();
+          await abrirTablero(tester, terminadaCon(16), sonidoMonedas: monedas);
+          await siguienteConsulta(tester);
+
+          expect(monedas.reproducciones, 1);
+        });
+
+        testWidgets('Suenan una sola vez aunque se siga consultando', (
+          tester,
+        ) async {
+          final monedas = SonidoFalso();
+          await abrirTablero(tester, terminadaCon(16), sonidoMonedas: monedas);
+          await siguienteConsulta(tester);
+          await siguienteConsulta(tester);
+          await siguienteConsulta(tester);
+
+          expect(monedas.reproducciones, 1);
+        });
+
+        testWidgets('Si perdí ELO no suenan', (tester) async {
+          final monedas = SonidoFalso();
+          await abrirTablero(tester, terminadaCon(-16), sonidoMonedas: monedas);
+          await siguienteConsulta(tester);
+
+          expect(monedas.reproducciones, 0);
+        });
+
+        testWidgets('Si quedé igual no suenan', (tester) async {
+          final monedas = SonidoFalso();
+          await abrirTablero(tester, terminadaCon(0), sonidoMonedas: monedas);
+          await siguienteConsulta(tester);
+
+          expect(monedas.reproducciones, 0);
+        });
+
+        testWidgets('Sin resultados de ELO (servidor anterior) no suenan', (
+          tester,
+        ) async {
+          final monedas = SonidoFalso();
+          final servidor = enRonda()
+            ..terminada = true
+            ..ganadores = ['ana'];
+          await abrirTablero(tester, servidor, sonidoMonedas: monedas);
+          await siguienteConsulta(tester);
+
+          expect(monedas.reproducciones, 0);
+        });
+
+        testWidgets('Suenan después de la victoria, sin encimarse', (
+          tester,
+        ) async {
+          final orden = <String>[];
+          await abrirTablero(
+            tester,
+            terminadaCon(16),
+            sonidoVictoria: SonidoQueAvisa(() => orden.add('victoria')),
+            sonidoMonedas: SonidoQueAvisa(() => orden.add('monedas')),
+          );
+          await siguienteConsulta(tester);
+          await siguienteConsulta(tester);
+
+          expect(orden, ['victoria', 'monedas']);
+        });
+
+        testWidgets('Con el silencio activado no suenan', (tester) async {
+          final control = ControlSonido()..value = true;
+          final monedas = SonidoFalso();
+          await tester.pumpWidget(
+            MaterialApp(
+              home: TableroPage(
+                compartida: terminadaCon(16).compartida(),
+                controlSonido: control,
+                sonidoDados: SonidoFalso(),
+                sonidoVictoria: SonidoFalso(),
+                sonidoAplausos: SonidoFalso(),
+                sonidoTristeza: SonidoFalso(),
+                sonidoMonedas: monedas,
+              ),
+            ),
+          );
+          await esperarServidor(tester);
+          await siguienteConsulta(tester);
+
+          expect(monedas.reproducciones, 0);
+        });
+
+        testWidgets('Al terminar se ve la animación de mi ELO', (tester) async {
+          await abrirTablero(tester, terminadaCon(16));
+          await siguienteConsulta(tester);
+
+          expect(find.byKey(const Key('celebracion-elo')), findsOneWidget);
+          expect(find.byKey(const Key('elo-subio')), findsOneWidget);
+        });
+      });
+
       testWidgets('Sin tableros del servidor solo se ve la clasificación', (
         tester,
       ) async {
@@ -2529,6 +2647,7 @@ void main() {
           home: TableroPage(
             sonidoDados: SonidoFalso(),
             sonidoVictoria: SonidoFalso(),
+            sonidoMonedas: SonidoFalso(),
           ),
         ),
       );

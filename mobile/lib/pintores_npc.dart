@@ -11,6 +11,7 @@ abstract final class ColoresNpc {
   static const Color boca = Color(0xFF8E2B2B);
   static const Color perro = Color(0xFFF7C325);
   static const Color hocico = Color(0xFFFDE38A);
+  static const Color lagrima = Color(0xFF4FB3F0);
 }
 
 /// Medidas en las que se dibuja cada personaje (luego se escala).
@@ -57,11 +58,19 @@ void _extremidad(Canvas canvas, Offset desde, Offset hasta, Color color) {
 /// Un niño con gorro blanco de orejitas, camisa celeste, short azul y mochila
 /// verde. Mira hacia la derecha; para que mire a la izquierda se voltea.
 class PintorNino extends CustomPainter {
-  const PintorNino({required this.paso, required this.saludando});
+  const PintorNino({
+    required this.paso,
+    required this.saludando,
+    this.triste = false,
+  });
 
   /// Balanceo de las piernas, de −1 a 1.
   final double paso;
   final bool saludando;
+
+  /// Cabizbajo: boca hacia abajo, cejitas caídas, una lágrima y el brazo
+  /// colgando (por ejemplo, al perder ELO).
+  final bool triste;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -120,7 +129,11 @@ class PintorNino extends CustomPainter {
 
     // El brazo de enfrente: arriba saludando o balanceándose al caminar.
     final hombro = const Offset(19.5, 21.5);
-    final mano = saludando ? const Offset(26, 13) : Offset(21.5 - paso * 2, 28);
+    final mano = triste
+        ? const Offset(20.5, 29.5)
+        : saludando
+        ? const Offset(26, 13)
+        : Offset(21.5 - paso * 2, 28);
     _extremidad(canvas, hombro, mano, ColoresNpc.piel);
     canvas
       ..drawCircle(mano, 1.6, _relleno(ColoresNpc.piel))
@@ -152,8 +165,20 @@ class PintorNino extends CustomPainter {
     canvas
       ..drawCircle(const Offset(15, 12), 0.95, _relleno(ColoresNpc.contorno))
       ..drawCircle(const Offset(19.5, 12), 0.95, _relleno(ColoresNpc.contorno));
-    // Sonrisa; abierta cuando saluda.
-    if (saludando) {
+    // Sonrisa; abierta cuando saluda y al revés cuando está triste.
+    if (triste) {
+      canvas
+        ..drawArc(const Rect.fromLTWH(15, 15, 4.5, 3), 3.5, 2.4, false, _linea)
+        // Cejitas caídas hacia afuera.
+        ..drawLine(const Offset(13.6, 10.6), const Offset(15.8, 10), _linea)
+        ..drawLine(const Offset(20.9, 10.6), const Offset(18.7, 10), _linea);
+      // Una lagrimita azul.
+      final lagrima = Path()
+        ..moveTo(14.6, 13)
+        ..quadraticBezierTo(13.4, 15.4, 14.6, 15.9)
+        ..quadraticBezierTo(15.8, 15.4, 14.6, 13);
+      canvas.drawPath(lagrima, _relleno(ColoresNpc.lagrima));
+    } else if (saludando) {
       _figura(
         canvas,
         Path()..addArc(const Rect.fromLTWH(14.5, 12.5, 5.5, 4.5), 0, 3.1416),
@@ -172,7 +197,9 @@ class PintorNino extends CustomPainter {
 
   @override
   bool shouldRepaint(PintorNino anterior) =>
-      anterior.paso != paso || anterior.saludando != saludando;
+      anterior.paso != paso ||
+      anterior.saludando != saludando ||
+      anterior.triste != triste;
 }
 
 /// Un perrito amarillo de cuerpo redondito, ojos grandes y hocico claro.

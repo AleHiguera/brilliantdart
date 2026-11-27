@@ -625,6 +625,7 @@ class TableroPage extends StatefulWidget {
     this.sonidoDados,
     this.sonidoAplausos,
     this.sonidoTristeza,
+    this.sonidoMonedas,
     this.controlSonido,
     this.mapa = mapaUno,
     this.compartida,
@@ -647,6 +648,9 @@ class TableroPage extends StatefulWidget {
 
   /// Suena cuando otro jugador completa una zona antes que este.
   final Sonido? sonidoTristeza;
+
+  /// Suena al terminar la partida si el jugador ganó ELO.
+  final Sonido? sonidoMonedas;
 
   /// Si los sonidos están silenciados; el de toda la app si no se indica.
   final ControlSonido? controlSonido;
@@ -697,6 +701,13 @@ class _TableroPageState extends State<TableroPage> {
     widget.sonidoTristeza,
     Sonido.tristeza,
   );
+  late final Sonido _sonidoMonedas = _silenciable(
+    widget.sonidoMonedas,
+    Sonido.monedas,
+  );
+
+  /// Las monedas suenan una sola vez, cuando llega mi resultado de ELO.
+  bool _monedasSonaron = false;
   late final NombresZonas _nombresZonas = NombresZonas(widget.mapa);
   StreamSubscription<List<ZonaAjena>>? _zonasAjenas;
   late final BlocValoresIniciales _bloc = BlocValoresIniciales(
@@ -826,6 +837,15 @@ class _TableroPageState extends State<TableroPage> {
     if (compartida.terminada && !_finAnunciado) {
       _finAnunciado = true;
       if (compartida.gane) _colaSonidos.tocar(_sonidoVictoria);
+    }
+    // Si gané ELO suenan las monedas, en la cola: después de la victoria.
+    final miElo = compartida.sala.resultadosElo[compartida.usuario];
+    if (compartida.terminada &&
+        !_monedasSonaron &&
+        miElo != null &&
+        miElo.cambio > 0) {
+      _monedasSonaron = true;
+      _colaSonidos.tocar(_sonidoMonedas);
     }
     if (_bloc.jugando) return;
     final guardados = compartida.sala.miTablero;
@@ -1171,6 +1191,7 @@ class _TableroPageState extends State<TableroPage> {
     _sonidoDados.dispose();
     _sonidoAplausos.dispose();
     _sonidoTristeza.dispose();
+    _sonidoMonedas.dispose();
     super.dispose();
   }
 

@@ -235,3 +235,19 @@ Future<void> abrirTableroCasiLleno(
 /// Busca un texto dentro del widget con la clave indicada.
 Finder textoEn(String clave, String texto) =>
     find.descendant(of: find.byKey(Key(clave)), matching: find.text(texto));
+
+/// Un sonido que avisa cuando suena, para revisar en qué orden suenan.
+class SonidoQueAvisa extends Sonido {
+  SonidoQueAvisa(this.alSonar);
+
+  final void Function() alSonar;
+
+  @override
+  Future<void> reproducir() async => alSonar();
+
+  @override
+  Future<void> detener() async {}
+
+  @override
+  void dispose() {}
+}

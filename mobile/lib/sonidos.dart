@@ -7,6 +7,7 @@ abstract class Sonido {
   static const String dados = 'sonidos/dados.wav';
   static const String aplausos = 'sonidos/aplausos.wav';
   static const String tristeza = 'sonidos/tristeza.wav';
+  static const String monedas = 'sonidos/monedas.wav';
 
   /// Hace sonar el sonido. Termina cuando el sonido acaba (o se corta), así
   /// quien quiera puede esperar a que acabe antes de tocar otro.

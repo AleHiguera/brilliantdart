@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:brilliantdart/clasificacion.dart';
 import 'package:brilliantdart/mapa.dart';
 import 'package:brilliant_mobile/colores_zonas.dart';
+import 'package:brilliant_mobile/celebracion_elo.dart';
 import 'package:brilliant_mobile/datos_sala.dart';
 import 'package:brilliant_mobile/elo_del_puesto.dart';
 import 'package:brilliant_mobile/tabla_puntos_partida.dart';
@@ -143,6 +144,8 @@ class PanelFinCompartido extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 12, color: Colors.black54),
           ),
+          if (resultadosElo[usuario] case final mio?)
+            CelebracionElo(key: const Key('celebracion-elo'), resultado: mio),
           const SizedBox(height: 10),
           _TablaClasificacion(
             puestos: clasificacion.puestos,
