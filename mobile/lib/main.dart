@@ -39,6 +39,7 @@ import 'package:brilliant_mobile/paneles_juego.dart';
 import 'package:brilliant_mobile/partida_compartida.dart';
 import 'package:brilliant_mobile/reanudar_partida.dart';
 import 'package:brilliant_mobile/seccion_multijugador.dart';
+import 'package:brilliant_mobile/seccion_salon_fama.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/sonidos.dart';
 import 'package:brilliant_mobile/tabla_puntos_partida.dart';
@@ -260,9 +261,11 @@ class SeleccionMapaPage extends StatelessWidget {
                 if (auth != null) ...[
                   const SizedBox(height: 24),
                   _Aparecer(indice: 5, child: SeccionMultijugador(auth: auth)),
+                  const SizedBox(height: 12),
+                  _Aparecer(indice: 6, child: SeccionSalonFama(auth: auth)),
                 ],
                 const SizedBox(height: 24),
-                const _Aparecer(indice: 6, child: _ComoSeJuega()),
+                const _Aparecer(indice: 7, child: _ComoSeJuega()),
               ],
             ),
           ),
