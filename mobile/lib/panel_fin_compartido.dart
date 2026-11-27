@@ -3,7 +3,7 @@ import 'package:brilliantdart/clasificacion.dart';
 import 'package:brilliantdart/mapa.dart';
 import 'package:brilliant_mobile/colores_zonas.dart';
 import 'package:brilliant_mobile/datos_sala.dart';
-import 'package:brilliant_mobile/panel_resultados_elo.dart';
+import 'package:brilliant_mobile/elo_del_puesto.dart';
 import 'package:brilliant_mobile/tabla_puntos_partida.dart';
 import 'package:brilliant_mobile/tableros_finales.dart';
 
@@ -144,11 +144,11 @@ class PanelFinCompartido extends StatelessWidget {
             style: const TextStyle(fontSize: 12, color: Colors.black54),
           ),
           const SizedBox(height: 10),
-          _TablaClasificacion(puestos: clasificacion.puestos, usuario: usuario),
-          if (resultadosElo.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            PanelResultadosElo(resultados: resultadosElo, usuario: usuario),
-          ],
+          _TablaClasificacion(
+            puestos: clasificacion.puestos,
+            usuario: usuario,
+            resultadosElo: resultadosElo,
+          ),
           const SizedBox(height: 12),
           FilledButton(
             key: const Key('fin-volver'),
@@ -172,10 +172,18 @@ class PanelFinCompartido extends StatelessWidget {
 }
 
 class _TablaClasificacion extends StatelessWidget {
-  const _TablaClasificacion({required this.puestos, required this.usuario});
+  const _TablaClasificacion({
+    required this.puestos,
+    required this.usuario,
+    required this.resultadosElo,
+  });
 
   final List<Puesto> puestos;
   final String? usuario;
+
+  /// El ELO de cada uno (antes, cambio y después); vacío con un servidor
+  /// anterior, y entonces la tabla se ve solo con lugares y puntos.
+  final Map<String, ResultadoEloJugador> resultadosElo;
 
   /// El lugar de quien empata dice «(empate)» para que se note a simple vista.
   bool _empatado(Puesto puesto) =>
@@ -193,6 +201,15 @@ class _TablaClasificacion extends StatelessWidget {
         : '@${puesto.jugador}',
     puntos: puesto.puntos,
     soyYo: puesto.jugador == usuario,
+    elo: switch (resultadosElo[puesto.jugador]) {
+      final resultado? => EloDelPuesto(
+        key: Key('elo-${puesto.jugador}'),
+        jugador: puesto.jugador,
+        resultado: resultado,
+        soyYo: puesto.jugador == usuario,
+      ),
+      null => null,
+    },
   );
 
   @override
@@ -208,9 +225,10 @@ class _TablaClasificacion extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'Clasificación',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+          Text(
+            resultadosElo.isEmpty ? 'Clasificación' : 'Clasificación y ELO',
+            key: const Key('clasificacion-titulo'),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           // Quien ganó va aparte, bajo su propio título, como en el papel.
@@ -262,12 +280,16 @@ class _FilaPuesto extends StatelessWidget {
     required this.nombre,
     required this.puntos,
     required this.soyYo,
+    this.elo,
   });
 
   final String lugar;
   final String nombre;
   final int puntos;
   final bool soyYo;
+
+  /// Debajo de la fila: cómo le cambió el ELO. Null si no hay ELO.
+  final Widget? elo;
 
   @override
   Widget build(BuildContext context) {
@@ -278,21 +300,36 @@ class _FilaPuesto extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(top: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Flexible(
-            flex: 2,
-            fit: FlexFit.tight,
-            child: Text(lugar, style: estilo),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Flexible(
+                flex: 2,
+                fit: FlexFit.tight,
+                child: Text(lugar, style: estilo),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  nombre,
+                  overflow: TextOverflow.ellipsis,
+                  style: estilo,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text('$puntos pts', style: estilo),
+            ],
           ),
-          const SizedBox(width: 6),
-          Expanded(
-            flex: 3,
-            child: Text(nombre, overflow: TextOverflow.ellipsis, style: estilo),
-          ),
-          const SizedBox(width: 6),
-          Text('$puntos pts', style: estilo),
+          if (elo case final elo?)
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
+              child: Align(alignment: Alignment.centerRight, child: elo),
+            ),
         ],
       ),
     );

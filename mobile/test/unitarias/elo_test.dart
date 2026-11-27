@@ -158,6 +158,62 @@ void main() {
     });
   });
 
+  group('Unitarias: ELO que empieza en 0', () {
+    test('Un ELO de 0 se lee como cualquier otro', () async {
+      final sala = await leer(salaJson(elos: {'ana': 0, 'luis': 16}));
+
+      expect(sala.elos, {'ana': 0, 'luis': 16});
+    });
+
+    test('Perder con 0 y quedarse en 0 es un resultado válido', () async {
+      final sala = await leer(
+        salaJson(
+          terminada: true,
+          resultadosElo: {
+            'ana': {'lugar': 1, 'antes': 0, 'cambio': 16, 'despues': 16},
+            'luis': {'lugar': 2, 'antes': 0, 'cambio': 0, 'despues': 0},
+          },
+        ),
+      );
+
+      expect(sala.resultadosElo['ana'], (
+        lugar: 1,
+        antes: 0,
+        cambio: 16,
+        despues: 16,
+      ));
+      expect(sala.resultadosElo['luis'], (
+        lugar: 2,
+        antes: 0,
+        cambio: 0,
+        despues: 0,
+      ));
+    });
+
+    test('Perder solo lo que se tenía (5 → 0) es válido', () async {
+      final sala = await leer(
+        salaJson(
+          terminada: true,
+          resultadosElo: {
+            'luis': {'lugar': 2, 'antes': 5, 'cambio': -5, 'despues': 0},
+          },
+        ),
+      );
+
+      expect(sala.resultadosElo['luis']?.despues, 0);
+    });
+
+    test('Mi ELO de 0 se guarda en la sesión (no es "sin ELO")', () async {
+      final auth = sesion(
+        (_) async => json({'ok': true, 'mensaje': 'ELO.', 'elo': 0}),
+      );
+
+      await ServicioPartidas(auth).actualizarMiElo();
+
+      expect(auth.elo.value, 0);
+    });
+  });
+
   group('Unitarias: mi ELO', () {
     test('Se pide a /api/elo con la sesión y queda en la sesión', () async {
       final peticiones = <http.Request>[];

@@ -1559,7 +1559,7 @@ void main() {
           };
         await abrirTablero(tester, servidor);
 
-        await tester.ensureVisible(find.byKey(const Key('resultados-elo')));
+        await tester.ensureVisible(find.byKey(const Key('elo-luis')));
         await tester.pumpAndSettle();
         expect(
           find.descendant(
