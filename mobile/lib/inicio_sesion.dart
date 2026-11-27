@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:brilliant_mobile/fondo_app.dart';
 import 'package:flutter/services.dart';
 import 'package:brilliant_mobile/colores_zonas.dart' as estilo;
 import 'package:brilliant_mobile/cuadro_error.dart';
@@ -107,7 +108,8 @@ class _InicioSesionPageState extends State<InicioSesionPage> {
       appBar: AppBar(
         title: const Text('Brilliant'),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: const FondoBarra(),
         foregroundColor: Colors.black,
         elevation: 0,
       ),

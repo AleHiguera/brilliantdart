@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:brilliant_mobile/fondo_app.dart';
 import 'package:flutter/services.dart';
 import 'package:brilliant_mobile/cuadro_error.dart';
 import 'package:brilliant_mobile/errores_formulario.dart';
@@ -155,7 +156,8 @@ class _RegistroPageState extends State<RegistroPage> {
       appBar: AppBar(
         title: const Text('Crear cuenta'),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: const FondoBarra(),
         foregroundColor: Colors.black,
         elevation: 0,
       ),

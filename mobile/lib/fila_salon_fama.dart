@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:brilliant_mobile/avatar_jugador.dart';
 import 'package:brilliant_mobile/datos_salon_fama.dart';
+import 'package:brilliant_mobile/fondo_app.dart';
 import 'package:brilliant_mobile/podio_salon_fama.dart';
 import 'package:brilliant_mobile/texto_elo_salon.dart';
 
@@ -109,27 +110,25 @@ class SeparadorSalonFama extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      key: Key('salon-separador'),
-      padding: EdgeInsets.only(top: 10, bottom: 2),
-      child: Row(
-        children: [
-          Expanded(child: Divider(color: Color(0xFFDCD6C6))),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              '...',
-              style: TextStyle(
-                fontSize: 24,
-                height: 1,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 4,
-                color: Color(0xFFB8B09A),
-              ),
+    // Va en una pastilla para leerse sobre la imagen de fondo.
+    return Padding(
+      key: const Key('salon-separador'),
+      padding: const EdgeInsets.only(top: 12, bottom: 2),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 2, 12, 8),
+          decoration: decoracionPastilla(),
+          child: const Text(
+            '...',
+            style: TextStyle(
+              fontSize: 24,
+              height: 1,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 4,
+              color: Color(0xFF8A8577),
             ),
           ),
-          Expanded(child: Divider(color: Color(0xFFDCD6C6))),
-        ],
+        ),
       ),
     );
   }
@@ -141,23 +140,31 @@ class EtiquetaMiPosicion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      key: Key('salon-tu-posicion'),
-      padding: EdgeInsets.only(top: 8, left: 4),
-      child: Row(
-        children: [
-          Icon(Icons.person_pin_circle, size: 16, color: Color(0xFFB08A1E)),
-          SizedBox(width: 4),
-          Text(
-            'TU POSICIÓN',
-            style: TextStyle(
-              fontSize: 11,
-              letterSpacing: 1.4,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFFB08A1E),
-            ),
+    return Padding(
+      key: const Key('salon-tu-posicion'),
+      padding: const EdgeInsets.only(top: 10),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(8, 4, 12, 4),
+          decoration: decoracionPastilla(),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.person_pin_circle, size: 16, color: Color(0xFF8C6A0E)),
+              SizedBox(width: 4),
+              Text(
+                'TU POSICIÓN',
+                style: TextStyle(
+                  fontSize: 11,
+                  letterSpacing: 1.4,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF8C6A0E),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

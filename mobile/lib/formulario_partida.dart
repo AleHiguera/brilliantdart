@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:brilliant_mobile/fondo_app.dart';
 
 AppBar barraPartida(String titulo) => AppBar(
   title: Text(titulo),
   centerTitle: true,
-  backgroundColor: Colors.white,
+  backgroundColor: Colors.transparent,
+  flexibleSpace: const FondoBarra(),
   foregroundColor: Colors.black,
   elevation: 0,
 );

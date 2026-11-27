@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:brilliant_mobile/datos_salon_fama.dart';
 import 'package:brilliant_mobile/fila_salon_fama.dart';
+import 'package:brilliant_mobile/fondo_app.dart';
 import 'package:brilliant_mobile/podio_salon_fama.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/servicio_salon_fama.dart';
@@ -74,7 +75,7 @@ class _PantallaSalonFamaState extends State<PantallaSalonFama> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F4EC),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text(
           'Salón de la Fama',
@@ -173,19 +174,26 @@ class _PantallaSalonFamaState extends State<PantallaSalonFama> {
         ),
       ],
       const SizedBox(height: 20),
-      const Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.autorenew, size: 14, color: Colors.black38),
-          SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              'Se actualiza solo. Desliza hacia abajo para actualizar ahora.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.black45),
-            ),
+      Center(
+        child: Container(
+          key: const Key('salon-nota'),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: decoracionPastilla(),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.autorenew, size: 14, color: Colors.black54),
+              SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  'Se actualiza solo. Desliza hacia abajo para actualizar ahora.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: Colors.black87),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     ];
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:brilliant_mobile/paleta_atardecer.dart';
 import 'package:brilliantdart/tipoo.dart';
 
 const Map<TipoZona, Color> coloresZonas = {
@@ -11,14 +12,22 @@ const Map<TipoZona, Color> coloresZonas = {
   TipoZona.naranja: Color(0xFFFF9800),
 };
 
-/// Fondo de las tarjetas, el mismo que las opciones de mapa.
-const Color colorTarjeta = Color(0xFFF4F4F0);
-const Color colorBordeTarjeta = Color(0xFFE2E2DC);
+/// Fondo de las tarjetas: crema cálida que deja ver un poco la imagen de
+/// fondo, en vez de blanco.
+const Color colorTarjeta = PaletaAtardecer.tarjeta;
+const Color colorBordeTarjeta = PaletaAtardecer.borde;
 
 BoxDecoration decoracionTarjeta() => BoxDecoration(
   color: colorTarjeta,
-  borderRadius: BorderRadius.circular(6),
+  borderRadius: BorderRadius.circular(12),
   border: Border.all(color: colorBordeTarjeta),
+  boxShadow: const [
+    BoxShadow(
+      color: PaletaAtardecer.sombra,
+      blurRadius: 12,
+      offset: Offset(0, 4),
+    ),
+  ],
 );
 
 /// Encabezado común de las tarjetas: icono, título y algo a la derecha.

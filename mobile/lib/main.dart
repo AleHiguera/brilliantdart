@@ -40,6 +40,8 @@ import 'package:brilliant_mobile/partida_compartida.dart';
 import 'package:brilliant_mobile/reanudar_partida.dart';
 import 'package:brilliant_mobile/seccion_multijugador.dart';
 import 'package:brilliant_mobile/seccion_salon_fama.dart';
+import 'package:brilliant_mobile/fondo_app.dart';
+import 'package:brilliant_mobile/paleta_atardecer.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/sonidos.dart';
 import 'package:brilliant_mobile/tabla_puntos_partida.dart';
@@ -76,8 +78,19 @@ class BrilliantApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.black),
-        scaffoldBackgroundColor: Colors.white,
+        // Transparente: detrás de cada pantalla va la imagen de fondo.
+        scaffoldBackgroundColor: Colors.transparent,
+        appBarTheme: const AppBarTheme(
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: rellenoCampo,
+        ),
       ),
+      builder: (context, pantalla) =>
+          FondoApp(child: pantalla ?? const SizedBox.shrink()),
       home: switch (auth) {
         null => const SeleccionMapaPage(),
         // Se recargó la página con la sesión abierta: se sigue donde iba.
@@ -173,7 +186,8 @@ class SeleccionMapaPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Brilliant'),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: const FondoBarra(),
         foregroundColor: Colors.black,
         elevation: 0,
         actions: [
@@ -364,29 +378,29 @@ class _OpcionMapa extends StatelessWidget {
           ? 'Mapa $numero, disponible'
           : 'Mapa $numero, bloqueado',
       child: Container(
+        key: Key('map-card-$numero'),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: disponible ? Colors.black : estilo.colorBordeTarjeta,
-            width: disponible ? 1.5 : 1,
-          ),
+          borderRadius: BorderRadius.circular(16),
+          gradient: disponible ? PaletaAtardecer.tarjetaDestacada : null,
+          color: disponible ? null : estilo.colorTarjeta,
+          border: Border.all(color: PaletaAtardecer.borde, width: 1.2),
           boxShadow: disponible
               ? const [
                   BoxShadow(
-                    color: Color(0x1F000000),
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
+                    color: PaletaAtardecer.sombra,
+                    blurRadius: 14,
+                    offset: Offset(0, 5),
                   ),
                 ]
               : null,
         ),
         child: Material(
-          color: disponible ? Colors.white : const Color(0xFFF2F2EF),
-          borderRadius: BorderRadius.circular(10),
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
           child: InkWell(
             key: Key('map-choice-$numero'),
             onTap: onTap,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(16),
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Row(
@@ -454,11 +468,23 @@ class _OpcionMapa extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Container(
+                    key: Key('map-arrow-$numero'),
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: disponible ? Colors.black : Colors.transparent,
+                      gradient: disponible
+                          ? PaletaAtardecer.botonRedondo
+                          : null,
                       shape: BoxShape.circle,
+                      boxShadow: disponible
+                          ? const [
+                              BoxShadow(
+                                color: PaletaAtardecer.sombra,
+                                blurRadius: 6,
+                                offset: Offset(0, 2),
+                              ),
+                            ]
+                          : null,
                     ),
                     child: Icon(
                       disponible ? Icons.arrow_forward : Icons.lock_outline,
@@ -1316,7 +1342,8 @@ class _TableroPageState extends State<TableroPage> {
       appBar: AppBar(
         title: const Text('Tablero'),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: const FondoBarra(),
         foregroundColor: Colors.black,
         elevation: 0,
         scrolledUnderElevation: 0,
