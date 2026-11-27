@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:brilliant_mobile/chispas_subiendo.dart';
 import 'package:brilliant_mobile/fondo_app.dart';
 import 'package:brilliant_mobile/nieve_cayendo.dart';
 import 'package:brilliant_mobile/tema_mapa.dart';
 
 /// Viste una pantalla de mapa con su temática: le pasa el tema a todo lo de
-/// adentro (tarjetas, barra, copo de los números iniciales) y, si el mapa
-/// tiene fondo propio, lo pone detrás con su nieve.
+/// adentro (tarjetas, barra, indicador de los números iniciales) y, si el
+/// mapa tiene fondo propio, lo pone detrás con su nieve o sus brasas.
 class PantallaConTema extends StatelessWidget {
   const PantallaConTema({super.key, required this.tema, required this.child});
 
@@ -28,7 +29,15 @@ class PantallaConTema extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  if (tema.nieve) const Positioned.fill(child: NieveCayendo()),
+                  switch (tema.particulas) {
+                    ParticulasMapa.nieve => const Positioned.fill(
+                      child: NieveCayendo(),
+                    ),
+                    ParticulasMapa.brasas => const Positioned.fill(
+                      child: ChispasSubiendo(),
+                    ),
+                    ParticulasMapa.ninguna => const SizedBox.shrink(),
+                  },
                   child,
                 ],
               ),

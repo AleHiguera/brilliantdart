@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:brilliant_mobile/copo_progreso.dart';
+import 'package:brilliant_mobile/llama_progreso.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,14 +21,30 @@ void main() {
             child: Container(
               color: const Color(0xFFF4FAFF),
               padding: const EdgeInsets.all(8),
-              child: const Row(
+              child: const Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CopoProgresoIniciales(cantidad: 0),
-                  SizedBox(width: 12),
-                  CopoProgresoIniciales(cantidad: 3),
-                  SizedBox(width: 12),
-                  CopoProgresoIniciales(cantidad: 6),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CopoProgresoIniciales(cantidad: 0),
+                      SizedBox(width: 12),
+                      CopoProgresoIniciales(cantidad: 3),
+                      SizedBox(width: 12),
+                      CopoProgresoIniciales(cantidad: 6),
+                    ],
+                  ),
+                  SizedBox(height: 12),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      LlamaProgresoIniciales(cantidad: 0),
+                      SizedBox(width: 12),
+                      LlamaProgresoIniciales(cantidad: 3),
+                      SizedBox(width: 12),
+                      LlamaProgresoIniciales(cantidad: 6),
+                    ],
+                  ),
                 ],
               ),
             ),

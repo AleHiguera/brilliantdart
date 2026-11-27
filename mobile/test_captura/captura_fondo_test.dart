@@ -92,6 +92,7 @@ Future<GlobalKey> mostrar(WidgetTester tester, Widget app) async {
   for (final imagen in [
     imagenFondo,
     'assets/imagenes/fondo_reino_helado.jpg',
+    'assets/imagenes/fondo_reino_fuego.jpg',
   ]) {
     await tester.runAsync(
       () => precacheImage(
@@ -136,6 +137,13 @@ void main() {
     await tester.tap(find.byKey(const Key('map-option-1')));
     await esperar(tester);
     await guardar(tester, clave, 'fondo_tablero');
+  });
+
+  testWidgets('fuego', (tester) async {
+    final clave = await mostrar(tester, const BrilliantApp());
+    await tester.tap(find.byKey(const Key('map-option-2')));
+    await esperar(tester);
+    await guardar(tester, clave, 'fondo_fuego');
   });
 
   testWidgets('salon', (tester) async {

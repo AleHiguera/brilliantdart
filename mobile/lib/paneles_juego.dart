@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:brilliant_mobile/copo_progreso.dart';
+import 'package:brilliant_mobile/llama_progreso.dart';
 import 'package:brilliant_mobile/tema_mapa.dart';
 import 'package:brilliantdart/validador_anclas.dart';
 import 'package:brilliant_mobile/colores_zonas.dart';
@@ -41,10 +42,16 @@ class PanelPreparacion extends StatelessWidget {
         children: [
           Row(
             children: [
-              if (TemaMapa.maybeOf(context)?.copoDeNieve ?? false)
-                CopoProgresoIniciales(cantidad: cantidad)
-              else
-                RuedaProgresoIniciales(cantidad: cantidad),
+              switch (TemaMapa.maybeOf(context)?.indicador) {
+                IndicadorIniciales.copo => CopoProgresoIniciales(
+                  cantidad: cantidad,
+                ),
+                IndicadorIniciales.llama => LlamaProgresoIniciales(
+                  cantidad: cantidad,
+                ),
+                IndicadorIniciales.rueda ||
+                null => RuedaProgresoIniciales(cantidad: cantidad),
+              },
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

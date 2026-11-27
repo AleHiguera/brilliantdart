@@ -14,7 +14,7 @@ import 'package:brilliant_mobile/pantalla_con_tema.dart';
 import 'package:brilliant_mobile/tarjetas_sala.dart';
 import 'package:brilliant_mobile/tema_mapa.dart';
 import 'package:brilliantdart/mapa.dart';
-import 'package:brilliantdart/mapa_dos.dart';
+import 'package:brilliantdart/mapa_tres.dart';
 import 'package:brilliantdart/mapa_uno.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -86,7 +86,7 @@ void main() {
     ) async {
       await menu(tester);
 
-      for (final n in [2, 3, 4]) {
+      for (final n in [3, 4]) {
         await tester.ensureVisible(find.byKey(Key('map-option-$n')));
         expect(
           tester.widget<Text>(find.byKey(Key('map-name-$n'))).data,
@@ -109,7 +109,7 @@ void main() {
         TemaMapa.reinoHelado.botonRedondo,
       );
       expect(
-        decoracion(tester, find.byKey(const Key('map-card-2'))).gradient,
+        decoracion(tester, find.byKey(const Key('map-card-3'))).gradient,
         PaletaAtardecer.tarjetaDestacada,
       );
     });
@@ -267,7 +267,7 @@ void main() {
     });
 
     testWidgets('En los demás mapas sigue la rueda de siempre', (tester) async {
-      await tablero(tester, mapa: mapaDos);
+      await tablero(tester, mapa: mapaTres);
 
       expect(find.byType(RuedaProgresoIniciales), findsOneWidget);
       expect(find.byType(CopoProgresoIniciales), findsNothing);
@@ -279,7 +279,7 @@ void main() {
       tester,
     ) async {
       await menu(tester);
-      await tester.tap(find.byKey(const Key('map-option-2')));
+      await tester.tap(find.byKey(const Key('map-option-3')));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('fondo-mapa')), findsNothing);
@@ -288,7 +288,7 @@ void main() {
     });
 
     testWidgets('Sus paneles siguen en crema de atardecer', (tester) async {
-      await tablero(tester, mapa: mapaDos);
+      await tablero(tester, mapa: mapaTres);
 
       final panel = decoracion(tester, find.byKey(const Key('setup-panel')));
       expect(panel.color, colorTarjeta);
@@ -314,13 +314,13 @@ void main() {
     testWidgets('Las demás salas dicen Mapa N', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(body: TarjetaMapa(mapa: mapaDos)),
+          home: Scaffold(body: TarjetaMapa(mapa: mapaTres)),
         ),
       );
 
       expect(
         tester.widget<Text>(find.byKey(const Key('sala-mapa'))).data,
-        'Mapa 2',
+        'Mapa 3',
       );
     });
   });

@@ -338,7 +338,7 @@ void main() {
     ) async {
       await tester.pumpWidget(BrilliantApp(auth: auth()));
       await pasar(tester, 1);
-      await tester.tap(find.byKey(const Key('map-option-2')));
+      await tester.tap(find.byKey(const Key('map-option-3')));
       await pasar(tester, 1);
 
       expect(find.text('Tablero'), findsOneWidget);

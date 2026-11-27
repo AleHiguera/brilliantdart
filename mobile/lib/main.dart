@@ -469,11 +469,12 @@ class _OpcionMapa extends StatelessWidget {
                         if (_tema.tieneNombrePropio)
                           Row(
                             children: [
-                              if (_tema.nieve) ...[
-                                const Icon(
-                                  Icons.ac_unit,
+                              if (_tema.icono case final icono?) ...[
+                                Icon(
+                                  icono,
+                                  key: Key('map-icon-$numero'),
                                   size: 14,
-                                  color: ColoresHielo.azul,
+                                  color: _tema.colorIcono,
                                 ),
                                 const SizedBox(width: 4),
                               ],

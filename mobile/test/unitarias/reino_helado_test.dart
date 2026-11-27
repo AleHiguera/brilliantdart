@@ -22,7 +22,7 @@ void main() {
     });
 
     test('Los demás siguen llamándose Mapa N', () {
-      for (final n in [2, 3, 4]) {
+      for (final n in [3, 4]) {
         expect(TemaMapa.de(n).nombre, 'Mapa $n');
         expect(TemaMapa.de(n).numero, n);
       }
@@ -30,7 +30,7 @@ void main() {
 
     test('Solo el Reino Helado tiene nombre propio', () {
       expect(TemaMapa.de(1).tieneNombrePropio, isTrue);
-      for (final n in [2, 3, 4]) {
+      for (final n in [3, 4]) {
         expect(TemaMapa.de(n).tieneNombrePropio, isFalse);
       }
     });
@@ -49,7 +49,7 @@ void main() {
     });
 
     test('Los demás mapas no tienen fondo propio', () {
-      for (final n in [2, 3, 4]) {
+      for (final n in [3, 4]) {
         expect(TemaMapa.de(n).imagenFondo, isNull);
         expect(TemaMapa.de(n).veloFondo, isNull);
       }
@@ -58,7 +58,7 @@ void main() {
     test('Nieva y usa el copo de nieve; los demás mapas no', () {
       expect(TemaMapa.reinoHelado.nieve, isTrue);
       expect(TemaMapa.reinoHelado.copoDeNieve, isTrue);
-      for (final n in [2, 3, 4]) {
+      for (final n in [3, 4]) {
         expect(TemaMapa.de(n).nieve, isFalse);
         expect(TemaMapa.de(n).copoDeNieve, isFalse);
       }
@@ -101,7 +101,7 @@ void main() {
     });
 
     test('Los mapas sin temática usan la paleta de atardecer', () {
-      final tema = TemaMapa.de(2);
+      final tema = TemaMapa.de(3);
       expect(tema.tarjeta, PaletaAtardecer.tarjeta);
       expect(tema.bordeTarjeta, PaletaAtardecer.borde);
       expect(tema.barra, PaletaAtardecer.barra);

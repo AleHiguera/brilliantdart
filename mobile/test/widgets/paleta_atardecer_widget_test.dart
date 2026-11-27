@@ -30,7 +30,7 @@ void main() {
     testWidgets('Van en degradado crema, no en blanco', (tester) async {
       await menu(tester);
 
-      final tarjeta = decoracion(tester, 'map-card-2');
+      final tarjeta = decoracion(tester, 'map-card-3');
       expect(tarjeta.gradient, PaletaAtardecer.tarjetaDestacada);
       expect(tarjeta.color, isNull);
     });
@@ -40,7 +40,7 @@ void main() {
     ) async {
       await menu(tester);
 
-      for (var n = 2; n <= 4; n++) {
+      for (var n = 3; n <= 4; n++) {
         await tester.ensureVisible(find.byKey(Key('map-card-$n')));
         final borde = decoracion(tester, 'map-card-$n').border! as Border;
         expect(borde.top.color, PaletaAtardecer.borde);
@@ -51,7 +51,7 @@ void main() {
     testWidgets('Tienen esquinas más redondas y sombra cálida', (tester) async {
       await menu(tester);
 
-      final tarjeta = decoracion(tester, 'map-card-2');
+      final tarjeta = decoracion(tester, 'map-card-3');
       expect(tarjeta.borderRadius, BorderRadius.circular(16));
       expect(tarjeta.boxShadow!.single.color, PaletaAtardecer.sombra);
     });
@@ -59,14 +59,14 @@ void main() {
     testWidgets('La flecha es terracota en vez de negra', (tester) async {
       await menu(tester);
 
-      final flecha = decoracion(tester, 'map-arrow-2');
+      final flecha = decoracion(tester, 'map-arrow-3');
       expect(flecha.gradient, PaletaAtardecer.botonRedondo);
       expect(flecha.color, isNull);
     });
 
     testWidgets('Se siguen pudiendo tocar para abrir el mapa', (tester) async {
       await menu(tester);
-      await tester.tap(find.byKey(const Key('map-option-2')));
+      await tester.tap(find.byKey(const Key('map-option-3')));
       await tester.pumpAndSettle();
 
       expect(find.text('Tablero'), findsOneWidget);
@@ -124,7 +124,7 @@ void main() {
 
     testWidgets('En el tablero', (tester) async {
       await menu(tester);
-      await tester.tap(find.byKey(const Key('map-option-2')));
+      await tester.tap(find.byKey(const Key('map-option-3')));
       await tester.pumpAndSettle();
       await comprobarBarra(tester);
     });
