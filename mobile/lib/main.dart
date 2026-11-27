@@ -41,6 +41,7 @@ import 'package:brilliant_mobile/reanudar_partida.dart';
 import 'package:brilliant_mobile/seccion_multijugador.dart';
 import 'package:brilliant_mobile/seccion_salon_fama.dart';
 import 'package:brilliant_mobile/fondo_app.dart';
+import 'package:brilliant_mobile/npcs_menu.dart';
 import 'package:brilliant_mobile/paleta_atardecer.dart';
 import 'package:brilliant_mobile/servicio_auth.dart';
 import 'package:brilliant_mobile/sonidos.dart';
@@ -224,66 +225,88 @@ class SeleccionMapaPage extends StatelessWidget {
               )
             : null,
       ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-              children: [
-                const _Aparecer(indice: 0, child: _CabeceraSeleccion()),
-                const SizedBox(height: 20),
-                _Aparecer(
-                  indice: 1,
-                  child: _OpcionMapa(
-                    key: const Key('map-option-1'),
-                    numero: 1,
-                    mapa: mapaUno,
-                    onTap: () => _abrirMapa(context, mapaUno),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: ListView(
+                  // Con sesión, abajo caminan los personajitos: se deja espacio
+                  // para que no tapen lo último de la lista.
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    12,
+                    20,
+                    auth != null ? 32 + NpcsMenu.alto : 32,
                   ),
+                  children: [
+                    const _Aparecer(indice: 0, child: _CabeceraSeleccion()),
+                    const SizedBox(height: 20),
+                    _Aparecer(
+                      indice: 1,
+                      child: _OpcionMapa(
+                        key: const Key('map-option-1'),
+                        numero: 1,
+                        mapa: mapaUno,
+                        onTap: () => _abrirMapa(context, mapaUno),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _Aparecer(
+                      indice: 2,
+                      child: _OpcionMapa(
+                        key: const Key('map-option-2'),
+                        numero: 2,
+                        mapa: mapaDos,
+                        onTap: () => _abrirMapa(context, mapaDos),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _Aparecer(
+                      indice: 3,
+                      child: _OpcionMapa(
+                        key: const Key('map-option-3'),
+                        numero: 3,
+                        mapa: mapaTres,
+                        onTap: () => _abrirMapa(context, mapaTres),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _Aparecer(
+                      indice: 4,
+                      child: _OpcionMapa(
+                        key: const Key('map-option-4'),
+                        numero: 4,
+                        mapa: mapaCuatro,
+                        onTap: () => _abrirMapa(context, mapaCuatro),
+                      ),
+                    ),
+                    if (auth != null) ...[
+                      const SizedBox(height: 24),
+                      _Aparecer(
+                        indice: 5,
+                        child: SeccionMultijugador(auth: auth),
+                      ),
+                      const SizedBox(height: 12),
+                      _Aparecer(indice: 6, child: SeccionSalonFama(auth: auth)),
+                    ],
+                    const SizedBox(height: 24),
+                    const _Aparecer(indice: 7, child: _ComoSeJuega()),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                _Aparecer(
-                  indice: 2,
-                  child: _OpcionMapa(
-                    key: const Key('map-option-2'),
-                    numero: 2,
-                    mapa: mapaDos,
-                    onTap: () => _abrirMapa(context, mapaDos),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _Aparecer(
-                  indice: 3,
-                  child: _OpcionMapa(
-                    key: const Key('map-option-3'),
-                    numero: 3,
-                    mapa: mapaTres,
-                    onTap: () => _abrirMapa(context, mapaTres),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _Aparecer(
-                  indice: 4,
-                  child: _OpcionMapa(
-                    key: const Key('map-option-4'),
-                    numero: 4,
-                    mapa: mapaCuatro,
-                    onTap: () => _abrirMapa(context, mapaCuatro),
-                  ),
-                ),
-                if (auth != null) ...[
-                  const SizedBox(height: 24),
-                  _Aparecer(indice: 5, child: SeccionMultijugador(auth: auth)),
-                  const SizedBox(height: 12),
-                  _Aparecer(indice: 6, child: SeccionSalonFama(auth: auth)),
-                ],
-                const SizedBox(height: 24),
-                const _Aparecer(indice: 7, child: _ComoSeJuega()),
-              ],
+              ),
             ),
           ),
-        ),
+          // Solo después de iniciar sesión: los personajitos que saludan.
+          if (auth != null)
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: SafeArea(top: false, child: NpcsMenu()),
+            ),
+        ],
       ),
     );
   }
